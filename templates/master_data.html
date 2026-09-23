@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Master Data | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    id="master-data-page"
+    data-resource="{{ resource }}"
+>
+
+    <section
+        class="
+            page-heading
+            page-heading-actions
+        "
+    >
+
+        <div>
+
+            <p class="eyebrow">
+                Stage 2 · Master Data
+            </p>
+
+            <h1 id="resource-title">
+                Master Data
+            </h1>
+
+            <p
+                class="page-subtitle"
+                id="resource-subtitle"
+            >
+                Create, update, search and archive records.
+            </p>
+
+        </div>
+
+
+        <button
+            class="
+                button
+                button-primary
+            "
+            id="add-record"
+            type="button"
+        >
+            + Add record
+        </button>
+
+    </section>
+
+
+    <section
+        class="
+            panel
+            master-panel
+        "
+    >
+
+        <div class="toolbar">
+
+            <label class="search-box">
+
+                <span class="sr-only">
+                    Search
+                </span>
+
+                <input
+                    id="search-input"
+                    type="search"
+                    placeholder="Search..."
+                    autocomplete="off"
+                >
+
+            </label>
+
+
+            <label class="checkbox-field">
+
+                <input
+                    id="include-archived"
+                    type="checkbox"
+                >
+
+                <span>
+                    Include archived
+                </span>
+
+            </label>
+
+
+            <button
+                class="
+                    button
+                    button-secondary
+                    button-small
+                "
+                id="refresh-list"
+                type="button"
+            >
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+            <table class="data-table">
+
+                <thead>
+
+                    <tr id="table-head">
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="table-body">
+                </tbody>
+
+            </table>
+
+
+            <div
+                class="table-state"
+                id="table-loading"
+            >
+                Loading records...
+            </div>
+
+
+            <div
+                class="
+                    table-state
+                    hidden
+                "
+                id="table-empty"
+            >
+                No records found.
+            </div>
+
+        </div>
+
+
+        <div class="pagination-bar">
+
+            <span id="pagination-summary">
+                0 records
+            </span>
+
+
+            <div class="pagination-actions">
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                    "
+                    id="previous-page"
+                    type="button"
+                >
+                    Previous
+                </button>
+
+
+                <span id="page-indicator">
+                    Page 1
+                </span>
+
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                    "
+                    id="next-page"
+                    type="button"
+                >
+                    Next
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<div
+    class="
+        modal-backdrop
+        hidden
+    "
+    id="record-modal"
+>
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p
+                    class="eyebrow"
+                    id="modal-eyebrow"
+                >
+                    Master Data
+                </p>
+
+                <h2 id="modal-title">
+                    Add record
+                </h2>
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                id="close-modal"
+                type="button"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="record-form">
+
+            <div
+                class="form-grid"
+                id="form-fields"
+            >
+            </div>
+
+
+            <div
+                class="
+                    form-error
+                    hidden
+                "
+                id="form-error"
+            >
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                    "
+                    id="cancel-modal"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        button
+                        button-primary
+                    "
+                    id="save-record"
+                    type="submit"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% if resource == "teams" %}
+<div
+    class="
+        modal-backdrop
+        hidden
+    "
+    id="squad-modal"
+>
+
+    <div class="modal-card squad-modal-card">
+
+        <div class="modal-header">
+
+            <div>
+                <p class="eyebrow">Team squad</p>
+                <h2 id="squad-modal-title">Squad</h2>
+            </div>
+
+            <button
+                class="icon-button"
+                id="close-squad-modal"
+                type="button"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="squad-modal-body">
+
+            <section class="squad-add-card">
+                <h3 class="squad-section-title">Add a player</h3>
+                <div id="squad-add-row"></div>
+            </section>
+
+            <section>
+                <div class="squad-list-header">
+                    <h3 class="squad-section-title">Current squad</h3>
+                    <span class="squad-count" id="squad-count">0 players</span>
+                </div>
+                <ul class="squad-members" id="squad-list"></ul>
+            </section>
+
+        </div>
+
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/master-data.js') }}?v={{ asset_version('js/master-data.js') }}"
+></script>
+
+{% if resource == "teams" %}
+<script
+    src="{{ url_for('static', path='js/team-squad.js') }}?v={{ asset_version('js/team-squad.js') }}"
+></script>
+{% endif %}
+
+{% endblock %}

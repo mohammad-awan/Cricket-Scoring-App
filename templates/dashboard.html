@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Dashboard | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<section class="page-heading">
+
+    <div>
+
+        <p class="eyebrow">
+            Stage 2
+        </p>
+
+        <h1>
+            Dashboard
+        </h1>
+
+        <p class="page-subtitle">
+            Manage the master data required before
+            match setup and scoring.
+        </p>
+
+    </div>
+
+</section>
+
+
+<section class="stats-grid">
+
+    <a
+        class="stat-card"
+        href="/master-data/teams"
+    >
+
+        <div class="stat-icon">
+            T
+        </div>
+
+        <div>
+
+            <span>
+                Teams
+            </span>
+
+            <strong id="teams-total">
+                —
+            </strong>
+
+            <small>
+                Active master records
+            </small>
+
+        </div>
+
+    </a>
+
+
+    <a
+        class="stat-card"
+        href="/master-data/players"
+    >
+
+        <div class="stat-icon">
+            P
+        </div>
+
+        <div>
+
+            <span>
+                Players
+            </span>
+
+            <strong id="players-total">
+                —
+            </strong>
+
+            <small>
+                Registered players
+            </small>
+
+        </div>
+
+    </a>
+
+
+    <a
+        class="stat-card"
+        href="/master-data/venues"
+    >
+
+        <div class="stat-icon">
+            V
+        </div>
+
+        <div>
+
+            <span>
+                Venues
+            </span>
+
+            <strong id="venues-total">
+                —
+            </strong>
+
+            <small>
+                Available venues
+            </small>
+
+        </div>
+
+    </a>
+
+
+    <a
+        class="stat-card"
+        href="/master-data/tournaments"
+    >
+
+        <div class="stat-icon">
+            C
+        </div>
+
+        <div>
+
+            <span>
+                Tournaments
+            </span>
+
+            <strong id="tournaments-total">
+                —
+            </strong>
+
+            <small>
+                Competition records
+            </small>
+
+        </div>
+
+    </a>
+
+</section>
+
+
+<section class="dashboard-grid">
+
+    <article class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    System
+                </p>
+
+                <h2>
+                    Backend health
+                </h2>
+
+            </div>
+
+
+            <button
+                class="
+                    button
+                    button-secondary
+                    button-small
+                "
+                id="refresh-health"
+                type="button"
+            >
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div class="health-list">
+
+            <div class="health-row">
+
+                <span>
+                    FastAPI
+                </span>
+
+                <span
+                    id="api-health"
+                    class="
+                        status-badge
+                        status-loading
+                    "
+                >
+                    Checking…
+                </span>
+
+            </div>
+
+
+            <div class="health-row">
+
+                <span>
+                    Supabase PostgreSQL
+                </span>
+
+                <span
+                    id="database-health"
+                    class="
+                        status-badge
+                        status-loading
+                    "
+                >
+                    Checking…
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <p
+            class="muted"
+            id="health-detail"
+        >
+            Running the Stage 1 health check.
+        </p>
+
+    </article>
+
+
+    <article class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Stage 2 Scope
+                </p>
+
+                <h2>
+                    What you can test now
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <ul class="check-list">
+
+            <li>
+                Create master records.
+            </li>
+
+            <li>
+                Search and paginate master data.
+            </li>
+
+            <li>
+                Edit active records.
+            </li>
+
+            <li>
+                Archive records without deleting history.
+            </li>
+
+            <li>
+                Test duplicate and validation errors.
+            </li>
+
+        </ul>
+
+    </article>
+
+</section>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/dashboard.js') }}?v={{ asset_version('js/dashboard.js') }}"
+></script>
+
+{% endblock %}

@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Matches | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<div id="matches-page">
+
+    <section
+        class="
+            page-heading
+            page-heading-actions
+        "
+    >
+
+        <div>
+
+            <p class="eyebrow">
+                Stage 3 · Match Setup
+            </p>
+
+            <h1>
+                Matches
+            </h1>
+
+            <p class="page-subtitle">
+                Create a match for any format — from a
+                1-over knockabout to a full XI-a-side
+                fixture — then configure toss, playing
+                teams and opening participants.
+            </p>
+
+        </div>
+
+
+        <button
+            class="
+                button
+                button-primary
+            "
+            id="add-match"
+            type="button"
+        >
+            + New match
+        </button>
+
+    </section>
+
+
+    <section
+        class="
+            panel
+            master-panel
+        "
+    >
+
+        <div class="toolbar">
+
+            <label class="search-box">
+
+                <span class="sr-only">
+                    Search
+                </span>
+
+                <input
+                    id="search-input"
+                    type="search"
+                    placeholder="Search by title or team…"
+                    autocomplete="off"
+                >
+
+            </label>
+
+
+            <select
+                id="status-filter"
+                class="status-filter"
+            >
+                <option value="">
+                    All statuses
+                </option>
+                <option value="draft">
+                    Draft
+                </option>
+                <option value="ready">
+                    Ready
+                </option>
+                <option value="live">
+                    Live
+                </option>
+                <option value="innings_break">
+                    Innings break
+                </option>
+                <option value="completed">
+                    Completed
+                </option>
+                <option value="abandoned">
+                    Abandoned
+                </option>
+            </select>
+
+
+            <button
+                class="
+                    button
+                    button-secondary
+                    button-small
+                "
+                id="refresh-list"
+                type="button"
+            >
+                Refresh
+            </button>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+            <table class="data-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Match</th>
+                        <th>Format</th>
+                        <th>Players / side</th>
+                        <th>Overs</th>
+                        <th>Venue</th>
+                        <th>Scheduled</th>
+                        <th>Status</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="table-body">
+                </tbody>
+
+            </table>
+
+
+            <div
+                class="table-state"
+                id="table-loading"
+            >
+                Loading matches...
+            </div>
+
+
+            <div
+                class="
+                    table-state
+                    hidden
+                "
+                id="table-empty"
+            >
+                No matches found.
+            </div>
+
+        </div>
+
+
+        <div class="pagination-bar">
+
+            <span id="pagination-summary">
+                0 matches
+            </span>
+
+
+            <div class="pagination-actions">
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                    "
+                    id="previous-page"
+                    type="button"
+                >
+                    Previous
+                </button>
+
+
+                <span id="page-indicator">
+                    Page 1
+                </span>
+
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                    "
+                    id="next-page"
+                    type="button"
+                >
+                    Next
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<div
+    class="
+        modal-backdrop
+        hidden
+    "
+    id="match-modal"
+>
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Match Setup
+                </p>
+
+                <h2>
+                    New match
+                </h2>
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                id="close-modal"
+                type="button"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form id="match-form">
+
+            <div class="form-grid">
+
+                <label class="form-field form-field-wide">
+                    <span>Title</span>
+                    <input
+                        name="title"
+                        type="text"
+                        maxlength="180"
+                        placeholder="Leave blank to auto-generate from teams"
+                    >
+                </label>
+
+
+                <label class="form-field">
+                    <span>Team A <em>*</em></span>
+                    <select name="team_a_id" id="team-a-select" required></select>
+                </label>
+
+
+                <label class="form-field">
+                    <span>Team B <em>*</em></span>
+                    <select name="team_b_id" id="team-b-select" required></select>
+                </label>
+
+
+                <label class="form-field">
+                    <span>Venue</span>
+                    <select name="venue_id" id="venue-select">
+                        <option value="">No venue yet</option>
+                    </select>
+                </label>
+
+
+                <label class="form-field">
+                    <span>Tournament</span>
+                    <select name="tournament_id" id="tournament-select">
+                        <option value="">No tournament</option>
+                    </select>
+                </label>
+
+
+                <label class="form-field">
+                    <span>Match type</span>
+                    <select name="match_type">
+                        <option value="t20">T20</option>
+                        <option value="odi">ODI</option>
+                        <option value="test">Test</option>
+                        <option value="other" selected>Other / custom</option>
+                    </select>
+                </label>
+
+
+                <label class="form-field">
+                    <span>Players per side <em>*</em></span>
+                    <input
+                        name="players_per_side"
+                        type="number"
+                        min="2"
+                        value="11"
+                        required
+                    >
+                </label>
+
+
+                <label class="form-field">
+                    <span>Total overs</span>
+                    <input
+                        name="total_overs"
+                        type="number"
+                        min="1"
+                        placeholder="Leave blank for unlimited"
+                    >
+                </label>
+
+
+                <label class="form-field">
+                    <span>Balls per over</span>
+                    <input
+                        name="balls_per_over"
+                        type="number"
+                        min="1"
+                        value="6"
+                    >
+                </label>
+
+
+                <label class="form-field">
+                    <span>Innings per team</span>
+                    <input
+                        name="innings_per_team"
+                        type="number"
+                        min="1"
+                        value="1"
+                    >
+                </label>
+
+
+                <label class="form-field form-field-wide">
+                    <span>Scheduled at</span>
+                    <input
+                        name="scheduled_at"
+                        type="datetime-local"
+                    >
+                </label>
+
+            </div>
+
+
+            <div
+                class="
+                    form-error
+                    hidden
+                "
+                id="form-error"
+            >
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                    "
+                    id="cancel-modal"
+                    type="button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        button
+                        button-primary
+                    "
+                    id="save-match"
+                    type="submit"
+                >
+                    Create match
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/matches.js') }}?v={{ asset_version('js/matches.js') }}"
+></script>
+
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Match Setup | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    id="match-setup-page"
+    data-match-id="{{ match_id }}"
+>
+
+    <section class="page-heading">
+
+        <a class="back-link" href="/match-setup">
+            ← All matches
+        </a>
+
+        <div class="setup-title-row">
+
+            <div>
+
+                <p class="eyebrow">
+                    Stage 3 · Match Setup
+                </p>
+
+                <h1 id="match-title">
+                    Loading match…
+                </h1>
+
+                <p class="page-subtitle" id="match-subtitle">
+                </p>
+
+            </div>
+
+            <span
+                class="status-badge"
+                id="match-status-badge"
+            >
+                —
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <div
+        class="
+            form-error
+            hidden
+        "
+        id="page-error"
+    >
+    </div>
+
+
+    <section class="setup-grid">
+
+        <article class="panel">
+
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Checklist</p>
+                    <h2>Readiness</h2>
+                </div>
+
+                <button
+                    class="button button-primary button-small"
+                    id="mark-ready"
+                    type="button"
+                    disabled
+                >
+                    Mark ready
+                </button>
+            </div>
+
+            <ul class="readiness-list" id="readiness-list">
+            </ul>
+
+        </article>
+
+
+        <article class="panel">
+
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Step 1</p>
+                    <h2>Toss</h2>
+                </div>
+            </div>
+
+            <div class="panel-body">
+
+                <p class="muted" id="toss-summary">
+                    Toss has not been recorded yet.
+                </p>
+
+                <div class="toss-options" id="toss-winner-options">
+                </div>
+
+                <div class="toss-options" id="toss-decision-options">
+                    <label class="toss-option">
+                        <input type="radio" name="toss-decision" value="bat">
+                        <span>Bat first</span>
+                    </label>
+                    <label class="toss-option">
+                        <input type="radio" name="toss-decision" value="bowl">
+                        <span>Bowl first</span>
+                    </label>
+                </div>
+
+                <button
+                    class="button button-primary button-small"
+                    id="save-toss"
+                    type="button"
+                >
+                    Save toss
+                </button>
+
+            </div>
+
+        </article>
+
+
+        <article class="panel setup-grid-wide">
+
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Match</p>
+                    <h2>Venue, date &amp; overs</h2>
+                </div>
+            </div>
+
+            <div class="panel-body" id="match-details-body">
+                <p class="muted">Loading…</p>
+            </div>
+
+        </article>
+
+
+        <article class="panel setup-grid-wide" id="playing-team-a-panel">
+        </article>
+
+
+        <article class="panel setup-grid-wide" id="playing-team-b-panel">
+        </article>
+
+
+        <article class="panel setup-grid-wide">
+
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Step 3</p>
+                    <h2>Opening innings</h2>
+                </div>
+            </div>
+
+            <div class="panel-body" id="opening-innings-body">
+
+                <p class="muted">
+                    Complete the toss and both playing teams first.
+                </p>
+
+            </div>
+
+        </article>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/match-setup.js') }}?v={{ asset_version('js/match-setup.js') }}"
+></script>
+
+{% endblock %}

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+        Cricket Intelligence Platform
+        {% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='css/app.css') }}?v={{ asset_version('css/app.css') }}"
+    >
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside
+        class="sidebar"
+        id="sidebar"
+    >
+
+        <a
+            class="brand"
+            href="/dashboard"
+        >
+            <span class="brand-mark">
+                CI
+            </span>
+
+            <span>
+                <strong>
+                    Cricket Intelligence
+                </strong>
+
+                <small>
+                    Stage 2 Admin
+                </small>
+            </span>
+        </a>
+
+
+        <nav class="nav-menu">
+
+            <a
+                class="nav-link
+                {% if request.url.path == '/dashboard' %}
+                active
+                {% endif %}"
+                href="/dashboard"
+            >
+                <span class="nav-icon">
+                    D
+                </span>
+
+                Dashboard
+            </a>
+
+
+            <p class="nav-section">
+                Master Data
+            </p>
+
+
+            <a
+                class="nav-link
+                {% if request.url.path == '/master-data/teams' %}
+                active
+                {% endif %}"
+                href="/master-data/teams"
+            >
+                <span class="nav-icon">
+                    T
+                </span>
+
+                Teams
+            </a>
+
+
+            <a
+                class="nav-link
+                {% if request.url.path == '/master-data/players' %}
+                active
+                {% endif %}"
+                href="/master-data/players"
+            >
+                <span class="nav-icon">
+                    P
+                </span>
+
+                Players
+            </a>
+
+
+            <a
+                class="nav-link
+                {% if request.url.path == '/master-data/venues' %}
+                active
+                {% endif %}"
+                href="/master-data/venues"
+            >
+                <span class="nav-icon">
+                    V
+                </span>
+
+                Venues
+            </a>
+
+
+            <a
+                class="nav-link
+                {% if request.url.path == '/master-data/tournaments' %}
+                active
+                {% endif %}"
+                href="/master-data/tournaments"
+            >
+                <span class="nav-icon">
+                    C
+                </span>
+
+                Tournaments
+            </a>
+
+
+            <p class="nav-section">
+                Stage 3
+            </p>
+
+
+            <a
+                class="nav-link
+                {% if request.url.path.startswith('/match-setup') %}
+                active
+                {% endif %}"
+                href="/match-setup"
+            >
+                <span class="nav-icon">
+                    M
+                </span>
+
+                Match Setup
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <a
+                href="/docs"
+                target="_blank"
+            >
+                Open API Docs ↗
+            </a>
+
+            <span>
+                Authentication will be added in Stage 10.
+            </span>
+
+        </div>
+
+    </aside>
+
+
+    <div class="app-main">
+
+        <header class="topbar">
+
+            <button
+                class="icon-button mobile-menu"
+                id="mobile-menu"
+                type="button"
+            >
+                ☰
+            </button>
+
+
+            <div>
+                <strong>
+                    Cricket Intelligence Platform
+                </strong>
+
+                <span>
+                    ORM Master Data
+                </span>
+            </div>
+
+
+            <div class="environment-pill">
+                Development
+            </div>
+
+        </header>
+
+
+        <main class="page-content">
+
+            {% block content %}
+            {% endblock %}
+
+        </main>
+
+    </div>
+
+</div>
+
+
+<div
+    id="toast-container"
+    class="toast-container"
+></div>
+
+
+<script>
+
+    document
+        .getElementById("mobile-menu")
+        ?.addEventListener(
+            "click",
+            () => {
+
+                document
+                    .getElementById("sidebar")
+                    ?.classList
+                    .toggle("open");
+
+            }
+        );
+
+</script>
+
+
+{% block scripts %}
+{% endblock %}
+
+</body>
+</html>
