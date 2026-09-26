@@ -1,10 +1,8 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
-
 import pytest
 from pydantic import ValidationError as PydanticValidationError
-
 from app.core.exceptions import ValidationError
 from app.models.enums import TossDecision
 from app.schemas.match_setup import (

@@ -77,3 +77,17 @@ async def match_setup_page(request: Request, match_id: str):
             "match_id": match_id,
         },
     )
+
+
+@router.get("/live-scoring/{match_id}")
+async def live_scoring_page(request: Request, match_id: str):
+    return templates.TemplateResponse(
+        request=request,
+        name="live_scoring.html",
+        context={
+            "match_id": match_id
+        }
+
+    )
+
+

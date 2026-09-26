@@ -1,0 +1,594 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Live Scoring | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    id="live-scoring-page"
+    data-match-id="{{ match_id }}"
+>
+
+    <section class="page-heading">
+
+        <a
+            class="back-link"
+            href="/match-setup/{{ match_id }}"
+        >
+            ← Match setup
+        </a>
+
+
+        <div class="setup-title-row">
+
+            <div>
+
+                <p class="eyebrow">
+                    Stage 4 · S13
+                </p>
+
+                <h1 id="scoring-title">
+                    Live Scoring Console
+                </h1>
+
+                <p
+                    class="page-subtitle"
+                    id="scoring-subtitle"
+                >
+                    Loading match context…
+                </p>
+
+            </div>
+
+
+            <span
+                class="status-badge"
+                id="scoring-status"
+            >
+                —
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <div
+        class="form-error hidden"
+        id="scoring-error"
+    ></div>
+
+
+    <div
+        class="result-banner hidden"
+        id="result-banner"
+    ></div>
+
+
+    <section
+        class="
+            scoring-scoreboard
+            panel
+        "
+    >
+
+        <div class="score-main">
+
+            <p
+                class="eyebrow"
+                id="batting-team-label"
+            >
+                Batting
+            </p>
+
+
+            <div class="score-number">
+
+                <span id="score-runs">
+                    0
+                </span>
+
+                <span class="score-wickets">
+                    /
+                    <span id="score-wickets">
+                        0
+                    </span>
+                </span>
+
+            </div>
+
+
+            <p class="score-overs">
+
+                <strong id="score-overs">
+                    0.0
+                </strong>
+
+                overs
+
+            </p>
+
+
+            <p
+                class="score-chase hidden"
+                id="score-chase"
+            ></p>
+
+
+            <p
+                class="innings-history muted hidden"
+                id="innings-history"
+            ></p>
+
+        </div>
+
+
+        <div class="score-metrics">
+
+            <div class="metric-card">
+
+                <span>
+                    Current RR
+                </span>
+
+                <strong id="score-crr">
+                    0.00
+                </strong>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <span>
+                    Next ball
+                </span>
+
+                <strong id="next-ball">
+                    1.1
+                </strong>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <span>
+                    Sequence
+                </span>
+
+                <strong id="next-sequence">
+                    1
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="scoring-grid">
+
+
+        <article class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Current participants
+                    </p>
+
+                    <h2>
+                        At the crease
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="
+                    panel-body
+                    participant-list
+                "
+            >
+
+                <div
+                    class="
+                        participant-row
+                        striker-row
+                    "
+                >
+
+                    <span>
+                        Striker
+                    </span>
+
+                    <strong
+                        id="current-striker"
+                    >
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="participant-row">
+
+                    <span>
+                        Non-striker
+                    </span>
+
+                    <strong
+                        id="current-non-striker"
+                    >
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div class="participant-row">
+
+                    <span>
+                        Bowler
+                    </span>
+
+                    <strong
+                        id="current-bowler"
+                    >
+                        —
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Normal runs
+                    </p>
+
+                    <h2>
+                        Record delivery
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel-body">
+
+                <p class="muted">
+                    Stage 4 supports legal
+                    deliveries with 0, 1, 2,
+                    3, 4 or 6 batter runs.
+                </p>
+
+
+                <div
+                    class="run-controls"
+                    id="run-controls"
+                >
+
+                    <button
+                        class="run-button"
+                        type="button"
+                        data-runs="0"
+                    >
+                        0
+                    </button>
+
+                    <button
+                        class="run-button"
+                        type="button"
+                        data-runs="1"
+                    >
+                        1
+                    </button>
+
+                    <button
+                        class="run-button"
+                        type="button"
+                        data-runs="2"
+                    >
+                        2
+                    </button>
+
+                    <button
+                        class="run-button"
+                        type="button"
+                        data-runs="3"
+                    >
+                        3
+                    </button>
+
+                    <button
+                        class="
+                            run-button
+                            boundary
+                        "
+                        type="button"
+                        data-runs="4"
+                    >
+                        4
+                    </button>
+
+                    <button
+                        class="
+                            run-button
+                            boundary
+                        "
+                        type="button"
+                        data-runs="6"
+                    >
+                        6
+                    </button>
+
+                </div>
+
+
+                <p
+                    class="muted"
+                    id="scoring-lock-note"
+                >
+                    Each click is committed
+                    as one backend transaction.
+                </p>
+
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                        hidden
+                    "
+                    id="end-innings"
+                    type="button"
+                >
+                    End innings
+                </button>
+
+            </div>
+
+        </article>
+
+
+        <article
+            class="
+                panel
+                scoring-grid-wide
+                next-innings-panel
+                hidden
+            "
+            id="next-innings-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Innings break
+                    </p>
+
+                    <h2 id="next-innings-title">
+                        Start next innings
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid next-innings-grid">
+
+                <label class="form-field">
+
+                    <span>
+                        Striker <em>*</em>
+                    </span>
+
+                    <select id="next-striker"></select>
+
+                </label>
+
+
+                <label class="form-field">
+
+                    <span>
+                        Non-striker <em>*</em>
+                    </span>
+
+                    <select id="next-non-striker"></select>
+
+                </label>
+
+
+                <label class="form-field">
+
+                    <span>
+                        Opening bowler <em>*</em>
+                    </span>
+
+                    <select id="next-opening-bowler"></select>
+
+                </label>
+
+
+                <div class="form-field next-innings-action">
+
+                    <button
+                        class="
+                            button
+                            button-primary
+                        "
+                        id="start-next-innings"
+                        type="button"
+                    >
+                        Start innings
+                    </button>
+
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article
+            class="
+                panel
+                scoring-grid-wide
+            "
+            id="bowler-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Over boundary
+                    </p>
+
+                    <h2>
+                        Next bowler
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="
+                    panel-body
+                    bowler-change-row
+                "
+            >
+
+                <select
+                    id="next-bowler-select"
+                    disabled
+                >
+
+                    <option value="">
+                        Complete an over first
+                    </option>
+
+                </select>
+
+
+                <button
+                    class="
+                        button
+                        button-primary
+                        button-small
+                    "
+                    id="save-bowler"
+                    type="button"
+                    disabled
+                >
+                    Set bowler
+                </button>
+
+
+                <span
+                    class="muted"
+                    id="bowler-help"
+                >
+                    Bowler can be changed
+                    only between overs.
+                </span>
+
+            </div>
+
+        </article>
+
+
+        <article
+            class="
+                panel
+                scoring-grid-wide
+            "
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Authoritative history
+                    </p>
+
+                    <h2>
+                        Recent deliveries
+                    </h2>
+
+                </div>
+
+
+                <span
+                    class="cache-pill"
+                    id="cache-status"
+                >
+                    Checking cache…
+                </span>
+
+            </div>
+
+
+            <div class="panel-body">
+
+                <div
+                    class="recent-balls"
+                    id="recent-balls"
+                >
+
+                    <span class="muted">
+                        No deliveries yet.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/scoring.js') }}?v={{ asset_version('js/scoring.js') }}"
+></script>
+
+{% endblock %}

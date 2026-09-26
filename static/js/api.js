@@ -339,6 +339,76 @@
         },
 
 
+        scoringGet(matchId) {
+
+            return request(
+                `/matches/${matchId}/scoring`
+            );
+
+        },
+
+
+        scoringRecord(matchId, data) {
+
+            return request(
+                `/matches/${matchId}/scoring/deliveries`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(data),
+                }
+            );
+
+        },
+
+
+        scoringRecordDelivery(matchId, data) {
+
+            return this.scoringRecord(
+                matchId,
+                data
+            );
+
+        },
+
+
+        scoringChangeBowler(matchId, data) {
+
+            return request(
+                `/matches/${matchId}/scoring/bowler`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(data),
+                }
+            );
+
+        },
+
+
+        scoringEndInnings(matchId) {
+
+            return request(
+                `/matches/${matchId}/scoring/innings/end`,
+                {
+                    method: "POST",
+                }
+            );
+
+        },
+
+
+        scoringStartNextInnings(matchId, data) {
+
+            return request(
+                `/matches/${matchId}/scoring/innings`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(data),
+                }
+            );
+
+        },
+
+
         teamSquad(teamId) {
 
             return request(
@@ -383,14 +453,24 @@
 
                 const result = await this.list(
                     resource,
-                    { ...params, page, page_size: 100 }
+                    {
+                        ...params,
+                        page,
+                        page_size: 100,
+                    }
                 );
 
-                items.push(...(result.items || []));
-                pages = result.pages || 1;
+                items.push(
+                    ...(result.items || [])
+                );
+
+                pages =
+                    result.pages || 1;
+
                 page += 1;
 
             } while (page <= pages);
+
 
             return items;
 
@@ -436,9 +516,11 @@
 
             requestAnimationFrame(
                 () => {
+
                     toast.classList.add(
                         "visible"
                     );
+
                 }
             );
 

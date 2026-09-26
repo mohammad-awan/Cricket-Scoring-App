@@ -2,26 +2,17 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.core.exceptions import (
-    register_exception_handlers,
-)
+from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging
 from app.db.session import close_database
-from app.web.router import (
-    router as web_router,
-)
+from app.web.router import router as web_router
 
 
-BASE_DIR = (
-    Path(__file__).resolve().parent.parent
-)
-
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:

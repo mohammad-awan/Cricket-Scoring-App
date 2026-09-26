@@ -1,5 +1,4 @@
 import logging
-
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -34,7 +33,7 @@ class ValidationError(AppError):
     def __init__(self, message: str) -> None:
         super().__init__(
             message,
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
         )
 
 

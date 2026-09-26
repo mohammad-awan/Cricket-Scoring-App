@@ -43,7 +43,7 @@ from app.models.enums import (
 
 class Team(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     __tablename__ = "teams"
-
+    
     name: Mapped[str] = mapped_column(
         String(120),
         nullable=False,
@@ -76,14 +76,12 @@ class Team(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
         passive_deletes=True,
         lazy="raise_on_sql",
     )
-
     home_matches: Mapped[list[Match]] = relationship(
         "Match",
         foreign_keys=lambda: [Match.team_a_id],
         back_populates="team_a",
         lazy="raise_on_sql",
     )
-
     away_matches: Mapped[list[Match]] = relationship(
         "Match",
         foreign_keys=lambda: [Match.team_b_id],
@@ -147,7 +145,6 @@ class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
         passive_deletes=True,
         lazy="raise_on_sql",
     )
-
     match_selections: Mapped[list[MatchPlayer]] = relationship(
         "MatchPlayer",
         back_populates="player",
@@ -212,7 +209,6 @@ class TeamPlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="players",
         lazy="raise_on_sql",
     )
-
     player: Mapped[Player] = relationship(
         "Player",
         back_populates="teams",
@@ -452,32 +448,27 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="home_matches",
         lazy="raise_on_sql",
     )
-
     team_b: Mapped[Team] = relationship(
         "Team",
         foreign_keys=lambda: [Match.team_b_id],
         back_populates="away_matches",
         lazy="raise_on_sql",
     )
-
     tournament: Mapped[Tournament | None] = relationship(
         "Tournament",
         back_populates="matches",
         lazy="raise_on_sql",
     )
-
     venue: Mapped[Venue | None] = relationship(
         "Venue",
         back_populates="matches",
         lazy="raise_on_sql",
     )
-
     toss_winner: Mapped[Team | None] = relationship(
         "Team",
         foreign_keys=lambda: [Match.toss_winner_id],
         lazy="raise_on_sql",
     )
-
     players: Mapped[list[MatchPlayer]] = relationship(
         "MatchPlayer",
         back_populates="match",
@@ -485,7 +476,6 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         passive_deletes=True,
         lazy="raise_on_sql",
     )
-
     innings: Mapped[list[Innings]] = relationship(
         "Innings",
         back_populates="match",
@@ -493,6 +483,13 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         passive_deletes=True,
         lazy="raise_on_sql",
         order_by="Innings.innings_number",
+    )
+    deliveries: Mapped[list[Delivery]] = relationship(
+        "Delivery",
+        back_populates="match",
+        passive_deletes=True,
+        lazy="raise_on_sql",
+        order_by="Delivery.delivery_number",
     )
 
     __table_args__ = (
@@ -578,12 +575,10 @@ class MatchPlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="players",
         lazy="raise_on_sql",
     )
-
     team: Mapped[Team] = relationship(
         "Team",
         lazy="raise_on_sql",
     )
-
     player: Mapped[Player] = relationship(
         "Player",
         back_populates="match_selections",
@@ -679,37 +674,31 @@ class Innings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="innings",
         lazy="raise_on_sql",
     )
-
     batting_team: Mapped[Team] = relationship(
         "Team",
         foreign_keys=lambda: [Innings.batting_team_id],
         lazy="raise_on_sql",
     )
-
     bowling_team: Mapped[Team] = relationship(
         "Team",
         foreign_keys=lambda: [Innings.bowling_team_id],
         lazy="raise_on_sql",
     )
-
     striker: Mapped[Player | None] = relationship(
         "Player",
         foreign_keys=lambda: [Innings.striker_id],
         lazy="raise_on_sql",
     )
-
     non_striker: Mapped[Player | None] = relationship(
         "Player",
         foreign_keys=lambda: [Innings.non_striker_id],
         lazy="raise_on_sql",
     )
-
     current_bowler: Mapped[Player | None] = relationship(
         "Player",
         foreign_keys=lambda: [Innings.current_bowler_id],
         lazy="raise_on_sql",
     )
-
     deliveries: Mapped[list[Delivery]] = relationship(
         "Delivery",
         back_populates="innings",
@@ -757,6 +746,11 @@ class Innings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "deliveries"
 
+    match_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("matches.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     innings_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey("innings.id", ondelete="CASCADE"),
@@ -830,30 +824,31 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default=func.now(),
     )
 
+    match: Mapped[Match] = relationship(
+        "Match",
+        back_populates="deliveries",
+        lazy="raise_on_sql",
+    )
     innings: Mapped[Innings] = relationship(
         "Innings",
         back_populates="deliveries",
         lazy="raise_on_sql",
     )
-
     striker: Mapped[Player] = relationship(
         "Player",
         foreign_keys=lambda: [Delivery.striker_id],
         lazy="raise_on_sql",
     )
-
     non_striker: Mapped[Player] = relationship(
         "Player",
         foreign_keys=lambda: [Delivery.non_striker_id],
         lazy="raise_on_sql",
     )
-
     bowler: Mapped[Player] = relationship(
         "Player",
         foreign_keys=lambda: [Delivery.bowler_id],
         lazy="raise_on_sql",
     )
-
     corrections: Mapped[list[DeliveryCorrection]] = relationship(
         "DeliveryCorrection",
         back_populates="delivery",
@@ -892,14 +887,20 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "striker_id <> non_striker_id",
             name="deliveries_batters_must_differ",
         ),
+        Index("ix_deliveries_match_id", "match_id"),
         Index("ix_deliveries_innings_id", "innings_id"),
+        Index(
+            "ix_deliveries_match_innings_sequence",
+            "match_id",
+            "innings_id",
+            "delivery_number",
+        ),
         Index(
             "ix_deliveries_innings_status",
             "innings_id",
             "status",
         ),
     )
-
 
 
 class DeliveryCorrection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
