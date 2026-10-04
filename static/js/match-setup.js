@@ -368,6 +368,11 @@
          * LIVE:
          * At least one official delivery
          * has already been recorded.
+         *
+         * INNINGS_BREAK:
+         * Previous innings completed and
+         * scorers need to start the next
+         * innings.
          */
         if (elements.openScoring) {
 
@@ -375,6 +380,7 @@
                 [
                     "ready",
                     "live",
+                    "innings_break",
                 ].includes(
                     match.status
                 );
@@ -387,6 +393,13 @@
                     "hidden",
                     !scoringAvailable
                 );
+
+            elements
+                .openScoring
+                .textContent =
+                match.status === "innings_break"
+                    ? "Start next innings"
+                    : "Open scoring";
 
         }
 
@@ -2664,9 +2677,10 @@
     /*
      * Initial Stage 3 setup load.
      *
-     * If this match is already READY
-     * or LIVE, renderHeader() will also
-     * expose the Stage 4 scoring button.
+     * If this match is already READY,
+     * LIVE, or between innings,
+     * renderHeader() will also expose
+     * the Stage 4 scoring button.
      */
     loadMatch();
 

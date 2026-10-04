@@ -3229,3 +3229,24 @@ h2 {
     }
 
 }
+/* =========================
+   STAGE 5 SCORING
+========================= */
+
+#extras-panel .form-grid,
+#wicket-panel .form-grid {
+    padding: 0;
+    margin-bottom: 14px;
+}
+
+
+.recent-ball-chip.is-void {
+    opacity: 0.58;
+    text-decoration: line-through;
+}
+
+
+.recent-ball-chip .button {
+    margin-top: 4px;
+    text-decoration: none;
+}

@@ -28,7 +28,7 @@ Live Scoring | Cricket Intelligence Platform
             <div>
 
                 <p class="eyebrow">
-                    Stage 4 · S13
+                    Stage 5 · S13–S16
                 </p>
 
                 <h1 id="scoring-title">
@@ -94,9 +94,11 @@ Live Scoring | Cricket Intelligence Platform
 
                 <span class="score-wickets">
                     /
+
                     <span id="score-wickets">
                         0
                     </span>
+
                 </span>
 
             </div>
@@ -174,6 +176,10 @@ Live Scoring | Cricket Intelligence Platform
 
     <section class="scoring-grid">
 
+
+        <!-- =========================
+             CURRENT PARTICIPANTS
+        ========================== -->
 
         <article class="panel">
 
@@ -255,6 +261,10 @@ Live Scoring | Cricket Intelligence Platform
         </article>
 
 
+        <!-- =========================
+             S13 NORMAL RUNS
+        ========================== -->
+
         <article class="panel">
 
             <div class="panel-header">
@@ -262,7 +272,7 @@ Live Scoring | Cricket Intelligence Platform
                 <div>
 
                     <p class="eyebrow">
-                        Normal runs
+                        S13 · Normal runs
                     </p>
 
                     <h2>
@@ -277,9 +287,12 @@ Live Scoring | Cricket Intelligence Platform
             <div class="panel-body">
 
                 <p class="muted">
-                    Stage 4 supports legal
-                    deliveries with 0, 1, 2,
+                    Record a normal legal
+                    delivery with 0, 1, 2,
                     3, 4 or 6 batter runs.
+                    Use the Stage 5 panels
+                    below for extras and
+                    wickets.
                 </p>
 
 
@@ -296,6 +309,7 @@ Live Scoring | Cricket Intelligence Platform
                         0
                     </button>
 
+
                     <button
                         class="run-button"
                         type="button"
@@ -303,6 +317,7 @@ Live Scoring | Cricket Intelligence Platform
                     >
                         1
                     </button>
+
 
                     <button
                         class="run-button"
@@ -312,6 +327,7 @@ Live Scoring | Cricket Intelligence Platform
                         2
                     </button>
 
+
                     <button
                         class="run-button"
                         type="button"
@@ -319,6 +335,7 @@ Live Scoring | Cricket Intelligence Platform
                     >
                         3
                     </button>
+
 
                     <button
                         class="
@@ -330,6 +347,7 @@ Live Scoring | Cricket Intelligence Platform
                     >
                         4
                     </button>
+
 
                     <button
                         class="
@@ -349,8 +367,9 @@ Live Scoring | Cricket Intelligence Platform
                     class="muted"
                     id="scoring-lock-note"
                 >
-                    Each click is committed
-                    as one backend transaction.
+                    Each scoring event is
+                    committed as one backend
+                    transaction.
                 </p>
 
 
@@ -371,6 +390,478 @@ Live Scoring | Cricket Intelligence Platform
 
         </article>
 
+
+        <!-- =========================
+             S14 EXTRAS ENTRY
+        ========================== -->
+
+        <article
+            class="panel"
+            id="extras-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        S14 · Extras Entry
+                    </p>
+
+                    <h2>
+                        Record extra
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel-body">
+
+                <p class="muted">
+                    Record Wide, No Ball,
+                    Bye or Leg Bye while the
+                    backend controls legal-ball
+                    counting, run attribution
+                    and strike movement.
+                </p>
+
+
+                <div class="form-grid">
+
+                    <label class="form-field">
+
+                        <span>
+                            Extra type
+                        </span>
+
+                        <select id="extra-type">
+
+                            <option value="wide">
+                                Wide
+                            </option>
+
+                            <option value="no_ball">
+                                No Ball
+                            </option>
+
+                            <option value="bye">
+                                Bye
+                            </option>
+
+                            <option value="leg_bye">
+                                Leg Bye
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span id="extra-runs-label">
+                            Runs
+                        </span>
+
+                        <select id="extra-runs">
+
+                            <option value="0">
+                                0
+                            </option>
+
+                            <option
+                                value="1"
+                                selected
+                            >
+                                1
+                            </option>
+
+                            <option value="2">
+                                2
+                            </option>
+
+                            <option value="3">
+                                3
+                            </option>
+
+                            <option value="4">
+                                4
+                            </option>
+
+                            <option value="5">
+                                5
+                            </option>
+
+                            <option value="6">
+                                6
+                            </option>
+
+                        </select>
+
+                    </label>
+
+                </div>
+
+
+                <p
+                    class="muted"
+                    id="extra-help"
+                >
+                    Wide: enter the total
+                    wide runs including the
+                    automatic wide.
+                </p>
+
+
+                <button
+                    class="
+                        button
+                        button-primary
+                        button-small
+                    "
+                    id="record-extra"
+                    type="button"
+                >
+                    Record extra
+                </button>
+
+            </div>
+
+        </article>
+
+
+        <!-- =========================
+             S15 WICKET ENTRY
+        ========================== -->
+
+        <article
+            class="panel"
+            id="wicket-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        S15 · Wicket Entry
+                    </p>
+
+                    <h2>
+                        Record wicket
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel-body">
+
+                <p class="muted">
+                    Select the dismissal,
+                    dismissed batter and next
+                    batter. The backend validates
+                    playing-XI membership,
+                    dismissal eligibility and
+                    innings limits.
+                </p>
+
+
+                <div class="form-grid">
+
+                    <label class="form-field">
+
+                        <span>
+                            Wicket type
+                        </span>
+
+                        <select id="wicket-type">
+
+                            <option value="bowled">
+                                Bowled
+                            </option>
+
+                            <option value="caught">
+                                Caught
+                            </option>
+
+                            <option value="lbw">
+                                LBW
+                            </option>
+
+                            <option value="run_out">
+                                Run out
+                            </option>
+
+                            <option value="stumped">
+                                Stumped
+                            </option>
+
+                            <option value="hit_wicket">
+                                Hit wicket
+                            </option>
+
+                            <option value="obstructing_field">
+                                Obstructing field
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span>
+                            Dismissed player
+                        </span>
+
+                        <select
+                            id="dismissed-player"
+                        >
+
+                            <option value="">
+                                Select dismissed player
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span>
+                            Fielder
+                            <small>
+                                Optional
+                            </small>
+                        </span>
+
+                        <select
+                            id="wicket-fielder"
+                        >
+
+                            <option value="">
+                                No fielder
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span>
+                            Next batter
+                        </span>
+
+                        <select
+                            id="next-batter"
+                        >
+
+                            <option value="">
+                                Select next batter
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span>
+                            Runs on delivery
+                        </span>
+
+                        <select id="wicket-runs">
+
+                            <option
+                                value="0"
+                                selected
+                            >
+                                0
+                            </option>
+
+                            <option value="1">
+                                1
+                            </option>
+
+                            <option value="2">
+                                2
+                            </option>
+
+                            <option value="3">
+                                3
+                            </option>
+
+                            <option value="4">
+                                4
+                            </option>
+
+                            <option value="6">
+                                6
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span>
+                            Extra type
+                        </span>
+
+                        <select
+                            id="wicket-extra-type"
+                        >
+
+                            <option
+                                value="none"
+                                selected
+                            >
+                                None
+                            </option>
+
+                            <option value="wide">
+                                Wide
+                            </option>
+
+                            <option value="no_ball">
+                                No Ball
+                            </option>
+
+                            <option value="bye">
+                                Bye
+                            </option>
+
+                            <option value="leg_bye">
+                                Leg Bye
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="form-field">
+
+                        <span>
+                            Extra runs
+                        </span>
+
+                        <select
+                            id="wicket-extra-runs"
+                        >
+
+                            <option
+                                value="0"
+                                selected
+                            >
+                                0
+                            </option>
+
+                            <option value="1">
+                                1
+                            </option>
+
+                            <option value="2">
+                                2
+                            </option>
+
+                            <option value="3">
+                                3
+                            </option>
+
+                            <option value="4">
+                                4
+                            </option>
+
+                            <option value="5">
+                                5
+                            </option>
+
+                            <option value="6">
+                                6
+                            </option>
+
+                        </select>
+
+                    </label>
+
+
+                    <label
+                        class="
+                            form-field
+                            hidden
+                        "
+                        id="wicket-end-field"
+                    >
+
+                        <span>
+                            Run-out end
+                        </span>
+
+                        <select id="wicket-end">
+
+                            <option value="">
+                                Infer from completed runs
+                            </option>
+
+                            <option value="striker_end">
+                                Striker end
+                            </option>
+
+                            <option value="non_striker_end">
+                                Non-striker end
+                            </option>
+
+                        </select>
+
+                    </label>
+
+                </div>
+
+
+                <p
+                    class="muted"
+                    id="wicket-help"
+                >
+                    For the final wicket,
+                    no next batter is required.
+                    Run-out events can specify
+                    the end where the wicket
+                    occurred.
+                </p>
+
+
+                <button
+                    class="
+                        button
+                        button-primary
+                        button-small
+                    "
+                    id="record-wicket"
+                    type="button"
+                >
+                    Record wicket
+                </button>
+
+            </div>
+
+        </article>
+
+
+        <!-- =========================
+             NEXT INNINGS
+        ========================== -->
 
         <article
             class="
@@ -407,7 +898,9 @@ Live Scoring | Cricket Intelligence Platform
                         Striker <em>*</em>
                     </span>
 
-                    <select id="next-striker"></select>
+                    <select
+                        id="next-striker"
+                    ></select>
 
                 </label>
 
@@ -418,7 +911,9 @@ Live Scoring | Cricket Intelligence Platform
                         Non-striker <em>*</em>
                     </span>
 
-                    <select id="next-non-striker"></select>
+                    <select
+                        id="next-non-striker"
+                    ></select>
 
                 </label>
 
@@ -429,12 +924,19 @@ Live Scoring | Cricket Intelligence Platform
                         Opening bowler <em>*</em>
                     </span>
 
-                    <select id="next-opening-bowler"></select>
+                    <select
+                        id="next-opening-bowler"
+                    ></select>
 
                 </label>
 
 
-                <div class="form-field next-innings-action">
+                <div
+                    class="
+                        form-field
+                        next-innings-action
+                    "
+                >
 
                     <button
                         class="
@@ -453,6 +955,10 @@ Live Scoring | Cricket Intelligence Platform
 
         </article>
 
+
+        <!-- =========================
+             BOWLER CHANGE
+        ========================== -->
 
         <article
             class="
@@ -525,11 +1031,16 @@ Live Scoring | Cricket Intelligence Platform
         </article>
 
 
+        <!-- =========================
+             S16 UNDO / CORRECTION
+        ========================== -->
+
         <article
             class="
                 panel
                 scoring-grid-wide
             "
+            id="correction-panel"
         >
 
             <div class="panel-header">
@@ -537,11 +1048,11 @@ Live Scoring | Cricket Intelligence Platform
                 <div>
 
                     <p class="eyebrow">
-                        Authoritative history
+                        S16 · Undo / Correction
                     </p>
 
                     <h2>
-                        Recent deliveries
+                        Recent delivery history
                     </h2>
 
                 </div>
@@ -559,6 +1070,17 @@ Live Scoring | Cricket Intelligence Platform
 
             <div class="panel-body">
 
+                <p class="muted">
+                    Undo never deletes an
+                    official scoring event.
+                    The delivery is marked void,
+                    a correction record is stored,
+                    and the innings state is rebuilt
+                    from the remaining official
+                    delivery history.
+                </p>
+
+
                 <div
                     class="recent-balls"
                     id="recent-balls"
@@ -573,6 +1095,7 @@ Live Scoring | Cricket Intelligence Platform
             </div>
 
         </article>
+
 
     </section>
 

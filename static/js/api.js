@@ -301,7 +301,11 @@
         },
 
 
-        matchSetPlayingTeam(matchId, teamId, data) {
+        matchSetPlayingTeam(
+            matchId,
+            teamId,
+            data
+        ) {
 
             return request(
                 `/matches/${matchId}/playing-team/${teamId}`,
@@ -314,7 +318,10 @@
         },
 
 
-        matchSetupInnings(matchId, data) {
+        matchSetupInnings(
+            matchId,
+            data
+        ) {
 
             return request(
                 `/matches/${matchId}/opening-innings`,
@@ -348,7 +355,10 @@
         },
 
 
-        scoringRecord(matchId, data) {
+        scoringRecord(
+            matchId,
+            data
+        ) {
 
             return request(
                 `/matches/${matchId}/scoring/deliveries`,
@@ -361,7 +371,10 @@
         },
 
 
-        scoringRecordDelivery(matchId, data) {
+        scoringRecordDelivery(
+            matchId,
+            data
+        ) {
 
             return this.scoringRecord(
                 matchId,
@@ -371,7 +384,31 @@
         },
 
 
-        scoringChangeBowler(matchId, data) {
+        scoringUndoDelivery(
+            matchId,
+            deliveryId,
+            data
+        ) {
+
+            return request(
+                `/matches/${matchId}/scoring/deliveries/${deliveryId}/undo`,
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify(
+                            data
+                        ),
+                }
+            );
+
+        },
+
+
+        scoringChangeBowler(
+            matchId,
+            data
+        ) {
 
             return request(
                 `/matches/${matchId}/scoring/bowler`,
@@ -396,7 +433,10 @@
         },
 
 
-        scoringStartNextInnings(matchId, data) {
+        scoringStartNextInnings(
+            matchId,
+            data
+        ) {
 
             return request(
                 `/matches/${matchId}/scoring/innings`,
@@ -418,7 +458,10 @@
         },
 
 
-        teamSquadAdd(teamId, data) {
+        teamSquadAdd(
+            teamId,
+            data
+        ) {
 
             return request(
                 `/teams/${teamId}/squad`,
@@ -431,7 +474,10 @@
         },
 
 
-        teamSquadRemove(teamId, playerId) {
+        teamSquadRemove(
+            teamId,
+            playerId
+        ) {
 
             return request(
                 `/teams/${teamId}/squad/${playerId}/deactivate`,
@@ -443,26 +489,34 @@
         },
 
 
-        async listAll(resource, params = {}) {
+        async listAll(
+            resource,
+            params = {}
+        ) {
 
             const items = [];
+
             let page = 1;
             let pages = 1;
 
+
             do {
 
-                const result = await this.list(
-                    resource,
-                    {
-                        ...params,
-                        page,
-                        page_size: 100,
-                    }
-                );
+                const result =
+                    await this.list(
+                        resource,
+                        {
+                            ...params,
+                            page,
+                            page_size: 100,
+                        }
+                    );
+
 
                 items.push(
                     ...(result.items || [])
                 );
+
 
                 pages =
                     result.pages || 1;

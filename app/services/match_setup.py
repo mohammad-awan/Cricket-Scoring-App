@@ -1,10 +1,17 @@
 from __future__ import annotations
+
 from datetime import UTC, datetime
 from math import ceil
 from uuid import UUID
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+
+from app.core.exceptions import (
+    ConflictError,
+    NotFoundError,
+    ValidationError,
+)
 from app.models import (
     AuditAction,
     Innings,
@@ -17,8 +24,12 @@ from app.models import (
     TournamentStatus,
     VenueStatus,
 )
-from app.repositories.match_setup import MatchSetupRepository
-from app.schemas.common import PageResponse
+from app.repositories.match_setup import (
+    MatchSetupRepository,
+)
+from app.schemas.common import (
+    PageResponse,
+)
 from app.schemas.match_setup import (
     InningsSetupRead,
     MatchCreate,
@@ -35,18 +46,29 @@ from app.schemas.match_setup import (
     TournamentSummary,
     VenueSummary,
 )
-from app.services.common import add_audit_log, integrity_conflict, service_transaction
+from app.services.common import (
+    add_audit_log,
+    integrity_conflict,
+    service_transaction,
+)
 
 
-def _clean_optional(value: str | None) -> str | None:
+def _clean_optional(
+    value: str | None,
+) -> str | None:
+
     if value is None:
         return None
 
     cleaned = value.strip()
+
     return cleaned or None
 
 
-def derive_first_innings_teams(match: Match) -> tuple[UUID, UUID]:
+def derive_first_innings_teams(
+    match: Match,
+) -> tuple[UUID, UUID]:
+
     if (
         match.toss_winner_id is None
         or match.toss_decision is None
@@ -67,17 +89,33 @@ def derive_first_innings_teams(match: Match) -> tuple[UUID, UUID]:
 
     other_team_id = (
         match.team_b_id
-        if match.toss_winner_id == match.team_a_id
+        if (
+            match.toss_winner_id
+            == match.team_a_id
+        )
         else match.team_a_id
     )
 
-    if match.toss_decision.value == "bat":
-        return (match.toss_winner_id, other_team_id)
+    if (
+        match.toss_decision.value
+        == "bat"
+    ):
+        return (
+            match.toss_winner_id,
+            other_team_id,
+        )
 
-    return (other_team_id, match.toss_winner_id)
+    return (
+        other_team_id,
+        match.toss_winner_id,
+    )
 
 
-def _playing_team_ids(match: Match, team_id: UUID) -> set[UUID]:
+def _playing_team_ids(
+    match: Match,
+    team_id: UUID,
+) -> set[UUID]:
+
     return {
         selection.player_id
         for selection in match.players
@@ -85,11 +123,15 @@ def _playing_team_ids(match: Match, team_id: UUID) -> set[UUID]:
     }
 
 
-def _readiness(match: Match) -> MatchReadinessRead:
+def _readiness(
+    match: Match,
+) -> MatchReadinessRead:
+
     team_a_ids = _playing_team_ids(
         match,
         match.team_a_id,
     )
+
     team_b_ids = _playing_team_ids(
         match,
         match.team_b_id,
@@ -105,10 +147,13 @@ def _readiness(match: Match) -> MatchReadinessRead:
     )
 
     team_a_players_complete = (
-        len(team_a_ids) == match.players_per_side
+        len(team_a_ids)
+        == match.players_per_side
     )
+
     team_b_players_complete = (
-        len(team_b_ids) == match.players_per_side
+        len(team_b_ids)
+        == match.players_per_side
     )
 
     first_innings = next(
@@ -125,8 +170,10 @@ def _readiness(match: Match) -> MatchReadinessRead:
         and first_innings.striker_id
         and first_innings.non_striker_id
         and first_innings.current_bowler_id
-        and first_innings.striker_id
-        != first_innings.non_striker_id
+        and (
+            first_innings.striker_id
+            != first_innings.non_striker_id
+        )
     )
 
     details_complete = (
@@ -137,45 +184,87 @@ def _readiness(match: Match) -> MatchReadinessRead:
     missing: list[str] = []
 
     if match.venue_id is None:
-        missing.append("venue")
+        missing.append(
+            "venue"
+        )
 
     if match.scheduled_at is None:
-        missing.append("scheduled_at")
+        missing.append(
+            "scheduled_at"
+        )
 
     if not toss_complete:
-        missing.append("toss")
+        missing.append(
+            "toss"
+        )
 
     if not team_a_players_complete:
-        missing.append("team_a_playing_team")
+        missing.append(
+            "team_a_playing_team"
+        )
 
     if not team_b_players_complete:
-        missing.append("team_b_playing_team")
+        missing.append(
+            "team_b_playing_team"
+        )
 
     if not opening_innings_complete:
-        missing.append("opening_innings")
+        missing.append(
+            "opening_innings"
+        )
 
     return MatchReadinessRead(
-        details_complete=details_complete,
-        toss_complete=toss_complete,
-        team_a_players_complete=team_a_players_complete,
-        team_b_players_complete=team_b_players_complete,
-        opening_innings_complete=opening_innings_complete,
+        details_complete=(
+            details_complete
+        ),
+
+        toss_complete=(
+            toss_complete
+        ),
+
+        team_a_players_complete=(
+            team_a_players_complete
+        ),
+
+        team_b_players_complete=(
+            team_b_players_complete
+        ),
+
+        opening_innings_complete=(
+            opening_innings_complete
+        ),
+
         ready=not missing,
+
         missing=missing,
     )
 
 
-def _match_setup_read(match: Match) -> MatchSetupRead:
+def _match_setup_read(
+    match: Match,
+) -> MatchSetupRead:
+
     return MatchSetupRead(
         id=match.id,
+
         title=match.title,
-        match_number=match.match_number,
-        team_a=TeamSummary.model_validate(
-            match.team_a
+
+        match_number=(
+            match.match_number
         ),
-        team_b=TeamSummary.model_validate(
-            match.team_b
+
+        team_a=(
+            TeamSummary.model_validate(
+                match.team_a
+            )
         ),
+
+        team_b=(
+            TeamSummary.model_validate(
+                match.team_b
+            )
+        ),
+
         tournament=(
             TournamentSummary.model_validate(
                 match.tournament
@@ -183,6 +272,7 @@ def _match_setup_read(match: Match) -> MatchSetupRead:
             if match.tournament
             else None
         ),
+
         venue=(
             VenueSummary.model_validate(
                 match.venue
@@ -190,15 +280,43 @@ def _match_setup_read(match: Match) -> MatchSetupRead:
             if match.venue
             else None
         ),
-        match_type=match.match_type,
-        players_per_side=match.players_per_side,
-        total_overs=match.total_overs,
-        balls_per_over=match.balls_per_over,
-        innings_per_team=match.innings_per_team,
-        scheduled_at=match.scheduled_at,
-        status=match.status,
-        created_at=match.created_at,
-        updated_at=match.updated_at,
+
+        match_type=(
+            match.match_type
+        ),
+
+        players_per_side=(
+            match.players_per_side
+        ),
+
+        total_overs=(
+            match.total_overs
+        ),
+
+        balls_per_over=(
+            match.balls_per_over
+        ),
+
+        innings_per_team=(
+            match.innings_per_team
+        ),
+
+        scheduled_at=(
+            match.scheduled_at
+        ),
+
+        status=(
+            match.status
+        ),
+
+        created_at=(
+            match.created_at
+        ),
+
+        updated_at=(
+            match.updated_at
+        ),
+
         toss_winner=(
             TeamSummary.model_validate(
                 match.toss_winner
@@ -206,14 +324,58 @@ def _match_setup_read(match: Match) -> MatchSetupRead:
             if match.toss_winner
             else None
         ),
-        toss_decision=match.toss_decision,
-        players=match.players,
+
+        toss_decision=(
+            match.toss_decision
+        ),
+
+        players=(
+            match.players
+        ),
+
         innings=[
-            InningsSetupRead.model_validate(item)
+            InningsSetupRead.model_validate(
+                item
+            )
             for item in match.innings
         ],
-        readiness=_readiness(match),
+
+        readiness=(
+            _readiness(
+                match
+            )
+        ),
     )
+
+
+async def _reload_match(
+    session: AsyncSession,
+    repository: MatchSetupRepository,
+    match_id: UUID,
+) -> Match:
+    """
+    Reload authoritative match state
+    after setup mutations.
+
+    This avoids returning stale ORM
+    relationship collections from the
+    current SQLAlchemy identity map.
+    """
+
+    await session.flush()
+
+    session.expire_all()
+
+    match = await repository.get_match(
+        match_id
+    )
+
+    if match is None:
+        raise NotFoundError(
+            "Match not found"
+        )
+
+    return match
 
 
 async def _require_active_team(
@@ -221,7 +383,10 @@ async def _require_active_team(
     team_id: UUID,
     label: str,
 ) -> Team:
-    team = await repository.get_team(team_id)
+
+    team = await repository.get_team(
+        team_id
+    )
 
     if team is None:
         raise NotFoundError(
@@ -229,7 +394,8 @@ async def _require_active_team(
         )
 
     if (
-        team.status != TeamStatus.ACTIVE
+        team.status
+        != TeamStatus.ACTIVE
         or team.archived_at is not None
     ):
         raise ConflictError(
@@ -247,6 +413,7 @@ async def _validate_match_references(
     venue_id: UUID | None,
     tournament_id: UUID | None,
 ) -> tuple[Team, Team]:
+
     if team_a_id == team_b_id:
         raise ValidationError(
             "Team A and Team B "
@@ -265,9 +432,8 @@ async def _validate_match_references(
         "Team B",
     )
 
-    # Venue is optional while the match is draft;
-    # mark_match_ready() requires it.
     if venue_id is not None:
+
         venue = await repository.get_venue(
             venue_id
         )
@@ -278,16 +444,22 @@ async def _validate_match_references(
             )
 
         if (
-            venue.status != VenueStatus.ACTIVE
-            or venue.archived_at is not None
+            venue.status
+            != VenueStatus.ACTIVE
+            or venue.archived_at
+            is not None
         ):
             raise ConflictError(
                 "Venue must be active"
             )
 
     if tournament_id is not None:
-        tournament = await repository.get_tournament(
-            tournament_id
+
+        tournament = (
+            await repository
+            .get_tournament(
+                tournament_id
+            )
         )
 
         if tournament is None:
@@ -296,8 +468,10 @@ async def _validate_match_references(
             )
 
         if (
-            tournament.status == TournamentStatus.ARCHIVED
-            or tournament.archived_at is not None
+            tournament.status
+            == TournamentStatus.ARCHIVED
+            or tournament.archived_at
+            is not None
         ):
             raise ConflictError(
                 "Archived tournament "
@@ -314,16 +488,42 @@ async def create_match(
     session: AsyncSession,
     payload: MatchCreate,
 ) -> MatchSetupRead:
-    repository = MatchSetupRepository(session)
+
+    repository = (
+        MatchSetupRepository(
+            session
+        )
+    )
 
     try:
-        async with service_transaction(session):
-            team_a, team_b = await _validate_match_references(
-                repository,
-                team_a_id=payload.team_a_id,
-                team_b_id=payload.team_b_id,
-                venue_id=payload.venue_id,
-                tournament_id=payload.tournament_id,
+
+        async with service_transaction(
+            session
+        ):
+
+            (
+                team_a,
+                team_b,
+            ) = (
+                await _validate_match_references(
+                    repository,
+
+                    team_a_id=(
+                        payload.team_a_id
+                    ),
+
+                    team_b_id=(
+                        payload.team_b_id
+                    ),
+
+                    venue_id=(
+                        payload.venue_id
+                    ),
+
+                    tournament_id=(
+                        payload.tournament_id
+                    ),
+                )
             )
 
             title = _clean_optional(
@@ -331,6 +531,7 @@ async def create_match(
             )
 
             if title is None:
+
                 title = (
                     f"{team_a.short_name} "
                     f"vs "
@@ -339,56 +540,109 @@ async def create_match(
 
             match = Match(
                 title=title,
-                match_number=payload.match_number,
-                team_a_id=payload.team_a_id,
-                team_b_id=payload.team_b_id,
-                tournament_id=payload.tournament_id,
-                venue_id=payload.venue_id,
-                match_type=payload.match_type,
-                players_per_side=payload.players_per_side,
-                total_overs=payload.total_overs,
-                balls_per_over=payload.balls_per_over,
-                innings_per_team=payload.innings_per_team,
-                scheduled_at=payload.scheduled_at,
-                status=MatchStatus.DRAFT,
+
+                match_number=(
+                    payload.match_number
+                ),
+
+                team_a_id=(
+                    payload.team_a_id
+                ),
+
+                team_b_id=(
+                    payload.team_b_id
+                ),
+
+                tournament_id=(
+                    payload.tournament_id
+                ),
+
+                venue_id=(
+                    payload.venue_id
+                ),
+
+                match_type=(
+                    payload.match_type
+                ),
+
+                players_per_side=(
+                    payload.players_per_side
+                ),
+
+                total_overs=(
+                    payload.total_overs
+                ),
+
+                balls_per_over=(
+                    payload.balls_per_over
+                ),
+
+                innings_per_team=(
+                    payload.innings_per_team
+                ),
+
+                scheduled_at=(
+                    payload.scheduled_at
+                ),
+
+                status=(
+                    MatchStatus.DRAFT
+                ),
             )
 
-            session.add(match)
+            session.add(
+                match
+            )
+
             await session.flush()
 
             add_audit_log(
                 session,
-                entity_type="match",
-                entity_id=match.id,
-                action=AuditAction.CREATED,
+
+                entity_type=(
+                    "match"
+                ),
+
+                entity_id=(
+                    match.id
+                ),
+
+                action=(
+                    AuditAction.CREATED
+                ),
+
                 details={
-                    "team_a_id": str(
-                        match.team_a_id
-                    ),
-                    "team_b_id": str(
-                        match.team_b_id
-                    ),
-                    "status": MatchStatus.DRAFT.value,
+                    "team_a_id":
+                        str(
+                            match.team_a_id
+                        ),
+
+                    "team_b_id":
+                        str(
+                            match.team_b_id
+                        ),
+
+                    "status":
+                        MatchStatus
+                        .DRAFT
+                        .value,
                 },
             )
 
             await session.flush()
 
-        loaded = await repository.get_match(
-            match.id
+        loaded = await _reload_match(
+            session,
+            repository,
+            match.id,
         )
-
-        if loaded is None:
-            raise NotFoundError(
-                "Match not found "
-                "after creation"
-            )
 
         return _match_setup_read(
             loaded
         )
 
     except IntegrityError as error:
+
         raise integrity_conflict(
             error,
             "Match",
@@ -401,9 +655,16 @@ async def list_matches(
     page: int,
     page_size: int,
     search: str | None,
-    match_status: MatchStatus | None,
+    match_status: (
+        MatchStatus | None
+    ),
 ) -> PageResponse[MatchListRead]:
-    repository = MatchSetupRepository(session)
+
+    repository = (
+        MatchSetupRepository(
+            session
+        )
+    )
 
     items = await repository.list_matches(
         page=page,
@@ -412,21 +673,34 @@ async def list_matches(
         match_status=match_status,
     )
 
-    total = await repository.count_matches(
-        search=search,
-        match_status=match_status,
+    total = (
+        await repository
+        .count_matches(
+            search=search,
+            match_status=match_status,
+        )
     )
 
-    return PageResponse[MatchListRead](
+    return PageResponse[
+        MatchListRead
+    ](
         items=[
-            MatchListRead.model_validate(item)
+            MatchListRead.model_validate(
+                item
+            )
             for item in items
         ],
+
         page=page,
+
         page_size=page_size,
+
         total=total,
+
         pages=(
-            ceil(total / page_size)
+            ceil(
+                total / page_size
+            )
             if total
             else 0
         ),
@@ -437,10 +711,14 @@ async def get_match_setup(
     session: AsyncSession,
     match_id: UUID,
 ) -> MatchSetupRead:
-    match = await MatchSetupRepository(
-        session
-    ).get_match(
-        match_id
+
+    match = (
+        await MatchSetupRepository(
+            session
+        )
+        .get_match(
+            match_id
+        )
     )
 
     if match is None:
@@ -458,16 +736,29 @@ async def update_match(
     match_id: UUID,
     payload: MatchUpdate,
 ) -> MatchSetupRead:
-    repository = MatchSetupRepository(session)
+
+    repository = (
+        MatchSetupRepository(
+            session
+        )
+    )
+
     data = payload.model_dump(
         exclude_unset=True
     )
 
     try:
-        async with service_transaction(session):
-            match = await repository.get_match(
-                match_id,
-                for_update=True,
+
+        async with service_transaction(
+            session
+        ):
+
+            match = (
+                await repository
+                .get_match(
+                    match_id,
+                    for_update=True,
+                )
             )
 
             if match is None:
@@ -475,7 +766,10 @@ async def update_match(
                     "Match not found"
                 )
 
-            if match.status != MatchStatus.DRAFT:
+            if (
+                match.status
+                != MatchStatus.DRAFT
+            ):
                 raise ConflictError(
                     "Only draft matches "
                     "can be edited"
@@ -489,9 +783,14 @@ async def update_match(
                 "balls_per_over",
                 "innings_per_team",
             ):
+
                 if (
-                    required_field in data
-                    and data[required_field] is None
+                    required_field
+                    in data
+                    and data[
+                        required_field
+                    ]
+                    is None
                 ):
                     raise ValidationError(
                         f"{required_field} "
@@ -502,28 +801,34 @@ async def update_match(
                 "team_a_id",
                 match.team_a_id,
             )
+
             team_b_id = data.get(
                 "team_b_id",
                 match.team_b_id,
             )
+
             venue_id = data.get(
                 "venue_id",
                 match.venue_id,
             )
+
             tournament_id = data.get(
                 "tournament_id",
                 match.tournament_id,
             )
 
             teams_changed = (
-                team_a_id != match.team_a_id
-                or team_b_id != match.team_b_id
+                team_a_id
+                != match.team_a_id
+                or team_b_id
+                != match.team_b_id
             )
 
             if (
                 teams_changed
                 and (
-                    match.toss_winner_id is not None
+                    match.toss_winner_id
+                    is not None
                     or match.players
                     or match.innings
                 )
@@ -535,8 +840,11 @@ async def update_match(
                 )
 
             if (
-                "players_per_side" in data
-                and data["players_per_side"]
+                "players_per_side"
+                in data
+                and data[
+                    "players_per_side"
+                ]
                 != match.players_per_side
                 and match.players
             ):
@@ -548,10 +856,22 @@ async def update_match(
 
             await _validate_match_references(
                 repository,
-                team_a_id=team_a_id,
-                team_b_id=team_b_id,
-                venue_id=venue_id,
-                tournament_id=tournament_id,
+
+                team_a_id=(
+                    team_a_id
+                ),
+
+                team_b_id=(
+                    team_b_id
+                ),
+
+                venue_id=(
+                    venue_id
+                ),
+
+                tournament_id=(
+                    tournament_id
+                ),
             )
 
             for field in (
@@ -567,7 +887,9 @@ async def update_match(
                 "innings_per_team",
                 "scheduled_at",
             ):
+
                 if field in data:
+
                     setattr(
                         match,
                         field,
@@ -575,42 +897,58 @@ async def update_match(
                     )
 
             if "title" in data:
-                match.title = _clean_optional(
-                    data["title"]
+
+                match.title = (
+                    _clean_optional(
+                        data["title"]
+                    )
                 )
 
-            match.updated_at = datetime.now(
-                UTC
+            match.updated_at = (
+                datetime.now(
+                    UTC
+                )
             )
 
             await session.flush()
 
             add_audit_log(
                 session,
-                entity_type="match",
-                entity_id=match.id,
-                action=AuditAction.UPDATED,
+
+                entity_type=(
+                    "match"
+                ),
+
+                entity_id=(
+                    match.id
+                ),
+
+                action=(
+                    AuditAction.UPDATED
+                ),
+
                 details={
-                    "fields": sorted(data)
+                    "fields":
+                        sorted(
+                            data
+                        )
                 },
             )
 
             await session.flush()
 
-        loaded = await repository.get_match(
-            match_id
+        loaded = await _reload_match(
+            session,
+            repository,
+            match_id,
         )
-
-        if loaded is None:
-            raise NotFoundError(
-                "Match not found"
-            )
 
         return _match_setup_read(
             loaded
         )
 
     except IntegrityError as error:
+
         raise integrity_conflict(
             error,
             "Match",
@@ -622,12 +960,23 @@ async def set_toss(
     match_id: UUID,
     payload: TossSetup,
 ) -> MatchSetupRead:
-    repository = MatchSetupRepository(session)
 
-    async with service_transaction(session):
-        match = await repository.get_match(
-            match_id,
-            for_update=True,
+    repository = (
+        MatchSetupRepository(
+            session
+        )
+    )
+
+    async with service_transaction(
+        session
+    ):
+
+        match = (
+            await repository
+            .get_match(
+                match_id,
+                for_update=True,
+            )
         )
 
         if match is None:
@@ -635,16 +984,22 @@ async def set_toss(
                 "Match not found"
             )
 
-        if match.status != MatchStatus.DRAFT:
+        if (
+            match.status
+            != MatchStatus.DRAFT
+        ):
             raise ConflictError(
                 "Toss can only be changed "
                 "while the match is draft"
             )
 
-        if payload.winner_team_id not in {
-            match.team_a_id,
-            match.team_b_id,
-        }:
+        if (
+            payload.winner_team_id
+            not in {
+                match.team_a_id,
+                match.team_b_id,
+            }
+        ):
             raise ValidationError(
                 "Toss winner must be "
                 "Team A or Team B"
@@ -660,39 +1015,58 @@ async def set_toss(
         match.toss_winner_id = (
             payload.winner_team_id
         )
+
         match.toss_decision = (
             payload.decision
         )
-        match.updated_at = datetime.now(
-            UTC
+
+        match.updated_at = (
+            datetime.now(
+                UTC
+            )
         )
 
         await session.flush()
 
         add_audit_log(
             session,
-            entity_type="match",
-            entity_id=match.id,
-            action=AuditAction.UPDATED,
+
+            entity_type=(
+                "match"
+            ),
+
+            entity_id=(
+                match.id
+            ),
+
+            action=(
+                AuditAction.UPDATED
+            ),
+
             details={
-                "setup": "toss",
-                "winner_team_id": str(
-                    payload.winner_team_id
-                ),
-                "decision": payload.decision.value,
+                "setup":
+                    "toss",
+
+                "winner_team_id":
+                    str(
+                        payload
+                        .winner_team_id
+                    ),
+
+                "decision":
+                    payload
+                    .decision
+                    .value,
             },
         )
 
         await session.flush()
 
-    loaded = await repository.get_match(
-        match_id
+    loaded = await _reload_match(
+        session,
+        repository,
+        match_id,
     )
-
-    if loaded is None:
-        raise NotFoundError(
-            "Match not found"
-        )
 
     return _match_setup_read(
         loaded
@@ -704,10 +1078,18 @@ async def get_active_squad(
     match_id: UUID,
     team_id: UUID,
 ) -> list[SquadPlayerRead]:
-    repository = MatchSetupRepository(session)
 
-    match = await repository.get_match(
-        match_id
+    repository = (
+        MatchSetupRepository(
+            session
+        )
+    )
+
+    match = (
+        await repository
+        .get_match(
+            match_id
+        )
     )
 
     if match is None:
@@ -724,18 +1106,33 @@ async def get_active_squad(
             "belong to this match"
         )
 
-    squad = await repository.get_active_squad(
-        team_id
+    squad = (
+        await repository
+        .get_active_squad(
+            team_id
+        )
     )
 
     return [
         SquadPlayerRead(
-            team_player_id=item.id,
-            player=PlayerSummary.model_validate(
-                item.player
+            team_player_id=(
+                item.id
             ),
-            role=item.role,
-            squad_number=item.squad_number,
+
+            player=(
+                PlayerSummary
+                .model_validate(
+                    item.player
+                )
+            ),
+
+            role=(
+                item.role
+            ),
+
+            squad_number=(
+                item.squad_number
+            ),
         )
         for item in squad
     ]
@@ -747,13 +1144,25 @@ async def set_playing_team(
     team_id: UUID,
     payload: PlayingTeamSetup,
 ) -> MatchSetupRead:
-    repository = MatchSetupRepository(session)
+
+    repository = (
+        MatchSetupRepository(
+            session
+        )
+    )
 
     try:
-        async with service_transaction(session):
-            match = await repository.get_match(
-                match_id,
-                for_update=True,
+
+        async with service_transaction(
+            session
+        ):
+
+            match = (
+                await repository
+                .get_match(
+                    match_id,
+                    for_update=True,
+                )
             )
 
             if match is None:
@@ -761,7 +1170,10 @@ async def set_playing_team(
                     "Match not found"
                 )
 
-            if match.status != MatchStatus.DRAFT:
+            if (
+                match.status
+                != MatchStatus.DRAFT
+            ):
                 raise ConflictError(
                     "Playing team can only "
                     "be changed while "
@@ -787,7 +1199,9 @@ async def set_playing_team(
                 )
 
             if (
-                len(payload.players)
+                len(
+                    payload.players
+                )
                 != match.players_per_side
             ):
                 raise ValidationError(
@@ -800,7 +1214,8 @@ async def set_playing_team(
 
             requested_ids = {
                 item.player_id
-                for item in payload.players
+                for item
+                in payload.players
             }
 
             memberships = (
@@ -813,18 +1228,28 @@ async def set_playing_team(
 
             if (
                 len(memberships)
-                != len(requested_ids)
+                != len(
+                    requested_ids
+                )
             ):
+
                 invalid_ids = (
                     requested_ids
-                    - set(memberships)
+                    - set(
+                        memberships
+                    )
                 )
 
-                invalid_text = ", ".join(
-                    str(item)
-                    for item in sorted(
-                        invalid_ids,
-                        key=str,
+                invalid_text = (
+                    ", ".join(
+                        str(
+                            item
+                        )
+                        for item
+                        in sorted(
+                            invalid_ids,
+                            key=str,
+                        )
                     )
                 )
 
@@ -842,62 +1267,109 @@ async def set_playing_team(
 
             selections = [
                 MatchPlayer(
-                    match_id=match.id,
-                    team_id=team_id,
-                    player_id=item.player_id,
-                    batting_order=item.batting_order,
-                    role=memberships[
+                    match_id=(
+                        match.id
+                    ),
+
+                    team_id=(
+                        team_id
+                    ),
+
+                    player_id=(
                         item.player_id
-                    ].role,
-                    is_captain=item.is_captain,
+                    ),
+
+                    batting_order=(
+                        item.batting_order
+                    ),
+
+                    role=(
+                        memberships[
+                            item.player_id
+                        ].role
+                    ),
+
+                    is_captain=(
+                        item.is_captain
+                    ),
+
                     is_wicket_keeper=(
-                        item.is_wicket_keeper
+                        item
+                        .is_wicket_keeper
                     ),
                 )
-                for item in payload.players
+                for item
+                in payload.players
             ]
 
             await repository.replace_playing_xi(
-                match_id=match.id,
-                team_id=team_id,
-                selections=selections,
+                match_id=(
+                    match.id
+                ),
+
+                team_id=(
+                    team_id
+                ),
+
+                selections=(
+                    selections
+                ),
             )
 
-            match.updated_at = datetime.now(
-                UTC
+            match.updated_at = (
+                datetime.now(
+                    UTC
+                )
             )
 
             add_audit_log(
                 session,
-                entity_type="match",
-                entity_id=match.id,
-                action=AuditAction.UPDATED,
+
+                entity_type=(
+                    "match"
+                ),
+
+                entity_id=(
+                    match.id
+                ),
+
+                action=(
+                    AuditAction.UPDATED
+                ),
+
                 details={
-                    "setup": "playing_team",
-                    "team_id": str(team_id),
+                    "setup":
+                        "playing_team",
+
+                    "team_id":
+                        str(
+                            team_id
+                        ),
+
                     "player_ids": [
-                        str(item.player_id)
-                        for item in payload.players
+                        str(
+                            item.player_id
+                        )
+                        for item
+                        in payload.players
                     ],
                 },
             )
 
             await session.flush()
 
-        loaded = await repository.get_match(
-            match_id
+        loaded = await _reload_match(
+            session,
+            repository,
+            match_id,
         )
-
-        if loaded is None:
-            raise NotFoundError(
-                "Match not found"
-            )
 
         return _match_setup_read(
             loaded
         )
 
     except IntegrityError as error:
+
         raise integrity_conflict(
             error,
             "Playing team",
@@ -909,15 +1381,25 @@ async def setup_opening_innings(
     match_id: UUID,
     payload: OpeningInningsSetup,
 ) -> MatchSetupRead:
-    repository = MatchSetupRepository(
-        session
+
+    repository = (
+        MatchSetupRepository(
+            session
+        )
     )
 
     try:
-        async with service_transaction(session):
-            match = await repository.get_match(
-                match_id,
-                for_update=True,
+
+        async with service_transaction(
+            session
+        ):
+
+            match = (
+                await repository
+                .get_match(
+                    match_id,
+                    for_update=True,
+                )
             )
 
             if match is None:
@@ -925,7 +1407,10 @@ async def setup_opening_innings(
                     "Match not found"
                 )
 
-            if match.status != MatchStatus.DRAFT:
+            if (
+                match.status
+                != MatchStatus.DRAFT
+            ):
                 raise ConflictError(
                     "Opening innings can "
                     "only be configured "
@@ -936,20 +1421,26 @@ async def setup_opening_innings(
                 match
             )
 
-            if not readiness.toss_complete:
+            if (
+                not readiness
+                .toss_complete
+            ):
                 raise ValidationError(
                     "Complete the toss "
                     "before innings setup"
                 )
 
             if (
-                not readiness.team_a_players_complete
-                or not readiness.team_b_players_complete
+                not readiness
+                .team_a_players_complete
+                or not readiness
+                .team_b_players_complete
             ):
                 raise ValidationError(
                     "Both playing teams "
                     "must contain exactly "
-                    f"{match.players_per_side} players"
+                    f"{match.players_per_side} "
+                    "players"
                 )
 
             (
@@ -959,31 +1450,44 @@ async def setup_opening_innings(
                 match
             )
 
-            batting_xi = _playing_team_ids(
-                match,
-                batting_team_id,
+            batting_xi = (
+                _playing_team_ids(
+                    match,
+                    batting_team_id,
+                )
             )
 
-            bowling_xi = _playing_team_ids(
-                match,
-                bowling_team_id,
+            bowling_xi = (
+                _playing_team_ids(
+                    match,
+                    bowling_team_id,
+                )
             )
 
-            if payload.striker_id not in batting_xi:
+            if (
+                payload.striker_id
+                not in batting_xi
+            ):
                 raise ValidationError(
                     "Striker must belong "
                     "to the batting team's "
                     "playing team"
                 )
 
-            if payload.non_striker_id not in batting_xi:
+            if (
+                payload.non_striker_id
+                not in batting_xi
+            ):
                 raise ValidationError(
                     "Non-striker must belong "
                     "to the batting team's "
                     "playing team"
                 )
 
-            if payload.opening_bowler_id not in bowling_xi:
+            if (
+                payload.opening_bowler_id
+                not in bowling_xi
+            ):
                 raise ValidationError(
                     "Opening bowler must "
                     "belong to the bowling "
@@ -998,18 +1502,38 @@ async def setup_opening_innings(
             )
 
             if first_innings is None:
+
                 first_innings = Innings(
-                    match_id=match.id,
-                    innings_number=1,
-                    batting_team_id=batting_team_id,
-                    bowling_team_id=bowling_team_id,
-                    status=InningsStatus.PENDING,
-                    striker_id=payload.striker_id,
-                    non_striker_id=(
-                        payload.non_striker_id
+                    match_id=(
+                        match.id
                     ),
+
+                    innings_number=1,
+
+                    batting_team_id=(
+                        batting_team_id
+                    ),
+
+                    bowling_team_id=(
+                        bowling_team_id
+                    ),
+
+                    status=(
+                        InningsStatus.PENDING
+                    ),
+
+                    striker_id=(
+                        payload.striker_id
+                    ),
+
+                    non_striker_id=(
+                        payload
+                        .non_striker_id
+                    ),
+
                     current_bowler_id=(
-                        payload.opening_bowler_id
+                        payload
+                        .opening_bowler_id
                     ),
                 )
 
@@ -1022,6 +1546,7 @@ async def setup_opening_innings(
                 )
 
             else:
+
                 if first_innings.deliveries:
                     raise ConflictError(
                         "Opening participants "
@@ -1032,23 +1557,33 @@ async def setup_opening_innings(
                 first_innings.batting_team_id = (
                     batting_team_id
                 )
+
                 first_innings.bowling_team_id = (
                     bowling_team_id
                 )
+
                 first_innings.status = (
                     InningsStatus.PENDING
                 )
+
                 first_innings.striker_id = (
                     payload.striker_id
                 )
+
                 first_innings.non_striker_id = (
-                    payload.non_striker_id
+                    payload
+                    .non_striker_id
                 )
+
                 first_innings.current_bowler_id = (
-                    payload.opening_bowler_id
+                    payload
+                    .opening_bowler_id
                 )
-                first_innings.updated_at = datetime.now(
-                    UTC
+
+                first_innings.updated_at = (
+                    datetime.now(
+                        UTC
+                    )
                 )
 
                 audit_action = (
@@ -1057,73 +1592,103 @@ async def setup_opening_innings(
 
             await session.flush()
 
-            match.updated_at = datetime.now(
-                UTC
+            match.updated_at = (
+                datetime.now(
+                    UTC
+                )
             )
 
             add_audit_log(
                 session,
-                entity_type="innings",
-                entity_id=first_innings.id,
-                action=audit_action,
+
+                entity_type=(
+                    "innings"
+                ),
+
+                entity_id=(
+                    first_innings.id
+                ),
+
+                action=(
+                    audit_action
+                ),
+
                 details={
-                    "match_id": str(
-                        match.id
-                    ),
-                    "innings_number": 1,
-                    "batting_team_id": str(
-                        batting_team_id
-                    ),
-                    "bowling_team_id": str(
-                        bowling_team_id
-                    ),
-                    "striker_id": str(
-                        payload.striker_id
-                    ),
-                    "non_striker_id": str(
-                        payload.non_striker_id
-                    ),
-                    "opening_bowler_id": str(
-                        payload.opening_bowler_id
-                    ),
+                    "match_id":
+                        str(
+                            match.id
+                        ),
+
+                    "innings_number":
+                        1,
+
+                    "batting_team_id":
+                        str(
+                            batting_team_id
+                        ),
+
+                    "bowling_team_id":
+                        str(
+                            bowling_team_id
+                        ),
+
+                    "striker_id":
+                        str(
+                            payload
+                            .striker_id
+                        ),
+
+                    "non_striker_id":
+                        str(
+                            payload
+                            .non_striker_id
+                        ),
+
+                    "opening_bowler_id":
+                        str(
+                            payload
+                            .opening_bowler_id
+                        ),
                 },
             )
 
             await session.flush()
 
-        loaded = await repository.get_match(
-            match_id
+        loaded = await _reload_match(
+            session,
+            repository,
+            match_id,
         )
 
-        if loaded is None:
-            raise NotFoundError(
-                "Match not found"
-            )
-
-        return _match_setup_read(
-            loaded
-        )
+        return _match_setup_read(loaded)
 
     except IntegrityError as error:
-        raise integrity_conflict(
-            error,
-            "Opening innings",
-        ) from error
+        raise integrity_conflict(error, "Opening innings") from error
 
 
 async def mark_match_ready(
     session: AsyncSession,
     match_id: UUID,
 ) -> MatchSetupRead:
-    repository = MatchSetupRepository(
-        session
+
+    repository = (
+        MatchSetupRepository(
+            session
+        )
     )
 
     try:
-        async with service_transaction(session):
-            match = await repository.get_match(
-                match_id,
-                for_update=True,
+
+        async with service_transaction(
+            session
+        ):
+
+            match = (
+                await repository
+                .get_match(
+                    match_id,
+                    for_update=True,
+                )
             )
 
             if match is None:
@@ -1131,25 +1696,37 @@ async def mark_match_ready(
                     "Match not found"
                 )
 
-            if match.status == MatchStatus.READY:
+            if (
+                match.status
+                == MatchStatus.READY
+            ):
                 return _match_setup_read(
                     match
                 )
 
-            if match.status != MatchStatus.DRAFT:
+            if (
+                match.status
+                != MatchStatus.DRAFT
+            ):
                 raise ConflictError(
                     "Only a draft match "
                     "can move to ready"
                 )
 
-            if match.venue_id is None:
+            if (
+                match.venue_id
+                is None
+            ):
                 raise ValidationError(
                     "Venue is required "
                     "before the match "
                     "can be ready"
                 )
 
-            if match.scheduled_at is None:
+            if (
+                match.scheduled_at
+                is None
+            ):
                 raise ValidationError(
                     "Scheduled date/time "
                     "is required before "
@@ -1158,10 +1735,22 @@ async def mark_match_ready(
 
             await _validate_match_references(
                 repository,
-                team_a_id=match.team_a_id,
-                team_b_id=match.team_b_id,
-                venue_id=match.venue_id,
-                tournament_id=match.tournament_id,
+
+                team_a_id=(
+                    match.team_a_id
+                ),
+
+                team_b_id=(
+                    match.team_b_id
+                ),
+
+                venue_id=(
+                    match.venue_id
+                ),
+
+                tournament_id=(
+                    match.tournament_id
+                ),
             )
 
             readiness = _readiness(
@@ -1187,7 +1776,6 @@ async def mark_match_ready(
                     ),
                 )
             )
-
             team_b_memberships = (
                 await repository
                 .get_active_squad_memberships(
@@ -1200,7 +1788,9 @@ async def mark_match_ready(
             )
 
             if (
-                len(team_a_memberships)
+                len(
+                    team_a_memberships
+                )
                 != match.players_per_side
             ):
                 raise ValidationError(
@@ -1211,7 +1801,9 @@ async def mark_match_ready(
                 )
 
             if (
-                len(team_b_memberships)
+                len(
+                    team_b_memberships
+                )
                 != match.players_per_side
             ):
                 raise ValidationError(
@@ -1222,10 +1814,23 @@ async def mark_match_ready(
                 )
 
             first_innings = next(
-                item
-                for item in match.innings
-                if item.innings_number == 1
+                (
+                    item
+                    for item
+                    in match.innings
+                    if (
+                        item.innings_number
+                        == 1
+                    )
+                ),
+                None,
             )
+
+            if first_innings is None:
+                raise ValidationError(
+                    "Opening innings is required "
+                    "before the match can be ready"
+                )
 
             (
                 batting_team_id,
@@ -1235,9 +1840,11 @@ async def mark_match_ready(
             )
 
             if (
-                first_innings.batting_team_id
+                first_innings
+                .batting_team_id
                 != batting_team_id
-                or first_innings.bowling_team_id
+                or first_innings
+                .bowling_team_id
                 != bowling_team_id
             ):
                 raise ValidationError(
@@ -1246,17 +1853,24 @@ async def mark_match_ready(
                     "toss decision"
                 )
 
-            batting_xi = _playing_team_ids(
-                match,
-                batting_team_id,
+            batting_xi = (
+                _playing_team_ids(
+                    match,
+                    batting_team_id,
+                )
             )
 
-            bowling_xi = _playing_team_ids(
-                match,
-                bowling_team_id,
+            bowling_xi = (
+                _playing_team_ids(
+                    match,
+                    bowling_team_id,
+                )
             )
 
-            if first_innings.striker_id not in batting_xi:
+            if (
+                first_innings.striker_id
+                not in batting_xi
+            ):
                 raise ValidationError(
                     "Configured striker "
                     "is no longer in the "
@@ -1264,7 +1878,8 @@ async def mark_match_ready(
                 )
 
             if (
-                first_innings.non_striker_id
+                first_innings
+                .non_striker_id
                 not in batting_xi
             ):
                 raise ValidationError(
@@ -1274,7 +1889,8 @@ async def mark_match_ready(
                 )
 
             if (
-                first_innings.current_bowler_id
+                first_innings
+                .current_bowler_id
                 not in bowling_xi
             ):
                 raise ValidationError(
@@ -1284,40 +1900,29 @@ async def mark_match_ready(
                 )
 
             match.status = MatchStatus.READY
-            match.updated_at = datetime.now(
-                UTC
-            )
-
+            match.updated_at = datetime.now(UTC)
             await session.flush()
 
             add_audit_log(
                 session,
-                entity_type="match",
-                entity_id=match.id,
-                action=AuditAction.UPDATED,
+                entity_type=("match"),
+                entity_id=(match.id),
+                action=(AuditAction.UPDATED),
                 details={
-                    "transition": "draft_to_ready",
-                    "status": MatchStatus.READY.value,
+                    "transition":
+                        "draft_to_ready",
+
+                    "status":
+                        MatchStatus
+                        .READY
+                        .value,
                 },
             )
 
             await session.flush()
 
-        loaded = await repository.get_match(
-            match_id
-        )
-
-        if loaded is None:
-            raise NotFoundError(
-                "Match not found"
-            )
-
-        return _match_setup_read(
-            loaded
-        )
+        loaded = await _reload_match(session, repository, match_id)
+        return _match_setup_read(loaded)
 
     except IntegrityError as error:
-        raise integrity_conflict(
-            error,
-            "Match readiness",
-        ) from error
+        raise integrity_conflict(error, "Match readiness") from error

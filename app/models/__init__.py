@@ -24,6 +24,7 @@ from app.models.enums import (
     TossDecision,
     TournamentStatus,
     VenueStatus,
+    WicketType
 )
 
 
@@ -51,4 +52,5 @@ __all__ = [
     "TournamentStatus",
     "Venue",
     "VenueStatus",
+    "WicketType"
 ]

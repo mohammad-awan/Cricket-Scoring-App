@@ -65,6 +65,16 @@ class InningsStatus(str, Enum):
     COMPLETED = "completed"
 
 
+class WicketType(str, Enum):
+    BOWLED = "bowled"
+    CAUGHT = "caught"
+    LBW = "lbw"
+    RUN_OUT = "run_out"
+    STUMPED = "stumped"
+    HIT_WICKET = "hit_wicket"
+    OBSTRUCTING_FIELD = "obstructing_field"
+
+
 class DeliveryStatus(str, Enum):
     RECORDED = "recorded"
     VOID = "void"

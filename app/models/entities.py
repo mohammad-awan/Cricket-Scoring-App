@@ -38,6 +38,7 @@ from app.models.enums import (
     TournamentStatus,
     VenueStatus,
     db_enum,
+    WicketType
 )
 
 
@@ -110,34 +111,17 @@ class Team(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
 class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     __tablename__ = "players"
 
-    full_name: Mapped[str] = mapped_column(
-        String(160),
-        nullable=False,
-    )
-    short_name: Mapped[str | None] = mapped_column(
-        String(80),
-        nullable=True,
-    )
-    date_of_birth: Mapped[date | None] = mapped_column(
-        Date,
-        nullable=True,
-    )
-    nationality: Mapped[str | None] = mapped_column(
-        String(80),
-        nullable=True,
-    )
-    external_id: Mapped[str | None] = mapped_column(
-        String(80),
-        nullable=True,
-        unique=True,
-    )
+    full_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    short_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    nationality: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(80), nullable=True, unique=True)
     status: Mapped[PlayerStatus] = mapped_column(
         db_enum(PlayerStatus, "player_status"),
         nullable=False,
         default=PlayerStatus.ACTIVE,
         server_default="active",
     )
-
     teams: Mapped[list[TeamPlayer]] = relationship(
         "TeamPlayer",
         back_populates="player",
@@ -185,25 +169,15 @@ class TeamPlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=PlayerRole.BATTER,
         server_default="batter",
     )
-    squad_number: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-    )
-    joined_on: Mapped[date | None] = mapped_column(
-        Date,
-        nullable=True,
-    )
-    left_on: Mapped[date | None] = mapped_column(
-        Date,
-        nullable=True,
-    )
+    squad_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    joined_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    left_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=True,
         server_default="true",
     )
-
     team: Mapped[Team] = relationship(
         "Team",
         back_populates="players",
@@ -237,33 +211,17 @@ class TeamPlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class Venue(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     __tablename__ = "venues"
 
-    name: Mapped[str] = mapped_column(
-        String(160),
-        nullable=False,
-    )
-    city: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False,
-    )
-    country: Mapped[str | None] = mapped_column(
-        String(80),
-        nullable=True,
-    )
-    address: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-    capacity: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    city: Mapped[str] = mapped_column(String(100), nullable=False)
+    country: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[VenueStatus] = mapped_column(
         db_enum(VenueStatus, "venue_status"),
         nullable=False,
         default=VenueStatus.ACTIVE,
         server_default="active",
     )
-
     matches: Mapped[list[Match]] = relationship(
         "Match",
         back_populates="venue",
@@ -297,42 +255,19 @@ class Venue(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
 class Tournament(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     __tablename__ = "tournaments"
 
-    name: Mapped[str] = mapped_column(
-        String(160),
-        nullable=False,
-    )
-    slug: Mapped[str] = mapped_column(
-        String(180),
-        nullable=False,
-        unique=True,
-    )
-    season: Mapped[str | None] = mapped_column(
-        String(40),
-        nullable=True,
-    )
-    organizer: Mapped[str | None] = mapped_column(
-        String(160),
-        nullable=True,
-    )
-    description: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-    start_date: Mapped[date | None] = mapped_column(
-        Date,
-        nullable=True,
-    )
-    end_date: Mapped[date | None] = mapped_column(
-        Date,
-        nullable=True,
-    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    slug: Mapped[str] = mapped_column(String(180), nullable=False, unique=True)
+    season: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    organizer: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[TournamentStatus] = mapped_column(
         db_enum(TournamentStatus, "tournament_status"),
         nullable=False,
         default=TournamentStatus.DRAFT,
         server_default="draft",
     )
-
     matches: Mapped[list[Match]] = relationship(
         "Match",
         back_populates="tournament",
@@ -366,14 +301,8 @@ class Tournament(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
 class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "matches"
 
-    title: Mapped[str | None] = mapped_column(
-        String(180),
-        nullable=True,
-    )
-    match_number: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-    )
+    title: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    match_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     team_a_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey("teams.id", ondelete="RESTRICT"),
@@ -406,10 +335,7 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=11,
         server_default="11",
     )
-    total_overs: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-    )
+    total_overs: Mapped[int | None] = mapped_column(Integer, nullable=True)
     balls_per_over: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -422,10 +348,7 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=1,
         server_default="1",
     )
-    scheduled_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[MatchStatus] = mapped_column(
         db_enum(MatchStatus, "match_status"),
         nullable=False,
@@ -437,11 +360,7 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("teams.id", ondelete="SET NULL"),
         nullable=True,
     )
-    toss_decision: Mapped[TossDecision | None] = mapped_column(
-        db_enum(TossDecision, "toss_decision"),
-        nullable=True,
-    )
-
+    toss_decision: Mapped[TossDecision | None] = mapped_column(db_enum(TossDecision, "toss_decision"), nullable=True)
     team_a: Mapped[Team] = relationship(
         "Team",
         foreign_keys=lambda: [Match.team_a_id],
@@ -547,10 +466,7 @@ class MatchPlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("players.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    batting_order: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-    )
+    batting_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     role: Mapped[PlayerRole] = mapped_column(
         db_enum(PlayerRole, "player_role"),
         nullable=False,
@@ -569,16 +485,12 @@ class MatchPlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=False,
         server_default="false",
     )
-
     match: Mapped[Match] = relationship(
         "Match",
         back_populates="players",
         lazy="raise_on_sql",
     )
-    team: Mapped[Team] = relationship(
-        "Team",
-        lazy="raise_on_sql",
-    )
+    team: Mapped[Team] = relationship("Team", lazy="raise_on_sql")
     player: Mapped[Player] = relationship(
         "Player",
         back_populates="match_selections",
@@ -615,10 +527,7 @@ class Innings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("matches.id", ondelete="CASCADE"),
         nullable=False,
     )
-    innings_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
+    innings_number: Mapped[int] = mapped_column(Integer, nullable=False)
     batting_team_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey("teams.id", ondelete="RESTRICT"),
@@ -668,7 +577,6 @@ class Innings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("players.id", ondelete="SET NULL"),
         nullable=True,
     )
-
     match: Mapped[Match] = relationship(
         "Match",
         back_populates="innings",
@@ -756,18 +664,9 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("innings.id", ondelete="CASCADE"),
         nullable=False,
     )
-    delivery_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-    over_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-    ball_number: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
+    delivery_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    over_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    ball_number: Mapped[int] = mapped_column(Integer, nullable=False)
     striker_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey("players.id", ondelete="RESTRICT"),
@@ -783,6 +682,9 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("players.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    # =========================
+    # RUN ATTRIBUTION
+    # =========================
     batter_runs: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -790,6 +692,30 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         server_default="0",
     )
     extra_runs: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    wide_runs: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    no_ball_runs: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    bye_runs: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    leg_bye_runs: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=0,
@@ -807,8 +733,47 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=True,
         server_default="true",
     )
+    # =========================
+    # WICKET DATA
+    # =========================
+    wicket_type: Mapped[WicketType | None] = mapped_column(
+        db_enum(
+            WicketType,
+            "wicket_type",
+        ),
+        nullable=True,
+    )
+    dismissed_player_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey(
+            "players.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
+    fielder_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey(
+            "players.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
+    next_batter_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey(
+            "players.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
+    # Mainly needed for exact run-out state reconstruction.
+    wicket_end: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[DeliveryStatus] = mapped_column(
-        db_enum(DeliveryStatus, "delivery_status"),
+        db_enum(
+            DeliveryStatus,
+            "delivery_status",
+        ),
         nullable=False,
         default=DeliveryStatus.RECORDED,
         server_default="recorded",
@@ -816,14 +781,19 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     actor_id: Mapped[UUID | None] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         nullable=True,
-        comment="Nullable until Stage 10 authentication is implemented.",
+        comment=(
+            "Nullable until Stage 10 "
+            "authentication is implemented."
+        ),
     )
     recorded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
     )
-
+    # =========================
+    # RELATIONSHIPS
+    # =========================
     match: Mapped[Match] = relationship(
         "Match",
         back_populates="deliveries",
@@ -836,17 +806,44 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     striker: Mapped[Player] = relationship(
         "Player",
-        foreign_keys=lambda: [Delivery.striker_id],
+        foreign_keys=lambda: [
+            Delivery.striker_id
+        ],
         lazy="raise_on_sql",
     )
     non_striker: Mapped[Player] = relationship(
         "Player",
-        foreign_keys=lambda: [Delivery.non_striker_id],
+        foreign_keys=lambda: [
+            Delivery.non_striker_id
+        ],
         lazy="raise_on_sql",
     )
     bowler: Mapped[Player] = relationship(
         "Player",
-        foreign_keys=lambda: [Delivery.bowler_id],
+        foreign_keys=lambda: [
+            Delivery.bowler_id
+        ],
+        lazy="raise_on_sql",
+    )
+    dismissed_player: Mapped[Player | None] = relationship(
+        "Player",
+        foreign_keys=lambda: [
+            Delivery.dismissed_player_id
+        ],
+        lazy="raise_on_sql",
+    )
+    fielder: Mapped[Player | None] = relationship(
+        "Player",
+        foreign_keys=lambda: [
+            Delivery.fielder_id
+        ],
+        lazy="raise_on_sql",
+    )
+    next_batter: Mapped[Player | None] = relationship(
+        "Player",
+        foreign_keys=lambda: [
+            Delivery.next_batter_id
+        ],
         lazy="raise_on_sql",
     )
     corrections: Mapped[list[DeliveryCorrection]] = relationship(
@@ -856,52 +853,207 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         passive_deletes=True,
         lazy="raise_on_sql",
     )
-
     __table_args__ = (
         UniqueConstraint(
             "innings_id",
             "delivery_number",
-            name="uq_deliveries_innings_delivery_number",
+            name=(
+                "uq_deliveries_"
+                "innings_delivery_number"
+            ),
         ),
         CheckConstraint(
             "delivery_number > 0",
-            name="deliveries_delivery_number_positive",
+            name=(
+                "deliveries_"
+                "delivery_number_positive"
+            ),
         ),
         CheckConstraint(
             "over_number > 0",
-            name="deliveries_over_number_positive",
+            name=(
+                "deliveries_"
+                "over_number_positive"
+            ),
         ),
         CheckConstraint(
             "ball_number > 0",
-            name="deliveries_ball_number_positive",
+            name=(
+                "deliveries_"
+                "ball_number_positive"
+            ),
         ),
         CheckConstraint(
-            "batter_runs >= 0 AND extra_runs >= 0 AND total_runs >= 0",
-            name="deliveries_runs_non_negative",
+            "batter_runs >= 0 "
+            "AND extra_runs >= 0 "
+            "AND total_runs >= 0",
+            name=(
+                "deliveries_"
+                "runs_non_negative"
+            ),
         ),
         CheckConstraint(
-            "total_runs = batter_runs + extra_runs",
-            name="deliveries_total_runs_match_components",
+            "wide_runs >= 0 "
+            "AND no_ball_runs >= 0 "
+            "AND bye_runs >= 0 "
+            "AND leg_bye_runs >= 0",
+            name=(
+                "deliveries_"
+                "extra_components_non_negative"
+            ),
+        ),
+        CheckConstraint(
+            "extra_runs = "
+            "wide_runs + "
+            "no_ball_runs + "
+            "bye_runs + "
+            "leg_bye_runs",
+            name=(
+                "deliveries_"
+                "extra_runs_match_components"
+            ),
+        ),
+        CheckConstraint(
+            "total_runs = "
+            "batter_runs + extra_runs",
+            name=(
+                "deliveries_"
+                "total_runs_match_components"
+            ),
+        ),
+        CheckConstraint(
+            "no_ball_runs IN (0, 1)",
+            name=(
+                "deliveries_"
+                "no_ball_single_penalty"
+            ),
+        ),
+        CheckConstraint(
+            "NOT ("
+            "wide_runs > 0 "
+            "AND ("
+            "no_ball_runs > 0 "
+            "OR bye_runs > 0 "
+            "OR leg_bye_runs > 0 "
+            "OR batter_runs > 0"
+            ")"
+            ")",
+            name=(
+                "deliveries_"
+                "wide_exclusive"
+            ),
+        ),
+        CheckConstraint(
+            "NOT ("
+            "bye_runs > 0 "
+            "AND leg_bye_runs > 0"
+            ")",
+            name=(
+                "deliveries_"
+                "bye_types_exclusive"
+            ),
+        ),
+        CheckConstraint(
+            "NOT ("
+            "(bye_runs > 0 "
+            "OR leg_bye_runs > 0) "
+            "AND batter_runs > 0"
+            ")",
+            name=(
+                "deliveries_"
+                "byes_not_batter_runs"
+            ),
+        ),
+        CheckConstraint(
+            "is_legal_ball = "
+            "(wide_runs = 0 "
+            "AND no_ball_runs = 0)",
+            name=(
+                "deliveries_"
+                "legal_ball_matches_extras"
+            ),
+        ),
+        CheckConstraint(
+            "("
+            "wicket_type IS NULL "
+            "AND dismissed_player_id IS NULL"
+            ") "
+            "OR "
+            "("
+            "wicket_type IS NOT NULL "
+            "AND dismissed_player_id IS NOT NULL"
+            ")",
+            name=(
+                "deliveries_"
+                "wicket_fields_together"
+            ),
+        ),
+        CheckConstraint(
+            "wicket_type IS NOT NULL "
+            "OR ("
+            "fielder_id IS NULL "
+            "AND next_batter_id IS NULL"
+            ")",
+            name=(
+                "deliveries_"
+                "wicket_dependents_require_wicket"
+            ),
+        ),
+        CheckConstraint(
+            "wicket_end IS NULL "
+            "OR wicket_end IN "
+            "('striker_end', 'non_striker_end')",
+            name=(
+                "deliveries_"
+                "wicket_end_valid"
+            ),
+        ),
+        CheckConstraint(
+            "wicket_end IS NULL "
+            "OR wicket_type = 'run_out'",
+            name=(
+                "deliveries_"
+                "wicket_end_requires_run_out"
+            ),
         ),
         CheckConstraint(
             "striker_id <> non_striker_id",
-            name="deliveries_batters_must_differ",
+            name=(
+                "deliveries_"
+                "batters_must_differ"
+            ),
         ),
-        Index("ix_deliveries_match_id", "match_id"),
-        Index("ix_deliveries_innings_id", "innings_id"),
         Index(
-            "ix_deliveries_match_innings_sequence",
+            "ix_deliveries_match_id",
+            "match_id",
+        ),
+        Index(
+            "ix_deliveries_innings_id",
+            "innings_id",
+        ),
+        Index(
+            "ix_deliveries_"
+            "match_innings_sequence",
             "match_id",
             "innings_id",
             "delivery_number",
         ),
         Index(
-            "ix_deliveries_innings_status",
+            "ix_deliveries_"
+            "innings_status",
             "innings_id",
             "status",
         ),
+        Index(
+            "ix_deliveries_"
+            "dismissed_player_id",
+            "dismissed_player_id",
+        ),
+        Index(
+            "ix_deliveries_wicket_type",
+            "wicket_type",
+        ),
     )
-
 
 class DeliveryCorrection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "delivery_corrections"
@@ -911,20 +1063,13 @@ class DeliveryCorrection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("deliveries.id", ondelete="CASCADE"),
         nullable=False,
     )
-    correction_type: Mapped[CorrectionType] = mapped_column(
-        db_enum(CorrectionType, "correction_type"),
-        nullable=False,
-    )
-    reason: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
+    correction_type: Mapped[CorrectionType] = mapped_column(db_enum(CorrectionType, "correction_type"), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
     actor_id: Mapped[UUID | None] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         nullable=True,
         comment="Nullable until Stage 10 authentication is implemented.",
     )
-
     delivery: Mapped[Delivery] = relationship(
         "Delivery",
         back_populates="corrections",
@@ -946,18 +1091,9 @@ class DeliveryCorrection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class AuditLog(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "audit_logs"
 
-    entity_type: Mapped[str] = mapped_column(
-        String(80),
-        nullable=False,
-    )
-    entity_id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
-        nullable=False,
-    )
-    action: Mapped[AuditAction] = mapped_column(
-        db_enum(AuditAction, "audit_action"),
-        nullable=False,
-    )
+    entity_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    action: Mapped[AuditAction] = mapped_column(db_enum(AuditAction, "audit_action"), nullable=False)
     actor_id: Mapped[UUID | None] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         nullable=True,
