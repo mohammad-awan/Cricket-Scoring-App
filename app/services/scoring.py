@@ -1,17 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from uuid import UUID
-from sqlalchemy.exc import (
-    IntegrityError,
-)
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-)
-from app.core.exceptions import (
-    ConflictError,
-    NotFoundError,
-    ValidationError,
-)
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.models import (
     AuditAction,
     Delivery,
@@ -27,13 +20,8 @@ from app.models.enums import (
     MatchStatus,
     WicketType,
 )
-from app.repositories.scoring import (
-    ScoringRepository,
-)
-from app.schemas.match_setup import (
-    PlayerSummary,
-    TeamSummary,
-)
+from app.repositories.scoring import ScoringRepository
+from app.schemas.match_setup import PlayerSummary, TeamSummary
 from app.schemas.scoring import (
     BowlerChange,
     DeliveryCreate,
@@ -51,14 +39,7 @@ from app.services.common import (
 )
 
 
-RUN_OUTCOMES = {
-    0,
-    1,
-    2,
-    3,
-    4,
-    6,
-}
+RUN_OUTCOMES = {0, 1, 2, 3, 4, 6}
 
 
 @dataclass(frozen=True)
@@ -954,9 +935,106 @@ def _innings_finished(
     )
 
 
+def _clear_match_result(
+    match: Match,
+) -> None:
+
+    match.winner_team_id = (
+        None
+    )
+
+    match.result_type = (
+        None
+    )
+
+    match.result_margin = (
+        None
+    )
+
+    match.completed_at = (
+        None
+    )
+
+
+def _finalize_match_result(
+    match: Match,
+    innings: Innings,
+    *,
+    wickets: int,
+    chase: ChaseState,
+) -> None:
+
+    if (
+        chase.batting_runs
+        > chase.bowling_runs
+    ):
+
+        match.winner_team_id = (
+            innings
+            .batting_team_id
+        )
+
+        match.result_type = (
+            "wickets"
+        )
+
+        match.result_margin = max(
+            (
+                match.players_per_side
+                - 1
+                - wickets
+            ),
+            1,
+        )
+
+    elif (
+        chase.batting_runs
+        == chase.bowling_runs
+    ):
+
+        match.winner_team_id = (
+            None
+        )
+
+        match.result_type = (
+            "tie"
+        )
+
+        match.result_margin = (
+            0
+        )
+
+    else:
+
+        match.winner_team_id = (
+            innings
+            .bowling_team_id
+        )
+
+        match.result_type = (
+            "runs"
+        )
+
+        match.result_margin = (
+            chase.bowling_runs
+            - chase.batting_runs
+        )
+
+    match.completed_at = (
+        datetime.now(
+            timezone.utc
+        )
+    )
+
+
 def _close_innings(
     match: Match,
     innings: Innings,
+    *,
+    wickets: int,
+    chase: (
+        ChaseState | None
+    ),
 ) -> None:
 
     innings.status = (
@@ -970,14 +1048,32 @@ def _close_innings(
         )
     ):
 
+        if chase is None:
+
+            raise ValidationError(
+                "Final innings result "
+                "could not be derived"
+            )
+
         match.status = (
             MatchStatus.COMPLETED
+        )
+
+        _finalize_match_result(
+            match,
+            innings,
+            wickets=wickets,
+            chase=chase,
         )
 
     else:
 
         match.status = (
             MatchStatus.INNINGS_BREAK
+        )
+
+        _clear_match_result(
+            match
         )
 
 
@@ -2593,6 +2689,14 @@ async def record_delivery(
                 _close_innings(
                     match,
                     innings,
+
+                    wickets=(
+                        after_wickets
+                    ),
+
+                    chase=(
+                        chase
+                    ),
                 )
 
             add_audit_log(
@@ -3003,9 +3107,21 @@ async def undo_delivery(
             _close_innings(
                 match,
                 innings,
+
+                wickets=(
+                    rebuilt.wickets
+                ),
+
+                chase=(
+                    chase
+                ),
             )
 
         else:
+
+            _clear_match_result(
+                match
+            )
 
             match.status = (
                 MatchStatus.READY
@@ -3302,9 +3418,49 @@ async def end_innings(
                 "ending the innings"
             )
 
+        derived = (
+            rebuild_from_deliveries(
+                innings,
+                deliveries,
+                balls_per_over=(
+                    match
+                    .balls_per_over
+                ),
+            )
+        )
+
+        innings_list = (
+            await repository
+            .list_innings(
+                match.id
+            )
+        )
+
+        totals = (
+            await repository
+            .delivery_totals(
+                match.id
+            )
+        )
+
+        chase = _chase_state(
+            match,
+            innings,
+            innings_list,
+            totals,
+        )
+
         _close_innings(
             match,
             innings,
+
+            wickets=(
+                derived.wickets
+            ),
+
+            chase=(
+                chase
+            ),
         )
 
         add_audit_log(
@@ -3594,6 +3750,10 @@ async def start_next_innings(
 
             session.add(
                 innings
+            )
+
+            _clear_match_result(
+                match
             )
 
             match.status = (

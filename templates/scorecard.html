@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Scorecard | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    id="scorecard-page"
+    data-match-id="{{ match_id }}"
+>
+
+    <section class="page-heading">
+
+        <a
+            class="back-link"
+            href="/live-scoring/{{ match_id }}"
+        >
+            ← Live scoring
+        </a>
+
+
+        <div class="setup-title-row">
+
+            <div>
+
+                <p class="eyebrow">
+                    Stage 6 · S17 / S18 / S20
+                </p>
+
+                <h1 id="scorecard-title">
+                    Full Scorecard
+                </h1>
+
+                <p
+                    class="page-subtitle"
+                    id="scorecard-subtitle"
+                >
+                    Loading scorecard…
+                </p>
+
+            </div>
+
+
+            <span
+                class="status-badge"
+                id="scorecard-status"
+            >
+                —
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <div
+        class="form-error hidden"
+        id="scorecard-error"
+    ></div>
+
+
+    <section
+        class="panel stage6-summary"
+    >
+
+        <div class="stage6-summary-grid">
+
+            <div>
+                <span>
+                    Lifecycle
+                </span>
+
+                <strong
+                    id="lifecycle-label"
+                >
+                    —
+                </strong>
+            </div>
+
+
+            <div>
+                <span>
+                    Target
+                </span>
+
+                <strong
+                    id="target-value"
+                >
+                    —
+                </strong>
+            </div>
+
+
+            <div>
+                <span>
+                    Runs required
+                </span>
+
+                <strong
+                    id="runs-required-value"
+                >
+                    —
+                </strong>
+            </div>
+
+
+            <div>
+                <span>
+                    Balls remaining
+                </span>
+
+                <strong
+                    id="balls-remaining-value"
+                >
+                    —
+                </strong>
+            </div>
+
+
+            <div>
+                <span>
+                    Required RR
+                </span>
+
+                <strong
+                    id="required-rr-value"
+                >
+                    —
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div
+            class="stage6-result hidden"
+            id="match-result"
+        ></div>
+
+    </section>
+
+
+    <div
+        id="innings-scorecards"
+    ></div>
+
+</div>
+
+
+<style>
+
+    .stage6-summary {
+        margin-bottom: 24px;
+        padding: 20px;
+    }
+
+
+    .stage6-summary-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                5,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap: 12px;
+    }
+
+
+    .stage6-summary-grid > div {
+        padding: 14px;
+
+        border:
+            1px solid
+            #dfe5ec;
+
+        border-radius:
+            12px;
+
+        background:
+            #f8fafc;
+    }
+
+
+    .stage6-summary-grid span {
+        display: block;
+
+        margin-bottom:
+            6px;
+
+        font-size:
+            12px;
+
+        color:
+            #64748b;
+    }
+
+
+    .stage6-summary-grid strong {
+        font-size:
+            18px;
+    }
+
+
+    .stage6-result {
+        margin-top:
+            16px;
+
+        padding:
+            14px 16px;
+
+        border:
+            1px solid
+            #a7f3d0;
+
+        border-radius:
+            12px;
+
+        background:
+            #ecfdf5;
+
+        color:
+            #065f46;
+
+        font-weight:
+            700;
+    }
+
+
+    .innings-card {
+        margin-bottom:
+            24px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .innings-card-header {
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        padding:
+            18px 20px;
+
+        border-bottom:
+            1px solid
+            #e5e7eb;
+    }
+
+
+    .innings-card-header h2 {
+        margin:
+            0;
+
+        font-size:
+            20px;
+    }
+
+
+    .innings-total {
+        text-align:
+            right;
+    }
+
+
+    .innings-total strong {
+        display:
+            block;
+
+        font-size:
+            24px;
+    }
+
+
+    .innings-total span {
+        font-size:
+            13px;
+
+        color:
+            #64748b;
+    }
+
+
+    .scorecard-section {
+        padding:
+            18px 20px;
+
+        border-bottom:
+            1px solid
+            #eef2f7;
+    }
+
+
+    .scorecard-section:last-child {
+        border-bottom:
+            0;
+    }
+
+
+    .scorecard-section h3 {
+        margin:
+            0 0 12px;
+
+        font-size:
+            15px;
+    }
+
+
+    .scorecard-table-wrap {
+        overflow-x:
+            auto;
+    }
+
+
+    .scorecard-table {
+        width:
+            100%;
+
+        min-width:
+            700px;
+
+        border-collapse:
+            collapse;
+    }
+
+
+    .scorecard-table th,
+    .scorecard-table td {
+
+        padding:
+            10px 8px;
+
+        border-bottom:
+            1px solid
+            #eef2f7;
+
+        text-align:
+            right;
+
+        font-size:
+            13px;
+    }
+
+
+    .scorecard-table th {
+        background:
+            #f8fafc;
+
+        color:
+            #64748b;
+
+        font-weight:
+            700;
+    }
+
+
+    .scorecard-table th:first-child,
+    .scorecard-table td:first-child,
+    .scorecard-table th:nth-child(2),
+    .scorecard-table td:nth-child(2) {
+
+        text-align:
+            left;
+    }
+
+
+    .scorecard-player {
+        font-weight:
+            700;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .scorecard-dismissal {
+        min-width:
+            180px;
+
+        color:
+            #64748b;
+    }
+
+
+    .scorecard-meta-row {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            12px 20px;
+
+        color:
+            #64748b;
+
+        font-size:
+            13px;
+    }
+
+
+    .partnership-list {
+        display:
+            grid;
+
+        gap:
+            10px;
+    }
+
+
+    .partnership-row {
+
+        display:
+            flex;
+
+        justify-content:
+            space-between;
+
+        gap:
+            18px;
+
+        padding:
+            10px 12px;
+
+        border:
+            1px solid
+            #e5e7eb;
+
+        border-radius:
+            10px;
+    }
+
+
+    .partnership-row span:last-child {
+
+        white-space:
+            nowrap;
+
+        font-weight:
+            700;
+    }
+
+
+    @media (
+        max-width: 980px
+    ) {
+
+        .stage6-summary-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+
+    @media (
+        max-width: 620px
+    ) {
+
+        .stage6-summary-grid {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .innings-card-header {
+
+            align-items:
+                flex-start;
+
+            flex-direction:
+                column;
+        }
+
+
+        .innings-total {
+
+            text-align:
+                left;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/scorecard.js') }}?v={{ asset_version('js/scorecard.js') }}"
+></script>
+
+{% endblock %}

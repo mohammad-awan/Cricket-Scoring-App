@@ -361,6 +361,14 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=True,
     )
     toss_decision: Mapped[TossDecision | None] = mapped_column(db_enum(TossDecision, "toss_decision"), nullable=True)
+    winner_team_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("teams.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    result_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    result_margin: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     team_a: Mapped[Team] = relationship(
         "Team",
         foreign_keys=lambda: [Match.team_a_id],
@@ -386,6 +394,11 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     toss_winner: Mapped[Team | None] = relationship(
         "Team",
         foreign_keys=lambda: [Match.toss_winner_id],
+        lazy="raise_on_sql",
+    )
+    winner_team: Mapped[Team | None] = relationship(
+        "Team",
+        foreign_keys=lambda: [Match.winner_team_id],
         lazy="raise_on_sql",
     )
     players: Mapped[list[MatchPlayer]] = relationship(
@@ -441,10 +454,50 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "(toss_winner_id IS NOT NULL AND toss_decision IS NOT NULL)",
             name="matches_toss_fields_together",
         ),
+        CheckConstraint(
+            (
+                "result_type IS NULL "
+                "OR result_type IN "
+                "('runs', 'wickets', 'tie')"
+            ),
+            name="matches_result_type_valid",
+        ),
+        CheckConstraint(
+            (
+                "result_margin IS NULL "
+                "OR result_margin >= 0"
+            ),
+            name=(
+                "matches_result_margin_"
+                "non_negative"
+            ),
+        ),
+        CheckConstraint(
+            (
+                "("
+                "result_type IS NULL "
+                "AND result_margin IS NULL"
+                ") "
+                "OR "
+                "("
+                "result_type = 'tie' "
+                "AND result_margin = 0"
+                ") "
+                "OR "
+                "("
+                "result_type IN "
+                "('runs', 'wickets') "
+                "AND result_margin > 0"
+                ")"
+            ),
+            name="matches_result_fields_valid",
+        ),
         Index("ix_matches_status", "status"),
         Index("ix_matches_scheduled_at", "scheduled_at"),
         Index("ix_matches_team_a_id", "team_a_id"),
         Index("ix_matches_team_b_id", "team_b_id"),
+        Index("ix_matches_winner_team_id", "winner_team_id"),
+        Index("ix_matches_completed_at", "completed_at")
     )
 
 

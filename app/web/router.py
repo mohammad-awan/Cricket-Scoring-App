@@ -91,3 +91,13 @@ async def live_scoring_page(request: Request, match_id: str):
     )
 
 
+@router.get("/scorecard/{match_id}")
+async def scorecard_page(request: Request, match_id: str):
+    return templates.TemplateResponse(
+        request=request,
+        name="scorecard.html",
+        context={
+            "match_id": match_id,
+        },
+    )
+
