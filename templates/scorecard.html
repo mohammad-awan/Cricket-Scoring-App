@@ -45,12 +45,27 @@ Scorecard | Cricket Intelligence Platform
             </div>
 
 
+            <div
+                class="stage7-heading-status"
+            >
+
+                <span
+                    class="live-connection-pill"
+                    data-live-connection-status
+                    data-status="connecting"
+                >
+                    Connecting&hellip;
+                </span>
+
+
             <span
                 class="status-badge"
                 id="scorecard-status"
             >
                 —
             </span>
+
+            </div>
 
         </div>
 
@@ -518,6 +533,10 @@ Scorecard | Cricket Intelligence Platform
 
 <script
     src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/realtime.js') }}?v={{ asset_version('js/realtime.js') }}"
 ></script>
 
 <script

@@ -5,6 +5,7 @@ from app.api.routes.match_setup import router as match_setup_router
 from app.api.routes.scoring import router as scoring_router
 from app.api.routes.scorecard import router as scorecard_router
 from app.api.routes.team_squads import router as team_squads_router
+from app.api.routes.realtime import router as realtime_router
 
 
 api_router = APIRouter()
@@ -14,4 +15,5 @@ api_router.include_router(master_data_router)
 api_router.include_router(match_setup_router)
 api_router.include_router(scoring_router)
 api_router.include_router(scorecard_router)
+api_router.include_router(realtime_router)
 api_router.include_router(team_squads_router)

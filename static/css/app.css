@@ -3250,3 +3250,454 @@ h2 {
     margin-top: 4px;
     text-decoration: none;
 }
+
+
+/* =========================
+   STAGE 7
+   REAL-TIME LIVE SCORING
+   ========================= */
+
+
+.stage7-heading-status {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        flex-end;
+
+    gap:
+        10px;
+
+    flex-wrap:
+        wrap;
+
+}
+
+
+.live-connection-pill {
+
+    display:
+        inline-flex;
+
+    align-items:
+        center;
+
+    gap:
+        8px;
+
+
+    padding:
+        8px 12px;
+
+
+    border:
+        1px solid
+        #cbd5e1;
+
+
+    border-radius:
+        999px;
+
+
+    background:
+        #f8fafc;
+
+
+    color:
+        #475569;
+
+
+    font-size:
+        13px;
+
+
+    font-weight:
+        700;
+
+}
+
+
+.live-connection-pill::before {
+
+    width:
+        8px;
+
+    height:
+        8px;
+
+
+    border-radius:
+        50%;
+
+
+    background:
+        #94a3b8;
+
+
+    content:
+        "";
+
+}
+
+
+.live-connection-pill[
+    data-status="live"
+] {
+
+    border-color:
+        #a7f3d0;
+
+
+    background:
+        #ecfdf5;
+
+
+    color:
+        #047857;
+
+}
+
+
+.live-connection-pill[
+    data-status="live"
+]::before {
+
+    background:
+        #10b981;
+
+}
+
+
+.live-connection-pill[
+    data-status="reconnecting"
+] {
+
+    border-color:
+        #fde68a;
+
+
+    background:
+        #fffbeb;
+
+
+    color:
+        #92400e;
+
+}
+
+
+.live-connection-pill[
+    data-status="reconnecting"
+]::before {
+
+    background:
+        #f59e0b;
+
+}
+
+
+.live-connection-pill[
+    data-status="offline"
+] {
+
+    border-color:
+        #fecaca;
+
+
+    background:
+        #fef2f2;
+
+
+    color:
+        #b91c1c;
+
+}
+
+
+.live-connection-pill[
+    data-status="offline"
+]::before {
+
+    background:
+        #ef4444;
+
+}
+
+
+/* =========================
+   S19 LIVE VIEWER
+   ========================= */
+
+
+.viewer-scoreboard {
+
+    display:
+        grid;
+
+
+    grid-template-columns:
+        minmax(
+            0,
+            1.2fr
+        )
+        minmax(
+            0,
+            1fr
+        );
+
+
+    gap:
+        28px;
+
+
+    padding:
+        28px;
+
+
+    margin-bottom:
+        20px;
+
+}
+
+
+.viewer-score {
+
+    display:
+        flex;
+
+
+    align-items:
+        baseline;
+
+
+    gap:
+        8px;
+
+
+    font-size:
+        clamp(
+            52px,
+            8vw,
+            92px
+        );
+
+
+    line-height:
+        1;
+
+
+    font-weight:
+        800;
+
+}
+
+
+.viewer-overs {
+
+    margin-top:
+        12px;
+
+}
+
+
+.viewer-metrics {
+
+    display:
+        grid;
+
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+
+    gap:
+        12px;
+
+}
+
+
+.viewer-metrics > div {
+
+    padding:
+        16px;
+
+
+    border:
+        1px solid
+        #e2e8f0;
+
+
+    border-radius:
+        12px;
+
+
+    background:
+        #f8fafc;
+
+}
+
+
+.viewer-metrics span,
+.viewer-person-row span {
+
+    display:
+        block;
+
+
+    color:
+        #64748b;
+
+
+    font-size:
+        12px;
+
+}
+
+
+.viewer-metrics strong {
+
+    display:
+        block;
+
+
+    margin-top:
+        5px;
+
+
+    font-size:
+        22px;
+
+}
+
+
+.viewer-grid {
+
+    display:
+        grid;
+
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+
+    gap:
+        20px;
+
+}
+
+
+.viewer-card {
+
+    padding:
+        22px;
+
+}
+
+
+.viewer-person-row {
+
+    display:
+        flex;
+
+
+    justify-content:
+        space-between;
+
+
+    gap:
+        18px;
+
+
+    padding:
+        12px 0;
+
+
+    border-bottom:
+        1px solid
+        #eef2f7;
+
+}
+
+
+.viewer-person-row:last-child {
+
+    border-bottom:
+        0;
+
+}
+
+
+.viewer-last-ball {
+
+    display:
+        block;
+
+
+    margin:
+        14px 0 8px;
+
+
+    font-size:
+        28px;
+
+}
+
+
+.viewer-result {
+
+    margin-top:
+        20px;
+
+
+    padding:
+        18px 20px;
+
+
+    border:
+        1px solid
+        #a7f3d0;
+
+
+    background:
+        #ecfdf5;
+
+
+    color:
+        #065f46;
+
+
+    font-weight:
+        800;
+
+}
+
+
+@media (
+    max-width: 800px
+) {
+
+    .viewer-scoreboard,
+    .viewer-grid {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+}

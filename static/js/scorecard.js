@@ -757,6 +757,35 @@
     }
 
 
+    if (
+        window.MatchLive
+    ) {
+
+        window.MatchLive.connect(
+
+            matchId,
+
+            (
+                event
+            ) => {
+
+                if (
+                    event.scorecard
+                ) {
+
+                    render(
+                        event.scorecard
+                    );
+
+                }
+
+            }
+
+        );
+
+    }
+
+
     load();
 
 })();

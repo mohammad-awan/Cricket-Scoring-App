@@ -3661,6 +3661,35 @@
         );
 
 
+    if (
+        window.MatchLive
+    ) {
+
+        window.MatchLive.connect(
+
+            matchId,
+
+            (
+                event
+            ) => {
+
+                if (
+                    event.scoring
+                ) {
+
+                    render(
+                        event.scoring
+                    );
+
+                }
+
+            }
+
+        );
+
+    }
+
+
     load();
 
 })();

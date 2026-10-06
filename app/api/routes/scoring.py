@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db_session
+from app.schemas.realtime import LiveEventType
 from app.schemas.scoring import (
     BowlerChange,
     DeliveryCreate,
@@ -11,6 +12,7 @@ from app.schemas.scoring import (
     NextInningsCreate,
     ScoringStateRead,
 )
+from app.services.realtime import publish_committed_match_state
 from app.services.scoring import (
     change_bowler,
     end_innings,
@@ -20,30 +22,43 @@ from app.services.scoring import (
     undo_delivery,
 )
 
+
 SessionDependency = Annotated[AsyncSession, Depends(get_db_session)]
+
 
 router = APIRouter(prefix="/matches", tags=["scoring"])
 
 
-@router.get("/{match_id}/scoring", response_model=ScoringStateRead)
-async def get_scoring_state_endpoint(match_id: UUID, session: SessionDependency) -> ScoringStateRead:
+@router.get(
+    "/{match_id}/scoring",
+    response_model=ScoringStateRead
+)
+async def get_scoring_state_endpoint(
+    match_id: UUID,
+    session: SessionDependency,
+) -> ScoringStateRead:
+
     return await get_scoring_state(session, match_id)
 
 
 @router.post(
     "/{match_id}/scoring/deliveries",
     response_model=ScoringStateRead,
-    status_code=(
-        status.HTTP_201_CREATED
-    ),
+    status_code=status.HTTP_201_CREATED,
 )
 async def record_delivery_endpoint(
     match_id: UUID,
     payload: DeliveryCreate,
     session: SessionDependency,
 ) -> ScoringStateRead:
+    # Existing service completes
+    # transaction first.
+    scoring = await record_delivery(session, match_id, payload)
+    # Only reached after the service
+    # transaction succeeded.
 
-    return await record_delivery(session, match_id, payload)
+    await publish_committed_match_state(match_id, LiveEventType.DELIVERY_RECORDED)
+    return scoring
 
 
 @router.post(
@@ -60,17 +75,33 @@ async def undo_delivery_endpoint(
     session: SessionDependency,
 ) -> ScoringStateRead:
 
-    return await undo_delivery(session, match_id, delivery_id, payload)
+    scoring = (
+        await undo_delivery(
+            session,
+            match_id,
+            delivery_id,
+            payload,
+        )
+    )
+
+    await publish_committed_match_state(match_id, LiveEventType.DELIVERY_CORRECTED)
+
+    return scoring
 
 
-@router.put("/{match_id}/scoring/bowler", response_model=ScoringStateRead)
+@router.put(
+    "/{match_id}/scoring/bowler",
+    response_model=ScoringStateRead,
+)
 async def change_bowler_endpoint(
     match_id: UUID,
     payload: BowlerChange,
     session: SessionDependency,
 ) -> ScoringStateRead:
 
-    return await change_bowler(session, match_id, payload)
+    scoring = await change_bowler(session, match_id, payload)
+    await publish_committed_match_state(match_id, LiveEventType.BOWLER_CHANGED)
+    return scoring
 
 
 @router.post(
@@ -80,14 +111,21 @@ async def change_bowler_endpoint(
     ),
     response_model=ScoringStateRead,
 )
-async def end_innings_endpoint(match_id: UUID, session: SessionDependency) -> ScoringStateRead:
-    return await end_innings(session, match_id)
+async def end_innings_endpoint(
+    match_id: UUID,
+    session: SessionDependency,
+) -> ScoringStateRead:
+
+    scoring = await end_innings(session, match_id)
+    await publish_committed_match_state(match_id, LiveEventType.INNINGS_ENDED)
+
+    return scoring
 
 
 @router.post(
     "/{match_id}/scoring/innings",
     response_model=ScoringStateRead,
-    status_code=(status.HTTP_201_CREATED),
+    status_code=status.HTTP_201_CREATED,
 )
 async def start_next_innings_endpoint(
     match_id: UUID,
@@ -95,4 +133,6 @@ async def start_next_innings_endpoint(
     session: SessionDependency,
 ) -> ScoringStateRead:
 
-    return await start_next_innings(session, match_id, payload)
+    scoring = await start_next_innings(session, match_id, payload)
+    await publish_committed_match_state(match_id, LiveEventType.INNINGS_STARTED)
+    return scoring
