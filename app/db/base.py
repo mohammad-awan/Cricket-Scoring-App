@@ -50,9 +50,6 @@ class TimestampMixin:
 
 
 class ArchiveMixin:
-    archived_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
