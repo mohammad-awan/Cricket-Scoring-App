@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Player Profile | Cricket Intelligence Platform
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    id="player-profile-page"
+    class="player-profile"
+    data-player-id="{{ player_id }}"
+>
+
+    <div class="profile-topbar">
+
+        <a
+            class="profile-back-link"
+            href="/master-data/players"
+        >
+            ← Back to players
+        </a>
+
+        <span class="profile-topbar-tag">
+            Player Detail & Career Profile
+        </span>
+
+    </div>
+
+
+    <div
+        id="profile-error"
+        class="
+            form-error
+            hidden
+        "
+    ></div>
+
+
+    <!-- HERO -->
+
+    <section class="profile-hero">
+
+        <div class="profile-hero-main">
+
+            <div
+                class="profile-avatar"
+                id="player-avatar"
+                aria-hidden="true"
+            >
+                ··
+            </div>
+
+
+            <div class="profile-hero-identity">
+
+                <div class="profile-hero-badges">
+
+                    <span
+                        class="profile-status-pill"
+                        id="player-status"
+                    >
+                        —
+                    </span>
+
+                    <span
+                        class="profile-hero-teams"
+                        id="player-hero-teams"
+                    ></span>
+
+                </div>
+
+
+                <h1 id="player-name">
+                    Player profile
+                </h1>
+
+
+                <p
+                    class="profile-hero-subtitle"
+                    id="player-subtitle"
+                >
+                    Loading player identity,
+                    teams and career statistics…
+                </p>
+
+            </div>
+
+
+            <div class="profile-hero-highlights">
+
+                <div>
+                    <strong id="hero-matches">—</strong>
+                    <span>Matches</span>
+                </div>
+
+                <div>
+                    <strong id="hero-runs">—</strong>
+                    <span>Runs</span>
+                </div>
+
+                <div>
+                    <strong id="hero-wickets">—</strong>
+                    <span>Wickets</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <dl class="profile-facts">
+
+            <div>
+                <dt>Age</dt>
+                <dd id="player-age">—</dd>
+            </div>
+
+            <div>
+                <dt>Nationality</dt>
+                <dd id="player-nationality">—</dd>
+            </div>
+
+            <div>
+                <dt>Batting</dt>
+                <dd id="player-batting-style">—</dd>
+            </div>
+
+            <div>
+                <dt>Bowling</dt>
+                <dd id="player-bowling-style">—</dd>
+            </div>
+
+            <div>
+                <dt>External ID</dt>
+                <dd id="player-external-id">—</dd>
+            </div>
+
+        </dl>
+
+    </section>
+
+
+    <!-- TEAMS -->
+
+    <section class="profile-section">
+
+        <div class="profile-section-heading">
+
+            <h2>
+                Active teams
+            </h2>
+
+        </div>
+
+
+        <div
+            id="active-teams"
+            class="profile-team-grid"
+        >
+        </div>
+
+    </section>
+
+
+    <!-- CAREER -->
+
+    <section class="profile-stat-columns">
+
+        <article class="profile-card profile-career-card is-batting">
+
+            <header class="profile-card-header">
+
+                <span class="profile-card-icon">
+                    🏏
+                </span>
+
+                <div>
+                    <h2>Batting career</h2>
+                    <p>Runs, tempo and boundaries</p>
+                </div>
+
+            </header>
+
+
+            <div
+                id="batting-highlights"
+                class="profile-highlight-grid"
+            >
+            </div>
+
+
+            <div
+                id="batting-stats"
+                class="profile-stat-grid"
+            >
+            </div>
+
+
+            <div class="profile-recent-block">
+
+                <h3>
+                    Recent form
+                </h3>
+
+                <div
+                    id="batting-form"
+                    class="profile-form-chips"
+                >
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article class="profile-card profile-career-card is-bowling">
+
+            <header class="profile-card-header">
+
+                <span class="profile-card-icon">
+                    🎯
+                </span>
+
+                <div>
+                    <h2>Bowling career</h2>
+                    <p>Wickets, control and value</p>
+                </div>
+
+            </header>
+
+
+            <div
+                id="bowling-highlights"
+                class="profile-highlight-grid"
+            >
+            </div>
+
+
+            <div
+                id="bowling-stats"
+                class="profile-stat-grid"
+            >
+            </div>
+
+
+            <div class="profile-recent-block">
+
+                <h3>
+                    Recent form
+                </h3>
+
+                <div
+                    id="bowling-form"
+                    class="profile-form-chips"
+                >
+                </div>
+
+            </div>
+
+        </article>
+
+    </section>
+
+
+    <!-- HISTORY -->
+
+    <section class="profile-card">
+
+        <header class="profile-card-header">
+
+            <span class="profile-card-icon">
+                📅
+            </span>
+
+            <div>
+                <h2>Match history</h2>
+                <p>Every match this player was selected for</p>
+            </div>
+
+        </header>
+
+
+        <div
+            id="history-list"
+            class="profile-history-list"
+        >
+        </div>
+
+
+        <div class="profile-pagination">
+
+            <span id="history-summary">
+                0 matches
+            </span>
+
+
+            <div class="pagination-actions">
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                    "
+                    id="history-previous"
+                    type="button"
+                >
+                    ← Previous
+                </button>
+
+
+                <span id="history-page">
+                    Page 0 of 0
+                </span>
+
+
+                <button
+                    class="
+                        button
+                        button-secondary
+                        button-small
+                    "
+                    id="history-next"
+                    type="button"
+                >
+                    Next →
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script
+    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
+></script>
+
+<script
+    src="{{ url_for('static', path='js/player-detail.js') }}?v={{ asset_version('js/player-detail.js') }}"
+></script>
+
+{% endblock %}

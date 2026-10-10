@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Annotated
-from fastapi import Query
+from fastapi import Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_db_session
 from app.schemas.common import MasterDataQuery
 
 
@@ -37,3 +39,7 @@ def get_master_data_query(
         ),
         include_archived=include_archived,
     )
+
+
+SessionDependency = Annotated[AsyncSession, Depends(get_db_session)]
+QueryDependency = Annotated[MasterDataQuery, Depends(get_master_data_query)]

@@ -24,7 +24,7 @@ class MatchSetupRepository:
         self.session = session
 
 
-    def _detail_options(self):
+    def detail_options(self):
 
         # Every query is a network round trip to Supabase, so
         # many-to-one references are JOINed into their parent
@@ -51,7 +51,7 @@ class MatchSetupRepository:
 
     async def get_match(self, match_id: UUID, *, for_update: bool = False) -> Match | None:
         statement = (select(Match).where(Match.id == match_id)
-            .options(*self._detail_options())
+            .options(*self.detail_options())
             .execution_options(populate_existing=True)
         )
         if for_update:

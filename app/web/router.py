@@ -109,3 +109,15 @@ async def live_viewer_page(request: Request, match_id: str):
         name="live_viewer.html",
         context={"match_id": match_id}
     )
+
+
+@router.get("/player-profile/{player_id}")
+async def player_detail_page(request: Request, player_id: str):
+    return templates.TemplateResponse(
+        request=request,
+        name="player_detail.html",
+        context={
+            "player_id":
+                player_id,
+        },
+    )

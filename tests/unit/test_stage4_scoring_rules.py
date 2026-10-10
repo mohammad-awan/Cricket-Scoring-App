@@ -109,10 +109,7 @@ def test_history_rebuild() -> None:
     opening_striker = uuid4()
     opening_non_striker = uuid4()
 
-    innings = SimpleNamespace(
-        striker_id=uuid4(),
-        non_striker_id=uuid4(),
-    )
+    innings = SimpleNamespace(striker_id=uuid4(), non_striker_id=uuid4())
 
     deliveries = [
         SimpleNamespace(

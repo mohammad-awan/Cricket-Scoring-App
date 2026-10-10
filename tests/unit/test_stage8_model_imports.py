@@ -1,5 +1,4 @@
 from sqlalchemy.orm import configure_mappers
-
 from app.db.base import Base
 from app.models import (
     AuditLog,

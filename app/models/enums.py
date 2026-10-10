@@ -93,6 +93,30 @@ class AuditAction(str, Enum):
     CORRECTED = "corrected"
 
 
+class BattingHand(str, Enum):
+    RIGHT = "right"
+    LEFT = "left"
+
+
+class BowlingArm(str, Enum):
+    RIGHT = "right"
+    LEFT = "left"
+    NONE = "none"
+
+
+class BowlingStyle(str, Enum):
+    FAST = "fast"
+    FAST_MEDIUM = "fast_medium"
+    MEDIUM_FAST = "medium_fast"
+    MEDIUM = "medium"
+    OFF_BREAK = "off_break"
+    LEG_BREAK = "leg_break"
+    ORTHODOX = "orthodox"
+    WRIST_SPIN = "wrist_spin"
+    MYSTERY_SPIN = "mystery_spin"
+    OTHER = "other"
+
+
 
 def enum_values(enum_class: type[EnumT]) -> list[str]:
     return [member.value for member in enum_class]

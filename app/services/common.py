@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
+from math import ceil
+from typing import TYPE_CHECKING, Any, AsyncIterator
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError
 from app.models import AuditAction, AuditLog
+from app.schemas.common import MasterDataQuery, PageResponse
+
+if TYPE_CHECKING:
+    from app.repositories.base_master_data import MasterDataRepository
 
 
 @asynccontextmanager
@@ -43,4 +48,34 @@ def add_audit_log(
             actor_id=None,
             details=details,
         )
+    )
+
+
+def duplicate_conflict(resource: str, field: str) -> ConflictError:
+    return ConflictError(f"A {resource} with the same {field} already exists.")
+
+
+async def list_master_data(
+    repository: MasterDataRepository[Any],
+    query: MasterDataQuery,
+    schema: type[Any],
+) -> PageResponse[Any]:
+    items = await repository.list_page(
+        page=query.page,
+        page_size=query.page_size,
+        search=query.search,
+        include_archived=query.include_archived,
+    )
+
+    total = await repository.count(
+        search=query.search,
+        include_archived=query.include_archived,
+    )
+
+    return PageResponse[schema](  # type: ignore[valid-type]
+        items=items,
+        page=query.page,
+        page_size=query.page_size,
+        total=total,
+        pages=ceil(total / query.page_size) if total else 0,
     )

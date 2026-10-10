@@ -751,6 +751,44 @@
 
 
         // =========================
+        // STAGE 9 - PLAYER PROFILE
+        // =========================
+
+        playerProfile(playerId) {
+
+            return request(
+
+                `/players/${playerId}/profile`
+
+            );
+
+        },
+
+
+        playerMatchHistory(
+
+            playerId,
+
+            params = {}
+
+        ) {
+
+            const query =
+                queryString(params);
+
+
+            return request(
+
+                `/players/${playerId}/match-history` +
+
+                `${query ? `?${query}` : ""}`
+
+            );
+
+        },
+
+
+        // =========================
         // PAGINATION HELPER
         // =========================
 

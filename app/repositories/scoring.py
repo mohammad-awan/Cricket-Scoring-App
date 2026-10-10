@@ -189,7 +189,7 @@ class ScoringRepository:
 
 
     @staticmethod
-    def _delivery_options():
+    def delivery_options():
         return (
             joinedload(Delivery.striker),
             joinedload(Delivery.non_striker),
@@ -214,7 +214,7 @@ class ScoringRepository:
                 == DeliveryStatus.RECORDED,
             )
             .options(
-                *self._delivery_options()
+                *self.delivery_options()
             )
             .order_by(
                 Delivery
@@ -265,7 +265,7 @@ class ScoringRepository:
                 == innings_id
             )
             .options(
-                *self._delivery_options()
+                *self.delivery_options()
             )
             .order_by(
                 Delivery

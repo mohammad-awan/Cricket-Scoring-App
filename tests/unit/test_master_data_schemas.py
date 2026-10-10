@@ -3,11 +3,8 @@ from datetime import date
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.master_data import (
-    TeamCreate,
-    TeamUpdate,
-    TournamentCreate,
-)
+from app.schemas.teams import TeamCreate, TeamUpdate
+from app.schemas.tournaments import TournamentCreate
 
 
 def test_team_create_strips_input() -> None:

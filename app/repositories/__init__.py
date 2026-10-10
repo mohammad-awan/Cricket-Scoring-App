@@ -1,10 +1,8 @@
-from app.repositories.master_data import (
-    MasterDataRepository,
-    PlayerRepository,
-    TeamRepository,
-    TournamentRepository,
-    VenueRepository,
-)
+from app.repositories.base_master_data import MasterDataRepository
+from app.repositories.players import PlayerRepository
+from app.repositories.teams import TeamRepository
+from app.repositories.tournaments import TournamentRepository
+from app.repositories.venues import VenueRepository
 
 
 __all__ = [

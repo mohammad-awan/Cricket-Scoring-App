@@ -11,7 +11,8 @@ from app.schemas.match_setup import (
     PlayingTeamPlayer,
     PlayingTeamSetup,
 )
-from app.services.match_setup import _readiness, derive_first_innings_teams
+from app.services.match_setup import derive_first_innings_teams
+from app.services.match_setup.rules import evaluate_readiness
 
 
 TEAM_A = uuid4()
@@ -63,7 +64,7 @@ def test_toss_winner_must_belong_to_match() -> None:
 
 
 def test_new_match_reports_everything_missing() -> None:
-    readiness = _readiness(make_match(venue_id=None, scheduled_at=None))
+    readiness = evaluate_readiness(make_match(venue_id=None, scheduled_at=None))
 
     assert not readiness.ready
     assert readiness.missing == [
@@ -92,7 +93,7 @@ def test_complete_setup_is_ready() -> None:
         innings=[innings],
     )
 
-    readiness = _readiness(match)
+    readiness = evaluate_readiness(match)
 
     assert readiness.ready
     assert readiness.missing == []
@@ -101,7 +102,7 @@ def test_complete_setup_is_ready() -> None:
 def test_playing_team_count_must_match_players_per_side() -> None:
     match = make_match(players=[selection(TEAM_A)], players_per_side=2)
 
-    readiness = _readiness(match)
+    readiness = evaluate_readiness(match)
 
     assert not readiness.team_a_players_complete
     assert "team_a_playing_team" in readiness.missing

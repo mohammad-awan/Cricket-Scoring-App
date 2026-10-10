@@ -4,8 +4,8 @@ import pytest
 from pydantic import ValidationError as PydanticValidationError
 from app.models.enums import WicketType
 from app.schemas.scoring import DeliveryCreate, WicketCreate
+from app.services.scoring.calculations import post_delivery_batters
 from app.services.scoring import (
-    _post_delivery_batters,
     delivery_components,
     max_wickets,
     rebuild_from_deliveries,
@@ -115,7 +115,7 @@ def test_illegal_ball_does_not_complete_over() -> None:
     striker = uuid4()
     non_striker = uuid4()
     after = (
-        _post_delivery_batters(
+        post_delivery_batters(
             striker_id=(
                 striker
             ),
@@ -137,7 +137,7 @@ def test_wicket_on_last_ball_changes_ends() -> None:
     non_striker = uuid4()
     next_batter = uuid4()
     after = (
-        _post_delivery_batters(
+        post_delivery_batters(
             striker_id=striker,
             non_striker_id=non_striker,
             running_runs=0,

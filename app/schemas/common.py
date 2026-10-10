@@ -11,6 +11,18 @@ from pydantic import (
 SchemaT = TypeVar("SchemaT")
 
 
+def strip_text(value: object) -> object:
+    if isinstance(value, str):
+        return value.strip()
+    return value
+
+
+def strip_required_text(value: object) -> object:
+    if value is None:
+        raise ValueError("This field cannot be null")
+    return strip_text(value)
+
+
 class MasterDataQuery(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

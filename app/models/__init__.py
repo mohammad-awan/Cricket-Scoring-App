@@ -13,6 +13,9 @@ from app.models.entities import (
 )
 from app.models.enums import (
     AuditAction,
+    BattingHand,
+    BowlingArm,
+    BowlingStyle,
     CorrectionType,
     DeliveryStatus,
     InningsStatus,
@@ -24,7 +27,7 @@ from app.models.enums import (
     TossDecision,
     TournamentStatus,
     VenueStatus,
-    WicketType
+    WicketType,
 )
 
 
@@ -52,5 +55,8 @@ __all__ = [
     "TournamentStatus",
     "Venue",
     "VenueStatus",
-    "WicketType"
+    "WicketType",
+    "BattingHand",
+    "BowlingArm",
+    "BowlingStyle",
 ]

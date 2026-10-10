@@ -9,7 +9,8 @@ from app.services.scorecard import (
     partnership_scorecard,
     required_run_rate,
 )
-from app.services.scoring import ChaseState, _finalize_match_result
+from app.services.scoring import ChaseState
+from app.services.scoring.chase import finalize_match_result
 
 
 def delivery(
@@ -200,7 +201,7 @@ def test_finalize_match_result_by_wickets() -> None:
     )
 
 
-    _finalize_match_result(
+    finalize_match_result(
         match,
         innings,
         wickets=4,
@@ -240,7 +241,7 @@ def test_finalize_match_result_by_runs_and_tie() -> None:
     )
 
 
-    _finalize_match_result(
+    finalize_match_result(
         match,
         innings,
         wickets=10,
@@ -258,7 +259,7 @@ def test_finalize_match_result_by_runs_and_tie() -> None:
     assert match.result_type == "runs"
     assert match.result_margin == 10
 
-    _finalize_match_result(
+    finalize_match_result(
         match,
         innings,
         wickets=10,

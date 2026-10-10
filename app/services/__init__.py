@@ -1,23 +1,29 @@
-from app.services.master_data import (
+from app.services.players import (
     archive_player,
-    archive_team,
-    archive_tournament,
-    archive_venue,
     create_player,
-    create_team,
-    create_tournament,
-    create_venue,
     get_player,
-    get_team,
-    get_tournament,
-    get_venue,
     list_players,
-    list_teams,
-    list_tournaments,
-    list_venues,
     update_player,
+)
+from app.services.teams import (
+    archive_team,
+    create_team,
+    get_team,
+    list_teams,
     update_team,
+)
+from app.services.tournaments import (
+    archive_tournament,
+    create_tournament,
+    get_tournament,
+    list_tournaments,
     update_tournament,
+)
+from app.services.venues import (
+    archive_venue,
+    create_venue,
+    get_venue,
+    list_venues,
     update_venue,
 )
 

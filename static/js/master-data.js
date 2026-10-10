@@ -149,6 +149,51 @@
                 },
 
                 {
+                    name: "batting_hand",
+                    label: "Batting hand",
+                    type: "select",
+
+                    options: [
+                        ["", "Not set"],
+                        ["right", "Right-handed"],
+                        ["left", "Left-handed"],
+                    ],
+                },
+
+                {
+                    name: "bowling_arm",
+                    label: "Bowling arm",
+                    type: "select",
+
+                    options: [
+                        ["", "Not set"],
+                        ["right", "Right arm"],
+                        ["left", "Left arm"],
+                        ["none", "Does not bowl"],
+                    ],
+                },
+
+                {
+                    name: "bowling_style",
+                    label: "Bowling style",
+                    type: "select",
+
+                    options: [
+                        ["", "Not set"],
+                        ["fast", "Fast"],
+                        ["fast_medium", "Fast-medium"],
+                        ["medium_fast", "Medium-fast"],
+                        ["medium", "Medium"],
+                        ["off_break", "Off break"],
+                        ["leg_break", "Leg break"],
+                        ["orthodox", "Orthodox"],
+                        ["wrist_spin", "Wrist spin"],
+                        ["mystery_spin", "Mystery spin"],
+                        ["other", "Other"],
+                    ],
+                },
+
+                {
                     name: "external_id",
                     label: "External ID",
                     type: "text",
@@ -805,6 +850,19 @@
                                             : ""
                                     }
 
+                                    ${
+                                        resource === "players"
+                                            ? `<button
+                                                class="table-action"
+                                                type="button"
+                                                data-action="profile"
+                                                data-id="${record.id}"
+                                            >
+                                                Profile
+                                            </button>`
+                                            : ""
+                                    }
+
                                     <button
                                         class="table-action"
                                         type="button"
@@ -1055,6 +1113,65 @@
             field.wide
                 ? " form-field-wide"
                 : "";
+
+
+        if (
+            field.type ===
+            "select"
+        ) {
+
+            const options =
+                (
+                    field.options
+                    || []
+                )
+                    .map(
+                        ([value, label]) => `
+                            <option
+                                value="${escapeHtml(
+                                    value
+                                )}"
+                            >
+                                ${escapeHtml(
+                                    label
+                                )}
+                            </option>
+                        `
+                    )
+                    .join("");
+
+
+            return `
+                <label
+                    class="
+                        form-field
+                        ${wide}
+                    "
+                >
+
+                    <span>
+                        ${escapeHtml(
+                            field.label
+                        )}
+
+                        ${
+                            field.required
+                                ? "<em>*</em>"
+                                : ""
+                        }
+                    </span>
+
+                    <select
+                        name="${field.name}"
+                        ${required}
+                    >
+                        ${options}
+                    </select>
+
+                </label>
+            `;
+
+        }
 
 
         if (
@@ -1723,6 +1840,16 @@
                     window.openTeamSquad(
                         record
                     );
+
+                }
+
+                else if (
+                    button.dataset.action ===
+                    "profile"
+                ) {
+
+                    window.location.href =
+                        `/player-profile/${record.id}`;
 
                 }
 

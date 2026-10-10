@@ -15,7 +15,14 @@ from app.db.base import (
     TimestampMixin,
     UUIDPrimaryKeyMixin,
 )
-from app.models.enums import PlayerStatus, db_enum
+from app.models.enums import (
+    PlayerStatus, 
+    db_enum,
+    BattingHand,
+    BowlingStyle,
+    BowlingArm
+)
+
 
 if TYPE_CHECKING:
     from app.models.entities.matches import MatchPlayer
@@ -30,6 +37,9 @@ class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     nationality: Mapped[str | None] = mapped_column(String(80), nullable=True)
     external_id: Mapped[str | None] = mapped_column(String(80), nullable=True, unique=True)
+    batting_hand: Mapped[BattingHand | None] = mapped_column(db_enum(BattingHand, "batting_hand"), nullable=True)
+    bowling_arm: Mapped[BowlingArm | None] = mapped_column(db_enum(BowlingArm, "bowling_arm"), nullable=True)
+    bowling_style: Mapped[BowlingStyle | None] = mapped_column(db_enum(BowlingStyle, "bowling_style"), nullable=True)
     status: Mapped[PlayerStatus] = mapped_column(
         db_enum(PlayerStatus, "player_status"),
         nullable=False,
