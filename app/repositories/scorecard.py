@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, joinedload
 from app.models import (
+    BatterRetirement,
     Delivery,
     Innings,
     Match,
@@ -53,6 +54,15 @@ class DeliveryScoreRow:
     fielder_name: str | None
     fielder_short_name: str | None
     next_batter_id: UUID | None
+
+
+@dataclass(frozen=True)
+class RetirementScoreRow:
+    event_number: int
+    after_delivery_number: int
+    player_id: UUID
+    retirement_type: str
+    replacement_player_id: UUID | None
 
 
 class ScorecardRepository:
@@ -329,4 +339,34 @@ class ScorecardRepository:
             )
 
             for row in rows
+        ]
+
+
+    async def list_retirement_rows(self, innings_id: UUID) -> list[RetirementScoreRow]:
+        statement = (
+            select(
+                BatterRetirement.event_number,
+                BatterRetirement.after_delivery_number,
+                BatterRetirement.player_id,
+                BatterRetirement.retirement_type,
+                BatterRetirement.replacement_player_id,
+            )
+            .where(
+                BatterRetirement.innings_id == innings_id,
+                BatterRetirement.status == DeliveryStatus.RECORDED,
+            )
+            .order_by(BatterRetirement.event_number.asc())
+        )
+
+        result = await self.session.execute(statement)
+
+        return [
+            RetirementScoreRow(
+                event_number=row.event_number,
+                after_delivery_number=row.after_delivery_number,
+                player_id=row.player_id,
+                retirement_type=row.retirement_type.value,
+                replacement_player_id=row.replacement_player_id,
+            )
+            for row in result.all()
         ]

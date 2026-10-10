@@ -528,7 +528,9 @@
 
             matchId,
 
-            data
+            data,
+
+            options = {}
 
         ) {
 
@@ -537,6 +539,8 @@
                 `/matches/${matchId}/scoring/deliveries`,
 
                 {
+
+                    ...options,
 
                     method: "POST",
 
@@ -554,7 +558,9 @@
 
             matchId,
 
-            data
+            data,
+
+            options = {}
 
         ) {
 
@@ -562,7 +568,9 @@
 
                 matchId,
 
-                data
+                data,
+
+                options
 
             );
 
@@ -659,6 +667,96 @@
                 {
 
                     method: "POST",
+
+                    body:
+                        JSON.stringify(data),
+
+                }
+
+            );
+
+        },
+
+
+        // =========================
+        // STAGE 10
+        // RETIREMENTS & LIVE ORDER
+        // =========================
+
+        scoringRetire(matchId, data) {
+
+            return request(
+
+                `/matches/${matchId}/scoring/retirements`,
+
+                {
+
+                    method: "POST",
+
+                    body:
+                        JSON.stringify(data),
+
+                }
+
+            );
+
+        },
+
+
+        scoringUndoRetirement(
+
+            matchId,
+
+            retirementId,
+
+            data
+
+        ) {
+
+            return request(
+
+                `/matches/${matchId}/scoring/retirements/${retirementId}/undo`,
+
+                {
+
+                    method: "POST",
+
+                    body:
+                        JSON.stringify(data),
+
+                }
+
+            );
+
+        },
+
+
+        scoringBattingOrderGet(matchId) {
+
+            return request(
+
+                `/matches/${matchId}/scoring/batting-order`
+
+            );
+
+        },
+
+
+        scoringBattingOrderUpdate(
+
+            matchId,
+
+            data
+
+        ) {
+
+            return request(
+
+                `/matches/${matchId}/scoring/batting-order`,
+
+                {
+
+                    method: "PATCH",
 
                     body:
                         JSON.stringify(data),

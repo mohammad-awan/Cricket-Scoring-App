@@ -90,9 +90,17 @@ async def get_full_scorecard(
             )
         )
 
+        retirements = (
+            await repository
+            .list_retirement_rows(
+                innings.id
+            )
+        )
+
         totals = (
             innings_totals(
-                deliveries
+                deliveries,
+                retirements,
             )
         )
 
@@ -178,6 +186,10 @@ async def get_full_scorecard(
 
                         deliveries=(
                             deliveries
+                        ),
+
+                        retirements=(
+                            retirements
                         ),
                     )
                 ),

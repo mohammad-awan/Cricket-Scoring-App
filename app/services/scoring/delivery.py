@@ -1,4 +1,6 @@
 from __future__ import annotations
+import hashlib
+import json
 from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,71 +20,98 @@ from app.services.scoring.calculations import (
     previous_over_bowler_id,
 )
 from app.services.scoring.chase import chase_state, close_innings, innings_finished
-from app.services.scoring.state import current_state, ensure_scoreable, rebuild_from_deliveries
+from app.services.scoring.state import current_state, ensure_scoreable, rebuild_innings_state
 from app.services.scoring.wickets import validate_wicket
+from app.domain.bowling import validate_bowler_quota
 
 
-async def record_delivery(
-    session: AsyncSession,
-    match_id: UUID,
-    payload: DeliveryCreate,
-) -> ScoringStateRead:
+CLIENT_EVENT_CONSTRAINT = "uq_deliveries_match_client_event"
 
-    repository = (
-        ScoringRepository(
-            session
+
+def request_fingerprint(payload: DeliveryCreate) -> str:
+    """
+    Canonical hash of the scoring event,
+    excluding the idempotency key itself.
+    """
+
+    body = payload.model_dump(mode="json", exclude={"client_event_id"})
+    canonical = json.dumps(body, sort_keys=True, separators=(",", ":"))
+
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def ensure_same_request(previous: Delivery, fingerprint: str) -> None:
+    if previous.client_event_fingerprint != fingerprint:
+        raise ConflictError(
+            "This scoring event ID was already "
+            "used for a different delivery."
         )
-    )
+
+
+async def replay_delivery(
+    repository: ScoringRepository,
+    match_id: UUID,
+    client_event_id: UUID,
+    fingerprint: str,
+) -> ScoringStateRead:
+    """
+    A verified identical retry returns the
+    current authoritative state instead of
+    recording a second ball.
+    """
+
+    previous = await repository.get_delivery_by_event_id(match_id, client_event_id)
+
+    if previous is None:
+        raise ConflictError("This scoring event has already been submitted.")
+
+    ensure_same_request(previous, fingerprint)
+
+    return await current_state(repository, match_id, "delivery replay")
+
+
+async def record_delivery(session: AsyncSession, match_id: UUID, payload: DeliveryCreate) -> ScoringStateRead:
+    repository = ScoringRepository(session)
+    fingerprint = request_fingerprint(payload)
 
     try:
 
-        async with service_transaction(
-            session
-        ):
-
-            innings = (
-                await repository
-                .lock_current_innings(
-                    match_id
-                )
-            )
+        async with service_transaction(session):
+            innings = await repository.lock_current_innings(match_id)
 
             if innings is None:
+                raise NotFoundError("First innings has not been configured")
 
-                raise NotFoundError(
-                    "First innings has "
-                    "not been configured"
-                )
-
-            match = (
-                await repository
-                .get_match(
-                    match_id
-                )
-            )
+            match = await repository.get_match(match_id)
 
             if match is None:
+                raise NotFoundError("Match not found")
 
-                raise NotFoundError(
-                    "Match not found"
+            # Checked before scoreability so a retry of the
+            # ball that closed the innings still replays.
+            if payload.client_event_id is not None:
+                previous_event = await repository.get_delivery_by_event_id(
+                    match_id,
+                    payload.client_event_id,
                 )
 
-            ensure_scoreable(
-                match,
-                innings,
-            )
+                if previous_event is not None:
+                    ensure_same_request(previous_event, fingerprint)
 
-            deliveries = (
-                await repository
-                .get_recorded_deliveries_plain(
-                    innings.id
-                )
-            )
+                    return await current_state(
+                        repository,
+                        match_id,
+                        "delivery replay",
+                    )
+
+            ensure_scoreable(match, innings)
+            deliveries = await repository.get_recorded_deliveries_plain(innings.id)
 
             before = (
-                rebuild_from_deliveries(
+                rebuild_innings_state(
                     innings,
                     deliveries,
+                    await repository.get_official_retirements(innings.id),
                     balls_per_over=(
                         match
                         .balls_per_over
@@ -90,11 +119,7 @@ async def record_delivery(
                 )
             )
 
-            if overs_complete(
-                match,
-                before.legal_balls,
-            ):
-
+            if overs_complete(match, before.legal_balls):
                 raise ConflictError(
                     "The configured "
                     "over limit has "
@@ -102,85 +127,65 @@ async def record_delivery(
                     "this innings"
                 )
 
-            if (
-                before.wickets
-                >= max_wickets(
-                    match
-                    .players_per_side
-                )
-            ):
+            if before.wickets >= max_wickets(match.players_per_side):
+                raise ConflictError("The batting side is already all out")
 
-                raise ConflictError(
-                    "The batting side "
-                    "is already all out"
-                )
-
-            if (
-                innings.current_bowler_id
-                is None
-            ):
-
-                raise ValidationError(
-                    "Current bowler "
-                    "is not configured"
-                )
+            if innings.current_bowler_id is None:
+                raise ValidationError("Current bowler is not configured")
 
             if bowler_change_required(
-                legal_balls=(
-                    before.legal_balls
-                ),
-
-                balls_per_over=(
-                    match
-                    .balls_per_over
-                ),
-
-                previous_bowler_id=(
-                    previous_over_bowler_id(
-                        deliveries
-                    )
-                ),
-
-                current_bowler_id=(
-                    innings
-                    .current_bowler_id
-                ),
+                legal_balls=before.legal_balls,
+                balls_per_over=match.balls_per_over,
+                previous_bowler_id=previous_over_bowler_id(deliveries),
+                current_bowler_id=innings.current_bowler_id,
             ):
 
-                raise ConflictError(
-                    "Over complete. "
-                    "Select a different "
-                    "bowler for the "
-                    "next over"
+                raise ConflictError("Over complete. Select a different bowler for the next over")
+
+            if innings.current_bowler_id in {
+                before.striker_id,
+                before.non_striker_id,
+            }:
+                raise ValidationError(
+                    "A current batter cannot be "
+                    "the bowling participant."
                 )
 
-            components = (
-                delivery_components(
-                    payload
+            bowler_is_selected = (
+                await repository.is_playing_team_player(
+                    match_id=match.id,
+                    team_id=innings.bowling_team_id,
+                    player_id=innings.current_bowler_id,
                 )
             )
 
-            if (
-                payload.wicket
-                is not None
-            ):
+            if not bowler_is_selected:
+                raise ValidationError(
+                    "Current bowler must belong "
+                    "to the bowling playing XI."
+                )
 
-                await validate_wicket(
-                    repository,
+            components = delivery_components(payload)
 
+            # Wides and no-balls do not consume quota, so a bowler
+            # at the limit may still deliver an illegal ball.
+            if components.is_legal_ball:
+                validate_bowler_quota(
                     match=match,
+                    deliveries=deliveries,
+                    bowler_id=innings.current_bowler_id,
+                )
 
+            resolved_wicket = None
+
+            if payload.wicket is not None:
+                resolved_wicket = await validate_wicket(
+                    repository,
+                    match=match,
                     innings=innings,
-
                     before=before,
-
-                    components=(
-                        components
-                    ),
-
-                    wicket=(
-                        payload.wicket
-                    ),
+                    components=components,
+                    wicket=payload.wicket,
                 )
 
             (
@@ -284,9 +289,8 @@ async def record_delivery(
                 ),
 
                 dismissed_player_id=(
-                    wicket
-                    .dismissed_player_id
-                    if wicket
+                    resolved_wicket.dismissed_player_id
+                    if resolved_wicket
                     else None
                 ),
 
@@ -297,9 +301,8 @@ async def record_delivery(
                 ),
 
                 next_batter_id=(
-                    wicket
-                    .next_batter_id
-                    if wicket
+                    resolved_wicket.next_batter_id
+                    if resolved_wicket
                     else None
                 ),
 
@@ -315,6 +318,16 @@ async def record_delivery(
                 ),
 
                 actor_id=None,
+
+                client_event_id=(
+                    payload.client_event_id
+                ),
+
+                client_event_fingerprint=(
+                    fingerprint
+                    if payload.client_event_id
+                    else None
+                ),
             )
 
             session.add(
@@ -378,16 +391,14 @@ async def record_delivery(
                 ),
 
                 dismissed_player_id=(
-                    wicket
-                    .dismissed_player_id
-                    if wicket
+                    resolved_wicket.dismissed_player_id
+                    if resolved_wicket
                     else None
                 ),
 
                 next_batter_id=(
-                    wicket
-                    .next_batter_id
-                    if wicket
+                    resolved_wicket.next_batter_id
+                    if resolved_wicket
                     else None
                 ),
 
@@ -504,6 +515,18 @@ async def record_delivery(
                     "sequence":
                         sequence,
 
+                    "client_event_id":
+                        (
+                            str(
+                                payload
+                                .client_event_id
+                            )
+
+                            if payload.client_event_id
+
+                            else None
+                        ),
+
                     "over_number":
                         over_number,
 
@@ -548,11 +571,11 @@ async def record_delivery(
                     "dismissed_player_id":
                         (
                             str(
-                                wicket
+                                resolved_wicket
                                 .dismissed_player_id
                             )
 
-                            if wicket
+                            if resolved_wicket
 
                             else None
                         ),
@@ -560,13 +583,13 @@ async def record_delivery(
                     "next_batter_id":
                         (
                             str(
-                                wicket
+                                resolved_wicket
                                 .next_batter_id
                             )
 
                             if (
-                                wicket
-                                and wicket
+                                resolved_wicket
+                                and resolved_wicket
                                 .next_batter_id
                             )
 
@@ -584,6 +607,19 @@ async def record_delivery(
         )
 
     except IntegrityError as error:
+
+        # A concurrent identical request won the race;
+        # the unique constraint is the final safeguard.
+        if (
+            payload.client_event_id is not None
+            and CLIENT_EVENT_CONSTRAINT in str(error.orig)
+        ):
+            return await replay_delivery(
+                repository,
+                match_id,
+                payload.client_event_id,
+                fingerprint,
+            )
 
         raise integrity_conflict(
             error,

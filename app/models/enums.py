@@ -75,6 +75,11 @@ class WicketType(str, Enum):
     OBSTRUCTING_FIELD = "obstructing_field"
 
 
+class RetirementType(str, Enum):
+    HURT = "retired_hurt"
+    OUT = "retired_out"
+
+
 class DeliveryStatus(str, Enum):
     RECORDED = "recorded"
     VOID = "void"

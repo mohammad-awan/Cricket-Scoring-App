@@ -4,13 +4,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from app.models import (
+    BatterRetirement,
     Delivery,
     Innings,
     Match,
     MatchPlayer,
     Player,
 )
-from app.models.enums import DeliveryStatus
+from app.models.enums import DeliveryStatus, RetirementType
 
 
 class ScoringRepository:
@@ -45,6 +46,40 @@ class ScoringRepository:
         )
 
         return await self.session.scalar(statement)
+
+    
+    async def get_playing_xi(self, match_id: UUID, team_id: UUID) -> list[MatchPlayer]:
+        """
+        Read official match selections in
+        ascending batting order.
+        """
+        statement = (
+            select(MatchPlayer)
+            .where(
+                MatchPlayer.match_id == match_id,
+                MatchPlayer.team_id == team_id,
+            )
+            .order_by(
+                MatchPlayer.batting_order.asc(),
+                MatchPlayer.player_id.asc(),
+            )
+        )
+
+        result = await self.session.scalars(statement)
+        return list(result.all())
+
+    
+    async def get_delivery_by_event_id(self, match_id: UUID, client_event_id: UUID) -> Delivery | None:
+        statement = (
+            select(Delivery)
+            .where(
+                Delivery.match_id == match_id,
+                Delivery.client_event_id == client_event_id,
+            )
+        )
+
+        return await self.session.scalar(statement)
+
 
 
     async def get_current_innings(self, match_id: UUID) -> Innings | None:
@@ -168,7 +203,7 @@ class ScoringRepository:
 
         result = await self.session.execute(statement)
 
-        return {
+        totals = {
             innings_id: (
                 int(runs),
                 int(legal_balls),
@@ -182,6 +217,26 @@ class ScoringRepository:
             )
             in result.all()
         }
+
+        # Retired out is a dismissal with no delivery.
+        retired_out = await self.session.execute(
+            select(
+                BatterRetirement.innings_id,
+                func.count(BatterRetirement.id),
+            )
+            .where(
+                BatterRetirement.match_id == match_id,
+                BatterRetirement.status == DeliveryStatus.RECORDED,
+                BatterRetirement.retirement_type == RetirementType.OUT,
+            )
+            .group_by(BatterRetirement.innings_id)
+        )
+
+        for innings_id, count in retired_out.all():
+            runs, legal_balls, wickets = totals.get(innings_id, (0, 0, 0))
+            totals[innings_id] = (runs, legal_balls, wickets + int(count))
+
+        return totals
 
 
     async def get_match(self, match_id: UUID) -> Match | None:
@@ -414,3 +469,84 @@ class ScoringRepository:
 
         result = await self.session.scalar(statement)
         return result is not None
+
+
+    async def get_playing_xi_with_players(self, match_id: UUID, team_id: UUID) -> list[MatchPlayer]:
+        statement = (
+            select(MatchPlayer)
+            .where(
+                MatchPlayer.match_id == match_id,
+                MatchPlayer.team_id == team_id,
+            )
+            .options(joinedload(MatchPlayer.player))
+            .order_by(
+                MatchPlayer.batting_order.asc(),
+                MatchPlayer.player_id.asc(),
+            )
+        )
+
+        result = await self.session.scalars(statement)
+        return list(result.all())
+
+
+    async def get_official_retirements(
+        self,
+        innings_id: UUID,
+        *,
+        with_players: bool = False,
+    ) -> list[BatterRetirement]:
+        """
+        Non-void retirements in event order,
+        replayed together with deliveries.
+        """
+
+        statement = (
+            select(BatterRetirement)
+            .where(
+                BatterRetirement.innings_id == innings_id,
+                BatterRetirement.status == DeliveryStatus.RECORDED,
+            )
+            .order_by(BatterRetirement.event_number.asc())
+        )
+
+        if with_players:
+            statement = statement.options(
+                joinedload(BatterRetirement.player),
+                joinedload(BatterRetirement.replacement_player),
+            )
+
+        result = await self.session.scalars(statement)
+        return list(result.all())
+
+
+    async def next_retirement_number(self, innings_id: UUID) -> int:
+        """
+        Like delivery numbers, event numbers
+        are permanent and never reused.
+        """
+
+        statement = (
+            select(func.coalesce(func.max(BatterRetirement.event_number), 0) + 1)
+            .where(BatterRetirement.innings_id == innings_id)
+        )
+
+        value = await self.session.scalar(statement)
+        return int(value or 1)
+
+
+    async def get_retirement_for_update(
+        self,
+        *,
+        match_id: UUID,
+        retirement_id: UUID,
+    ) -> BatterRetirement | None:
+        statement = (
+            select(BatterRetirement)
+            .where(
+                BatterRetirement.id == retirement_id,
+                BatterRetirement.match_id == match_id,
+            )
+            .with_for_update(of=BatterRetirement)
+        )
+
+        return await self.session.scalar(statement)

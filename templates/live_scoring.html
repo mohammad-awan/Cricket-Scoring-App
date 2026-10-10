@@ -1373,7 +1373,7 @@ Live Scoring | Cricket Intelligence Platform
 
                             <option value="">
 
-                                Select next batter
+                                Automatic — next in batting order
 
                             </option>
 
@@ -1711,8 +1711,11 @@ Live Scoring | Cricket Intelligence Platform
 
                 >
 
+                    Leave next batter on Automatic to
+                    follow the batting order, or pick a
+                    batter to promote them. A retired-hurt
+                    batter resumes only when picked here.
                     For the final wicket,
-
                     no next batter is required.
 
                     Run-out events can specify
@@ -1759,6 +1762,214 @@ Live Scoring | Cricket Intelligence Platform
 
 
 
+
+
+        <!-- =========================
+             STAGE 10 - RETIREMENTS
+        ========================== -->
+
+        <article
+            class="panel"
+            id="retirement-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        S17 · Retirement
+                    </p>
+
+                    <h2>
+                        Retire batter
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="panel-body">
+
+                <p class="muted">
+                    Retirements happen between
+                    deliveries. Retired hurt adds no
+                    wicket and the batter may resume
+                    later. Retired out counts as a
+                    team wicket but is never credited
+                    to the bowler.
+                </p>
+
+                <div class="form-grid">
+
+                    <label class="form-field">
+                        <span>
+                            Retiring batter
+                        </span>
+                        <select id="retire-player">
+                            <option value="">
+                                Select batter
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>
+                            Retirement type
+                        </span>
+                        <select id="retire-type">
+                            <option value="retired_hurt">
+                                Retired hurt
+                            </option>
+                            <option value="retired_out">
+                                Retired out
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>
+                            Replacement
+                        </span>
+                        <select id="retire-replacement">
+                            <option value="">
+                                Automatic — next in batting order
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>
+                            Reason
+                        </span>
+                        <input
+                            id="retire-reason"
+                            maxlength="500"
+                            placeholder="e.g. Hamstring injury"
+                            type="text"
+                        >
+                    </label>
+
+                </div>
+
+                <p
+                    class="muted"
+                    id="retirement-help"
+                ></p>
+
+                <button
+                    class="
+                        button
+                        button-primary
+                        button-small
+                    "
+                    id="record-retirement"
+                    type="button"
+                >
+                    Record retirement
+                </button>
+
+                <div
+                    class="recent-balls retirement-list"
+                    id="retirement-list"
+                ></div>
+
+            </div>
+
+        </article>
+
+
+        <!-- =========================
+             STAGE 10 - LIVE BATTING ORDER
+        ========================== -->
+
+        <article
+            class="panel"
+            id="batting-order-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        S18 · Strategy
+                    </p>
+
+                    <h2>
+                        Live batting order
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="panel-body">
+
+                <p class="muted">
+                    Reorder batters who have not yet
+                    batted. Automatic selection at the
+                    next wicket uses this order. Batters
+                    who have already entered stay locked.
+                </p>
+
+                <ol
+                    class="batting-order-list live-batting-order"
+                    id="batting-order-list"
+                >
+                    <li class="muted">
+                        Loading batting order…
+                    </li>
+                </ol>
+
+                <label class="form-field">
+                    <span>
+                        Reason for change
+                    </span>
+                    <input
+                        id="batting-order-reason"
+                        maxlength="500"
+                        placeholder="e.g. Promote power hitter for the death overs"
+                        type="text"
+                    >
+                </label>
+
+                <p
+                    class="muted"
+                    id="batting-order-help"
+                ></p>
+
+                <div class="batting-order-buttons">
+
+                    <button
+                        class="
+                            button
+                            button-primary
+                            button-small
+                        "
+                        id="save-batting-order"
+                        type="button"
+                    >
+                        Save order
+                    </button>
+
+                    <button
+                        class="
+                            button
+                            button-secondary
+                            button-small
+                        "
+                        id="reset-batting-order"
+                        type="button"
+                    >
+                        Reset
+                    </button>
+
+                </div>
+
+            </div>
+
+        </article>
 
 
         <!-- =========================

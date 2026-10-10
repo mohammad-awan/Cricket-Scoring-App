@@ -1,5 +1,6 @@
 from app.models.entities import (
     AuditLog,
+    BatterRetirement,
     Delivery,
     DeliveryCorrection,
     Innings,
@@ -23,6 +24,7 @@ from app.models.enums import (
     MatchType,
     PlayerRole,
     PlayerStatus,
+    RetirementType,
     TeamStatus,
     TossDecision,
     TournamentStatus,
@@ -34,6 +36,7 @@ from app.models.enums import (
 __all__ = [
     "AuditAction",
     "AuditLog",
+    "BatterRetirement",
     "CorrectionType",
     "Delivery",
     "DeliveryCorrection",
@@ -47,6 +50,7 @@ __all__ = [
     "Player",
     "PlayerRole",
     "PlayerStatus",
+    "RetirementType",
     "Team",
     "TeamPlayer",
     "TeamStatus",

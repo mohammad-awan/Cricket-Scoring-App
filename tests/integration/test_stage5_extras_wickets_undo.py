@@ -261,6 +261,9 @@ async def test_extras_wicket_failed_transaction_and_undo() -> None:
                                 a1.id
                             ),
 
+                            selection_mode="manual",
+
+
                             next_batter_id=(
                                 a3.id
                             ),
@@ -294,6 +297,9 @@ async def test_extras_wicket_failed_transaction_and_undo() -> None:
                         dismissed_player_id=(
                             a1.id
                         ),
+
+                        selection_mode="manual",
+
 
                         next_batter_id=(
                             a3.id

@@ -11,32 +11,39 @@ from pydantic import (
 )
 from app.models.enums import DeliveryStatus, InningsStatus, MatchStatus, WicketType
 from app.schemas.match_setup import OpeningInningsSetup, PlayerSummary, TeamSummary
+from app.schemas.retirements import BatterSelectionMode, RetirementRead
 
 
 NormalRun = Literal[0, 1, 2, 3, 4, 6]
 WicketEnd = Literal["striker_end", "non_striker_end"]
 
 
+
 class WicketCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
     wicket_type: WicketType
-    dismissed_player_id: UUID
+    # Optional: auto-derived for striker-only wickets.
+    # Explicit ID is retained for run-out and
+    # obstructing-field situations.
+    dismissed_player_id: UUID | None = None
     fielder_id: UUID | None = None
+    # Default batting order or scorer override.
+    selection_mode: BatterSelectionMode = "automatic"
+    # Required for a manual override when another
+    # batter is eligible to enter.
     next_batter_id: UUID | None = None
-    # Useful for exact run-out
-    # end reconstruction.
     wicket_end: WicketEnd | None = None
 
     @model_validator(mode="after")
-    def validate_wicket_end(self) -> Self:
+    def validate_selection(self) -> Self:
+        if self.selection_mode == "automatic" and self.next_batter_id is not None:
+            raise ValueError("next_batter_id must be omitted in automatic selection mode.")
+
         if self.wicket_end is not None and self.wicket_type != WicketType.RUN_OUT:
-            raise ValueError(
-                "wicket_end is only "
-                "valid for a run out"
-            )
+            raise ValueError("wicket_end is only valid for run out.")
 
         return self
+
 
 
 class DeliveryCreate(BaseModel):
@@ -54,6 +61,7 @@ class DeliveryCreate(BaseModel):
 
     runs: NormalRun = 0
     wide_runs: int = Field(default=0, ge=0)
+    client_event_id: UUID | None = None
     no_ball: bool = False
     bye_runs: int = Field(default=0, ge=0)
     leg_bye_runs: int = Field(default=0, ge=0)
@@ -200,7 +208,17 @@ class ScoringStateRead(BaseModel):
     striker: PlayerSummary
     non_striker: PlayerSummary
     current_bowler: PlayerSummary
+    # Includes retired-out batters.
     dismissed_player_ids: list[UUID]
+    # Retired hurt and eligible to resume.
+    retired_hurt_player_ids: list[UUID] = Field(default_factory=list)
+    retired_out_player_ids: list[UUID] = Field(default_factory=list)
+    # Official retirements in event order.
+    retirements: list[RetirementRead] = Field(default_factory=list)
+    # True when the latest official event is a
+    # retirement; it must be undone before the
+    # preceding delivery can be.
+    retirement_blocks_undo: bool = False
     next_sequence: int
     next_over_number: int
     next_ball_number: int

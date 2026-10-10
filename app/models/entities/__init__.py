@@ -11,6 +11,7 @@ from app.models.entities.audit import AuditLog
 from app.models.entities.innings import Innings
 from app.models.entities.matches import Match, MatchPlayer
 from app.models.entities.players import Player
+from app.models.entities.retirements import BatterRetirement
 from app.models.entities.scoring import Delivery, DeliveryCorrection
 from app.models.entities.teams import Team, TeamPlayer
 from app.models.entities.tournaments import Tournament
@@ -19,6 +20,7 @@ from app.models.entities.venues import Venue
 
 __all__ = [
     "AuditLog",
+    "BatterRetirement",
     "Delivery",
     "DeliveryCorrection",
     "Innings",

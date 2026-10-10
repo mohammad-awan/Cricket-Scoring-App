@@ -15,7 +15,7 @@ from app.services.scoring.chase import (
     close_innings,
     innings_finished,
 )
-from app.services.scoring.state import current_state, ensure_scoreable, rebuild_from_deliveries
+from app.services.scoring.state import current_state, ensure_scoreable, rebuild_innings_state
 
 
 async def end_innings(
@@ -94,9 +94,10 @@ async def end_innings(
             )
 
         derived = (
-            rebuild_from_deliveries(
+            rebuild_innings_state(
                 innings,
                 deliveries,
+                await repository.get_official_retirements(innings.id),
                 balls_per_over=(
                     match
                     .balls_per_over
@@ -258,9 +259,10 @@ async def start_next_innings(
             )
 
             derived = (
-                rebuild_from_deliveries(
+                rebuild_innings_state(
                     previous,
                     deliveries,
+                    await repository.get_official_retirements(previous.id),
                     balls_per_over=(
                         match
                         .balls_per_over

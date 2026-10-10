@@ -2,10 +2,12 @@ from __future__ import annotations
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
-from app.models import Delivery, Innings, Match
-from app.models.enums import InningsStatus, MatchStatus
+from app.domain.retirements import RetirementStatus, retirement_status
+from app.models import BatterRetirement, Delivery, Innings, Match
+from app.models.enums import InningsStatus, MatchStatus, RetirementType
 from app.repositories.scoring import ScoringRepository
 from app.schemas.match_setup import PlayerSummary, TeamSummary
+from app.schemas.retirements import RetirementRead
 from app.schemas.scoring import InningsSummary, ScoringStateRead
 from app.services.scoring.calculations import (
     delivery_running_runs,
@@ -185,6 +187,133 @@ def rebuild_from_deliveries(
     )
 
 
+def trailing_retirements(
+    deliveries: list[Delivery],
+    retirements: list[BatterRetirement],
+) -> list[BatterRetirement]:
+    """
+    Official retirements after the latest official
+    delivery. Earlier ones are already reflected in
+    the batters recorded on later deliveries.
+    """
+
+    anchor = deliveries[-1].delivery_number if deliveries else 0
+
+    return [
+        item
+        for item in retirements
+        if item.after_delivery_number >= anchor
+    ]
+
+
+def rebuild_innings_state(
+    innings: Innings,
+    deliveries: list[Delivery],
+    retirements: list[BatterRetirement],
+    *,
+    balls_per_over: int,
+) -> DerivedState:
+    """
+    Official state replayed from deliveries and
+    retirements as one timeline.
+
+    Retirements consume no ball and add no runs.
+    Retired out counts as a wicket; retired hurt
+    does not.
+    """
+
+    base = rebuild_from_deliveries(
+        innings,
+        deliveries,
+        balls_per_over=balls_per_over,
+    )
+
+    retired_out = sum(
+        1
+        for item in retirements
+        if item.retirement_type == RetirementType.OUT
+    )
+
+    striker_id = base.striker_id
+    non_striker_id = base.non_striker_id
+
+    trailing = trailing_retirements(deliveries, retirements)
+
+    if trailing:
+        striker_id = trailing[-1].striker_after_id
+        non_striker_id = trailing[-1].non_striker_after_id
+
+    return DerivedState(
+        total_runs=base.total_runs,
+        legal_balls=base.legal_balls,
+        wickets=base.wickets + retired_out,
+        striker_id=striker_id,
+        non_striker_id=non_striker_id,
+    )
+
+
+def batter_status(
+    deliveries: list[Delivery],
+    retirements: list[BatterRetirement],
+    derived: DerivedState,
+) -> tuple[set[UUID], RetirementStatus]:
+    """
+    Returns (dismissed by delivery, retirement status).
+    """
+
+    dismissed = {
+        item.dismissed_player_id
+        for item in deliveries
+        if item.dismissed_player_id is not None
+    }
+
+    status = retirement_status(
+        retirements,
+        crease_ids={derived.striker_id, derived.non_striker_id},
+        dismissed_ids=dismissed,
+    )
+
+    return dismissed, status
+
+
+async def load_innings_state(
+    repository: ScoringRepository,
+    *,
+    match: Match,
+    innings: Innings,
+) -> tuple[list[Delivery], list[BatterRetirement], DerivedState]:
+    deliveries = await repository.get_recorded_deliveries_plain(innings.id)
+    retirements = await repository.get_official_retirements(innings.id)
+
+    derived = rebuild_innings_state(
+        innings,
+        deliveries,
+        retirements,
+        balls_per_over=match.balls_per_over,
+    )
+
+    return deliveries, retirements, derived
+
+
+def retirement_read(item: BatterRetirement) -> RetirementRead:
+    return RetirementRead(
+        id=item.id,
+        event_number=item.event_number,
+        after_delivery_number=item.after_delivery_number,
+        player=PlayerSummary.model_validate(item.player),
+        retirement_type=item.retirement_type,
+        replacement_player=(
+            PlayerSummary.model_validate(item.replacement_player)
+            if item.replacement_player is not None
+            else None
+        ),
+        selection_mode=item.selection_mode,
+        reason=item.reason,
+        status=item.status,
+        created_at=item.created_at,
+    )
+
+
 def ensure_scoreable(
     match: Match,
     innings: Innings,
@@ -248,14 +377,32 @@ async def state_response(
         )
     )
 
+    retirements = (
+        await repository
+        .get_official_retirements(
+            innings.id,
+            with_players=True,
+        )
+    )
+
     derived = (
-        rebuild_from_deliveries(
+        rebuild_innings_state(
             innings,
             deliveries,
+            retirements,
             balls_per_over=(
                 match.balls_per_over
             ),
         )
+    )
+
+    (
+        delivery_dismissed,
+        retired,
+    ) = batter_status(
+        deliveries,
+        retirements,
+        derived,
     )
 
     striker = (
@@ -324,15 +471,8 @@ async def state_response(
     )
 
     dismissed_ids = sorted(
-        {
-            item.dismissed_player_id
-            for item
-            in deliveries
-            if (
-                item.dismissed_player_id
-                is not None
-            )
-        },
+        delivery_dismissed
+        | retired.retired_out_ids,
         key=str,
     )
 
@@ -618,6 +758,34 @@ async def state_response(
 
         dismissed_player_ids=(
             dismissed_ids
+        ),
+
+        retired_hurt_player_ids=sorted(
+            retired.retired_hurt_ids,
+            key=str,
+        ),
+
+        retired_out_player_ids=sorted(
+            retired.retired_out_ids,
+            key=str,
+        ),
+
+        retirements=[
+            retirement_read(
+                item
+            )
+            for item
+            in retirements
+        ],
+
+        retirement_blocks_undo=(
+            bool(deliveries)
+            and bool(
+                trailing_retirements(
+                    deliveries,
+                    retirements,
+                )
+            )
         ),
 
         next_sequence=(

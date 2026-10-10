@@ -1,7 +1,8 @@
 from __future__ import annotations
 from collections import defaultdict
+from collections.abc import Sequence
 from uuid import UUID
-from app.repositories.scorecard import DeliveryScoreRow, MatchPlayerRow
+from app.repositories.scorecard import DeliveryScoreRow, MatchPlayerRow, RetirementScoreRow
 from app.schemas.scorecard import BattingScorecardRow
 from app.services.scorecard.formatters import player_summary, strike_rate
 
@@ -95,6 +96,54 @@ def dismissal_text(
     return "out"
 
 
+def retirement_labels(
+    deliveries: Sequence[
+        DeliveryScoreRow
+    ],
+    retirements: Sequence[
+        RetirementScoreRow
+    ],
+) -> dict[UUID, str]:
+    """
+    "retired out" or "retired hurt" for batters whose
+    latest retirement still stands. A retired-hurt
+    batter who resumed is labelled by what happened
+    afterwards instead.
+    """
+
+    latest: dict[UUID, RetirementScoreRow] = {}
+
+    for item in retirements:
+        latest[item.player_id] = item
+
+    labels: dict[UUID, str] = {}
+
+    for player_id, item in latest.items():
+
+        if item.retirement_type == "retired_out":
+            labels[player_id] = "retired out"
+            continue
+
+        resumed = any(
+            delivery.delivery_number > item.after_delivery_number
+            and player_id in {
+                delivery.striker_id,
+                delivery.non_striker_id,
+                delivery.next_batter_id,
+            }
+            for delivery in deliveries
+        ) or any(
+            later.event_number > item.event_number
+            and later.replacement_player_id == player_id
+            for later in retirements
+        )
+
+        if not resumed:
+            labels[player_id] = "retired hurt"
+
+    return labels
+
+
 def batting_scorecard(
     *,
     players: list[
@@ -103,6 +152,9 @@ def batting_scorecard(
     deliveries: list[
         DeliveryScoreRow
     ],
+    retirements: Sequence[
+        RetirementScoreRow
+    ] = (),
 ) -> list[
     BattingScorecardRow
 ]:
@@ -209,6 +261,26 @@ def batting_scorecard(
                 )
             )
 
+    for item in retirements:
+
+        appeared.add(
+            item.player_id
+        )
+
+        if (
+            item.replacement_player_id
+            is not None
+        ):
+
+            appeared.add(
+                item.replacement_player_id
+            )
+
+    retired = retirement_labels(
+        deliveries,
+        retirements,
+    )
+
     ordered = sorted(
         players,
 
@@ -252,6 +324,12 @@ def batting_scorecard(
             )
         )
 
+        retirement = (
+            retired.get(
+                player.player_id
+            )
+        )
+
         if (
             dismissal
             is not None
@@ -262,6 +340,22 @@ def batting_scorecard(
             )
 
             is_not_out = False
+
+        elif (
+            retirement
+            is not None
+        ):
+
+            dismissal_label = (
+                retirement
+            )
+
+            # Retired hurt is recorded as not out;
+            # retired out is a dismissal.
+            is_not_out = (
+                retirement
+                == "retired hurt"
+            )
 
         elif did_appear:
 

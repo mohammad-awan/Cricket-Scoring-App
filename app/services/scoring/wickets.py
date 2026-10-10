@@ -1,11 +1,25 @@
 from __future__ import annotations
+from dataclasses import dataclass
+from uuid import UUID
 from app.core.exceptions import ValidationError
+from app.domain.batting_order import select_next_batter, validate_batting_order
+from app.domain.retirements import retirement_status
+from app.domain.wickets import (
+    resolve_dismissed_player,
+    validate_fielder,
+    validate_wicket_delivery,
+)
 from app.models import Innings, Match
-from app.models.enums import WicketType
 from app.repositories.scoring import ScoringRepository
 from app.schemas.scoring import WicketCreate
 from app.services.scoring.calculations import max_wickets
 from app.services.scoring.types import DeliveryComponents, DerivedState
+
+
+@dataclass(frozen=True)
+class ResolvedWicket:
+    dismissed_player_id: UUID
+    next_batter_id: UUID | None
 
 
 async def validate_wicket(
@@ -16,276 +30,76 @@ async def validate_wicket(
     before: DerivedState,
     components: DeliveryComponents,
     wicket: WicketCreate,
-) -> None:
+) -> ResolvedWicket:
     """
-    Central Stage 5 dismissal
-    validation.
+    Validate wicket and resolve authoritative
+    participant IDs.
 
-    Nothing is written before all
-    validations pass.
+    Must run inside the delivery transaction,
+    after locking the innings.
     """
 
-    current_batters = {
-        before.striker_id,
-        before.non_striker_id,
-    }
-
-    if (
-        wicket.dismissed_player_id
-        not in current_batters
-    ):
-
-        raise ValidationError(
-            "Dismissed player must "
-            "be one of the two "
-            "current batters"
-        )
-
-    striker_only = {
-        WicketType.BOWLED,
-        WicketType.CAUGHT,
-        WicketType.LBW,
-        WicketType.STUMPED,
-        WicketType.HIT_WICKET,
-    }
-
-    if (
-        wicket.wicket_type
-        in striker_only
-
-        and wicket
-        .dismissed_player_id
-        != before.striker_id
-    ):
-
-        raise ValidationError(
-            f"{wicket.wicket_type.value} "
-            "can dismiss only "
-            "the striker"
-        )
-
-    # On a no-ball ordinary striker
-    # dismissals do not apply.
-    if (
-        components.no_ball_runs
-    ):
-
-        allowed = {
-            WicketType.RUN_OUT,
-            WicketType.OBSTRUCTING_FIELD,
-        }
-
-        if (
-            wicket.wicket_type
-            not in allowed
-        ):
-
-            raise ValidationError(
-                "On a no-ball this "
-                "wicket type is not "
-                "a valid dismissal"
-            )
-
-    # Wides allow only applicable
-    # non-standard dismissals.
-    if (
-        components.wide_runs
-    ):
-
-        allowed = {
-            WicketType.RUN_OUT,
-            WicketType.STUMPED,
-            WicketType.HIT_WICKET,
-            WicketType.OBSTRUCTING_FIELD,
-        }
-
-        if (
-            wicket.wicket_type
-            not in allowed
-        ):
-
-            raise ValidationError(
-                "This wicket type "
-                "is not valid "
-                "on a wide"
-            )
-
-    # Completed runs with an ordinary
-    # bowled/caught/LBW/etc event are
-    # invalid for this Stage 5 model.
-    if (
-        components.running_runs > 0
-
-        and wicket.wicket_type
-        not in {
-            WicketType.RUN_OUT,
-            WicketType.OBSTRUCTING_FIELD,
-        }
-    ):
-
-        raise ValidationError(
-            "Runs on a wicket "
-            "delivery are supported "
-            "only for run out or "
-            "obstructing the field"
-        )
-
-    dismissed_before = (
-        await repository
-        .dismissed_player_ids(
-            innings.id
-        )
+    dismissed_id = resolve_dismissed_player(
+        wicket_type=wicket.wicket_type,
+        striker_id=before.striker_id,
+        non_striker_id=before.non_striker_id,
+        requested_player_id=wicket.dismissed_player_id,
     )
 
-    if (
-        wicket.dismissed_player_id
-        in dismissed_before
-    ):
-
-        raise ValidationError(
-            "This batter has "
-            "already been dismissed"
-        )
-
-    dismissed_belongs = (
-        await repository
-        .is_playing_team_player(
-            match_id=match.id,
-
-            team_id=(
-                innings
-                .batting_team_id
-            ),
-
-            player_id=(
-                wicket
-                .dismissed_player_id
-            ),
-        )
+    validate_wicket_delivery(
+        wicket_type=wicket.wicket_type,
+        no_ball=components.no_ball_runs > 0,
+        wide_runs=components.wide_runs,
+        running_runs=components.running_runs,
+        wicket_end=wicket.wicket_end,
     )
 
-    if not dismissed_belongs:
+    selections = await repository.get_playing_xi(match.id, innings.batting_team_id)
+    ordered_ids = validate_batting_order(selections, players_per_side=match.players_per_side)
 
-        raise ValidationError(
-            "Dismissed player must "
-            "belong to the batting "
-            "playing XI"
-        )
+    if dismissed_id not in ordered_ids:
+        raise ValidationError("Dismissed player does not belong to the batting XI.")
 
-    if (
-        wicket.fielder_id
-        is not None
-    ):
+    bowling_selections = await repository.get_playing_xi(match.id, innings.bowling_team_id)
+    bowling_ids = {selection.player_id for selection in bowling_selections}
 
-        fielder_belongs = (
-            await repository
-            .is_playing_team_player(
-                match_id=match.id,
-
-                team_id=(
-                    innings
-                    .bowling_team_id
-                ),
-
-                player_id=(
-                    wicket
-                    .fielder_id
-                ),
-            )
-        )
-
-        if not fielder_belongs:
-
-            raise ValidationError(
-                "Fielder must belong "
-                "to the bowling "
-                "playing XI"
-            )
-
-    wickets_after = (
-        before.wickets
-        + 1
+    validate_fielder(
+        wicket_type=wicket.wicket_type,
+        fielder_id=wicket.fielder_id,
+        bowling_xi_ids=bowling_ids,
     )
 
-    all_out_after = (
-        wickets_after
-        >= max_wickets(
-            match.players_per_side
-        )
+    dismissed_by_delivery = await repository.dismissed_player_ids(innings.id)
+    retired = retirement_status(
+        await repository.get_official_retirements(innings.id),
+        crease_ids={before.striker_id, before.non_striker_id},
+        dismissed_ids=dismissed_by_delivery,
+    )
+    dismissed_before = dismissed_by_delivery | retired.retired_out_ids
+
+    if dismissed_id in dismissed_before:
+        raise ValidationError("This player has already been dismissed.")
+
+    if before.striker_id == before.non_striker_id:
+        raise ValidationError("Striker and non-striker cannot be the same player.")
+
+    wickets_after = before.wickets + 1
+
+    if wickets_after > max_wickets(match.players_per_side):
+        raise ValidationError("Maximum wickets already reached.")
+
+    final_wicket = wickets_after >= max_wickets(match.players_per_side)
+
+    next_batter_id = select_next_batter(
+        ordered_ids,
+        striker_id=before.striker_id,
+        non_striker_id=before.non_striker_id,
+        dismissed_player_ids=dismissed_before,
+        dismissed_player_id=dismissed_id,
+        selection_mode=wicket.selection_mode,
+        manual_player_id=wicket.next_batter_id,
+        final_wicket=final_wicket,
+        resumable_player_ids=set(retired.retired_hurt_ids),
     )
 
-    # Last wicket.
-    if all_out_after:
-
-        if (
-            wicket.next_batter_id
-            is not None
-        ):
-
-            raise ValidationError(
-                "No next batter is "
-                "allowed after the "
-                "final wicket"
-            )
-
-        return
-
-    if (
-        wicket.next_batter_id
-        is None
-    ):
-
-        raise ValidationError(
-            "Select the next batter "
-            "for this wicket"
-        )
-
-    if (
-        wicket.next_batter_id
-        in {
-            before.striker_id,
-            before.non_striker_id,
-            wicket.dismissed_player_id,
-        }
-    ):
-
-        raise ValidationError(
-            "Next batter must be "
-            "a different available "
-            "batter"
-        )
-
-    if (
-        wicket.next_batter_id
-        in dismissed_before
-    ):
-
-        raise ValidationError(
-            "Next batter has already "
-            "been dismissed"
-        )
-
-    next_batter_belongs = (
-        await repository
-        .is_playing_team_player(
-            match_id=match.id,
-
-            team_id=(
-                innings
-                .batting_team_id
-            ),
-
-            player_id=(
-                wicket
-                .next_batter_id
-            ),
-        )
-    )
-
-    if not next_batter_belongs:
-
-        raise ValidationError(
-            "Next batter must belong "
-            "to the batting "
-            "playing XI"
-        )
+    return ResolvedWicket(dismissed_player_id=dismissed_id, next_batter_id=next_batter_id)

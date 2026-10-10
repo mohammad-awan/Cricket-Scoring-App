@@ -4697,3 +4697,42 @@ h2 {
     }
 
 }
+
+
+/* =========================
+   STAGE 10
+   RETIREMENTS & LIVE BATTING ORDER
+   ========================= */
+
+#retirement-panel .form-grid {
+    padding: 0;
+    margin-bottom: 14px;
+}
+
+
+.retirement-list {
+    margin-top: 16px;
+}
+
+
+.live-batting-order .batting-order-row small {
+    font-weight: 600;
+}
+
+
+.live-batting-order .batting-order-row.is-locked {
+    opacity: 0.7;
+}
+
+
+.live-batting-order .batting-order-row.is-locked small {
+    margin-left: auto;
+}
+
+
+.batting-order-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}

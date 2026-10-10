@@ -279,6 +279,81 @@
             document.getElementById(
                 "record-wicket"
             ),
+
+
+        // =========================
+        // STAGE 10 - RETIREMENTS
+        // =========================
+
+        retirementPanel:
+            document.getElementById(
+                "retirement-panel"
+            ),
+
+        retirePlayer:
+            document.getElementById(
+                "retire-player"
+            ),
+
+        retireType:
+            document.getElementById(
+                "retire-type"
+            ),
+
+        retireReplacement:
+            document.getElementById(
+                "retire-replacement"
+            ),
+
+        retireReason:
+            document.getElementById(
+                "retire-reason"
+            ),
+
+        retirementHelp:
+            document.getElementById(
+                "retirement-help"
+            ),
+
+        recordRetirement:
+            document.getElementById(
+                "record-retirement"
+            ),
+
+        retirementList:
+            document.getElementById(
+                "retirement-list"
+            ),
+
+
+        // =========================
+        // STAGE 10 - LIVE BATTING ORDER
+        // =========================
+
+        battingOrderList:
+            document.getElementById(
+                "batting-order-list"
+            ),
+
+        battingOrderReason:
+            document.getElementById(
+                "batting-order-reason"
+            ),
+
+        battingOrderHelp:
+            document.getElementById(
+                "batting-order-help"
+            ),
+
+        saveBattingOrder:
+            document.getElementById(
+                "save-batting-order"
+            ),
+
+        resetBattingOrder:
+            document.getElementById(
+                "reset-batting-order"
+            ),
     };
 
 
@@ -290,10 +365,23 @@
 
         busy: false,
 
+        // Scoring event awaiting a confirmed
+        // server response: { body, clientEventId }.
+        // A retry of the same event reuses its
+        // UUID so the server never records it twice.
+        pendingEvent: null,
+
         // Innings number the break form
         // was last populated for, so a
         // re-render keeps the selections.
         nextInningsFor: null,
+
+        // Live batting order from the server
+        // and the scorer's unsaved draft of
+        // the yet-to-bat priority.
+        lineup: null,
+        lineupKey: null,
+        orderDraft: null,
     };
 
 
@@ -616,6 +704,96 @@
     }
 
 
+    // Incoming batter choices for a wicket or a
+    // retirement. Retired-hurt batters are listed
+    // so the scorer can bring them back; automatic
+    // selection never picks them.
+    function incomingBatterOptions(
+        players,
+        scoring,
+        placeholder,
+        selectedId = ""
+    ) {
+
+        const retiredHurt =
+            new Set(
+                scoring
+                    .retired_hurt_player_ids
+                || []
+            );
+
+        return (
+            `<option value="">${escapeHtml(
+                placeholder
+            )}</option>`
+            +
+            players
+                .map(
+                    (item) => `
+                        <option
+                            value="${item.player.id}"
+                            ${
+                                item.player.id
+                                === selectedId
+                                    ? "selected"
+                                    : ""
+                            }
+                        >
+                            ${escapeHtml(
+                                item.player.full_name
+                            )}${
+                                retiredHurt.has(
+                                    item.player.id
+                                )
+                                    ? " (retired hurt · resumes)"
+                                    : ""
+                            }
+                        </option>
+                    `
+                )
+                .join("")
+        );
+    }
+
+
+    // Batters who may walk out next: not
+    // dismissed (incl. retired out) and
+    // not already at the crease.
+    function incomingBatters(
+        scoring
+    ) {
+
+        const dismissedIds =
+            new Set(
+                scoring
+                    .dismissed_player_ids
+                || []
+            );
+
+        const activeIds =
+            new Set(
+                [
+                    scoring.striker?.id,
+                    scoring.non_striker?.id,
+                ]
+                    .filter(
+                        Boolean
+                    )
+            );
+
+        return battingPlayers()
+            .filter(
+                (item) =>
+                    !dismissedIds.has(
+                        item.player.id
+                    )
+                    && !activeIds.has(
+                        item.player.id
+                    )
+            );
+    }
+
+
     function deliveryLabel(delivery) {
 
         const hasWicket =
@@ -772,12 +950,25 @@
                             === "void";
 
 
-                        const canUndo =
-                            !state.busy
-                            && !isVoid
+                        const isLatest =
+                            !isVoid
                             && latestRecorded
                             && latestRecorded.id
                                 === delivery.id;
+
+
+                        // A retirement recorded after this
+                        // ball must be undone first.
+                        const blockedByRetirement =
+                            isLatest
+                            && scoring
+                                .retirement_blocks_undo;
+
+
+                        const canUndo =
+                            !state.busy
+                            && isLatest
+                            && !blockedByRetirement;
 
 
                         const wicketText =
@@ -881,6 +1072,17 @@
 
 
                                 ${undoButton}
+                                ${
+                                    blockedByRetirement
+                                        ? (
+                                            `
+                                            <span class="muted">
+                                                Undo the retirement first
+                                            </span>
+                                            `
+                                        )
+                                        : ""
+                                }
 
                             </div>
                         `;
@@ -1389,9 +1591,10 @@
                 elements
                     .nextBatter
                     .innerHTML =
-                    playerOptions(
+                    incomingBatterOptions(
                         availableBatters,
-                        "Select next batter",
+                        scoring,
+                        "Automatic — next in batting order",
                         currentNextBatter
                     );
 
@@ -2211,6 +2414,19 @@
             scoring
         );
 
+
+        renderRetirementControls(
+            scoring
+        );
+
+
+        renderBattingOrder();
+
+
+        refreshLineupIfChanged(
+            scoring
+        );
+
     }
 
 
@@ -2253,6 +2469,14 @@
         );
 
 
+        renderRetirementControls(
+            state.scoring
+        );
+
+
+        renderBattingOrder();
+
+
         elements
             .startNextInnings
             .disabled =
@@ -2264,6 +2488,1283 @@
             .disabled =
             value;
 
+    }
+
+
+    // =========================
+    // STAGE 10 - RETIREMENTS
+    // =========================
+
+    function latestRecordedSequence(
+        scoring
+    ) {
+
+        const latest =
+            [
+                ...(
+                    scoring
+                        .recent_deliveries
+                    || []
+                ),
+            ]
+                .reverse()
+                .find(
+                    (delivery) =>
+                        delivery.status
+                        === "recorded"
+                );
+
+        return latest
+            ? latest.sequence
+            : 0;
+    }
+
+
+    function renderRetirementControls(
+        scoring
+    ) {
+
+        if (
+            !elements.retirementPanel
+            || !scoring
+        ) {
+            return;
+        }
+
+
+        const locked =
+            state.busy
+            || scoringLocked(
+                scoring
+            );
+
+
+        const currentPlayer =
+            elements
+                .retirePlayer
+                .value
+            || "";
+
+
+        const currentReplacement =
+            elements
+                .retireReplacement
+                .value
+            || "";
+
+
+        elements
+            .retirePlayer
+            .innerHTML =
+            plainPlayerOptions(
+                [
+                    scoring.striker,
+                    scoring.non_striker,
+                ]
+                    .filter(
+                        Boolean
+                    ),
+                "Select batter",
+                currentPlayer
+            );
+
+
+        const isOut =
+            elements
+                .retireType
+                .value
+            === "retired_out";
+
+
+        const finalWicket =
+            isOut
+            && Number(
+                scoring.wickets
+            ) + 1
+            >= Number(
+                scoring.max_wickets
+            );
+
+
+        if (
+            finalWicket
+        ) {
+
+            elements
+                .retireReplacement
+                .innerHTML =
+                `
+                <option value="">
+                    No replacement — final wicket
+                </option>
+                `;
+
+        }
+        else {
+
+            elements
+                .retireReplacement
+                .innerHTML =
+                incomingBatterOptions(
+                    incomingBatters(
+                        scoring
+                    ),
+                    scoring,
+                    "Automatic — next in batting order",
+                    currentReplacement
+                );
+
+        }
+
+
+        elements
+            .retirementHelp
+            .textContent =
+            finalWicket
+                ? (
+                    "This retirement is the final "
+                    + "wicket and will end the innings."
+                )
+                : (
+                    isOut
+                        ? (
+                            "Retired out adds a wicket. "
+                            + "The batter cannot resume."
+                        )
+                        : (
+                            "Retired hurt adds no wicket. "
+                            + "The batter can resume when "
+                            + "picked at a later wicket or "
+                            + "retirement."
+                        )
+                );
+
+
+        elements.retirePlayer.disabled =
+            locked;
+
+        elements.retireType.disabled =
+            locked;
+
+        elements.retireReplacement.disabled =
+            locked
+            || finalWicket;
+
+        elements.retireReason.disabled =
+            locked;
+
+        elements.recordRetirement.disabled =
+            locked;
+
+
+        renderRetirementList(
+            scoring
+        );
+    }
+
+
+    function renderRetirementList(
+        scoring
+    ) {
+
+        const retirements =
+            scoring.retirements
+            || [];
+
+
+        if (
+            !retirements.length
+        ) {
+
+            elements
+                .retirementList
+                .innerHTML =
+                `
+                <span class="muted">
+                    No retirements this innings.
+                </span>
+                `;
+
+            return;
+        }
+
+
+        const latest =
+            retirements[
+                retirements.length - 1
+            ];
+
+
+        // Only the most recent scoring event
+        // can be undone: no ball may follow it.
+        const latestUndoable =
+            latest.after_delivery_number
+            >= latestRecordedSequence(
+                scoring
+            );
+
+
+        elements
+            .retirementList
+            .innerHTML =
+            retirements
+                .map(
+                    (item) => {
+
+                        const canUndo =
+                            !state.busy
+                            && item.id
+                                === latest.id
+                            && latestUndoable;
+
+
+                        const replacement =
+                            item.replacement_player
+                                ? (
+                                    `
+                                    <span class="muted">
+                                        In: ${escapeHtml(
+                                            playerName(
+                                                item
+                                                    .replacement_player
+                                            )
+                                        )}
+                                    </span>
+                                    `
+                                )
+                                : "";
+
+
+                        return `
+                            <div class="recent-ball-chip">
+                                <small>
+                                    After ball
+                                    #${item.after_delivery_number}
+                                </small>
+
+                                <strong>
+                                    ${escapeHtml(
+                                        playerName(
+                                            item.player
+                                        )
+                                    )}
+                                </strong>
+
+                                <span class="muted">
+                                    ${
+                                        item.retirement_type
+                                        === "retired_out"
+                                            ? "Retired out"
+                                            : "Retired hurt"
+                                    }
+                                </span>
+
+                                ${replacement}
+
+                                <span class="muted">
+                                    ${escapeHtml(
+                                        item.reason
+                                    )}
+                                </span>
+
+                                ${
+                                    canUndo
+                                        ? (
+                                            `
+                                            <button
+                                                class="
+                                                    button
+                                                    button-secondary
+                                                    button-small
+                                                "
+                                                type="button"
+                                                data-undo-retirement="${item.id}"
+                                            >
+                                                Undo
+                                            </button>
+                                            `
+                                        )
+                                        : ""
+                                }
+                            </div>
+                        `;
+                    }
+                )
+                .join("");
+    }
+
+
+    async function recordRetirement() {
+
+        if (
+            state.busy
+            || !state.scoring
+        ) {
+            return;
+        }
+
+
+        const playerId =
+            elements
+                .retirePlayer
+                .value;
+
+
+        const retirementType =
+            elements
+                .retireType
+                .value;
+
+
+        const replacementId =
+            elements
+                .retireReplacement
+                .value;
+
+
+        const reason =
+            elements
+                .retireReason
+                .value
+                .trim();
+
+
+        if (
+            !playerId
+        ) {
+
+            showError(
+                "Select the retiring batter."
+            );
+
+            return;
+        }
+
+
+        if (
+            reason.length < 3
+        ) {
+
+            showError(
+                "Retirement reason must be "
+                + "at least 3 characters."
+            );
+
+            return;
+        }
+
+
+        const body = {
+            player_id:
+                playerId,
+
+            retirement_type:
+                retirementType,
+
+            reason:
+                reason,
+        };
+
+
+        if (
+            replacementId
+        ) {
+
+            // Scorer override of the batting order.
+            body.selection_mode =
+                "manual";
+
+            body.replacement_player_id =
+                replacementId;
+
+        }
+
+
+        const label =
+            retirementType
+            === "retired_out"
+                ? "retired out"
+                : "retired hurt";
+
+
+        const confirmed =
+            window.confirm(
+                `Record ${elements.retirePlayer.selectedOptions[0]?.textContent.trim() || "batter"} `
+                + `as ${label}?`
+            );
+
+
+        if (
+            !confirmed
+        ) {
+            return;
+        }
+
+
+        clearError();
+
+        setBusy(
+            true
+        );
+
+
+        try {
+
+            const scoring =
+                await window.API
+                    .scoringRetire(
+                        matchId,
+                        body
+                    );
+
+
+            elements
+                .retirePlayer
+                .value =
+                "";
+
+            elements
+                .retireReplacement
+                .value =
+                "";
+
+            elements
+                .retireReason
+                .value =
+                "";
+
+
+            render(
+                scoring
+            );
+
+
+            window.showToast(
+                `Batter ${label}.`
+            );
+
+        }
+        catch (
+            error
+        ) {
+
+            showError(
+                error.message
+                ||
+                "Retirement could not "
+                + "be recorded."
+            );
+
+        }
+        finally {
+
+            setBusy(
+                false
+            );
+
+        }
+    }
+
+
+    async function undoRetirement(
+        retirementId
+    ) {
+
+        if (
+            state.busy
+            || !retirementId
+        ) {
+            return;
+        }
+
+
+        const reasonInput =
+            window.prompt(
+                "Reason for undoing this retirement:"
+            );
+
+
+        if (
+            reasonInput === null
+        ) {
+            return;
+        }
+
+
+        const reason =
+            reasonInput.trim();
+
+
+        if (
+            reason.length < 3
+        ) {
+
+            showError(
+                "Correction reason must "
+                + "be at least 3 characters."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            window.confirm(
+                "Undo the latest retirement? "
+                + "It will remain in history as VOID "
+                + "and the previous batters return."
+            );
+
+
+        if (
+            !confirmed
+        ) {
+            return;
+        }
+
+
+        clearError();
+
+        setBusy(
+            true
+        );
+
+
+        try {
+
+            const scoring =
+                await window.API
+                    .scoringUndoRetirement(
+                        matchId,
+                        retirementId,
+                        {
+                            reason:
+                                reason,
+                        }
+                    );
+
+
+            render(
+                scoring
+            );
+
+
+            window.showToast(
+                "Retirement voided and "
+                + "scoring state rebuilt."
+            );
+
+        }
+        catch (
+            error
+        ) {
+
+            showError(
+                error.message
+                ||
+                "Retirement could not "
+                + "be undone."
+            );
+
+        }
+        finally {
+
+            setBusy(
+                false
+            );
+
+        }
+    }
+
+
+    // =========================
+    // STAGE 10 - LIVE BATTING ORDER
+    // =========================
+
+    function lineupStatusLabel(
+        status
+    ) {
+
+        return {
+            batting:
+                "Batting",
+
+            dismissed:
+                "Out",
+
+            retired_hurt:
+                "Retired hurt",
+
+            retired_out:
+                "Retired out",
+
+            batted:
+                "Batted",
+
+            yet_to_bat:
+                "",
+        }[status]
+        ?? "";
+    }
+
+
+    // Keeps the wicket and retirement dropdowns
+    // in the live order without a page reload.
+    function applyLineupOrder(
+        lineup
+    ) {
+
+        if (
+            !state.match
+            || !Array.isArray(
+                state.match.players
+            )
+        ) {
+            return;
+        }
+
+
+        const slots =
+            new Map(
+                lineup
+                    .entries
+                    .map(
+                        (entry) => [
+                            entry.player.id,
+                            entry.batting_order,
+                        ]
+                    )
+            );
+
+
+        state.match.players.forEach(
+            (item) => {
+
+                if (
+                    item.team_id
+                    === lineup.batting_team.id
+                    && slots.has(
+                        item.player.id
+                    )
+                ) {
+
+                    item.batting_order =
+                        slots.get(
+                            item.player.id
+                        );
+
+                }
+            }
+        );
+    }
+
+
+    function yetToBatIds(
+        lineup
+    ) {
+
+        return lineup
+            .entries
+            .filter(
+                (entry) =>
+                    !entry.locked
+            )
+            .map(
+                (entry) =>
+                    entry.player.id
+            );
+    }
+
+
+    function orderIsDirty() {
+
+        if (
+            !state.lineup
+            || !state.orderDraft
+        ) {
+            return false;
+        }
+
+
+        return (
+            state.orderDraft.join(",")
+            !== yetToBatIds(
+                state.lineup
+            ).join(",")
+        );
+    }
+
+
+    function renderBattingOrder() {
+
+        if (
+            !elements.battingOrderList
+        ) {
+            return;
+        }
+
+
+        const lineup =
+            state.lineup;
+
+
+        if (
+            !lineup
+        ) {
+            return;
+        }
+
+
+        const locked =
+            state.busy
+            || scoringLocked(
+                state.scoring
+            );
+
+
+        const lockedEntries =
+            lineup
+                .entries
+                .filter(
+                    (entry) =>
+                        entry.locked
+                );
+
+
+        const byId =
+            new Map(
+                lineup
+                    .entries
+                    .map(
+                        (entry) => [
+                            entry.player.id,
+                            entry,
+                        ]
+                    )
+            );
+
+
+        const draft =
+            state.orderDraft
+            || yetToBatIds(
+                lineup
+            );
+
+
+        // Locked batters keep their slots; the draft
+        // fills the remaining slots in order.
+        const freeSlots =
+            lineup
+                .entries
+                .filter(
+                    (entry) =>
+                        !entry.locked
+                )
+                .map(
+                    (entry) =>
+                        entry.batting_order
+                )
+                .sort(
+                    (a, b) =>
+                        a - b
+                );
+
+
+        const rows = [
+            ...lockedEntries
+                .map(
+                    (entry) => ({
+                        slot:
+                            entry.batting_order,
+
+                        entry:
+                            entry,
+
+                        draftIndex:
+                            null,
+                    })
+                ),
+
+            ...draft
+                .map(
+                    (playerId, index) => ({
+                        slot:
+                            freeSlots[index],
+
+                        entry:
+                            byId.get(
+                                playerId
+                            ),
+
+                        draftIndex:
+                            index,
+                    })
+                ),
+        ]
+            .filter(
+                (row) =>
+                    row.entry
+            )
+            .sort(
+                (a, b) =>
+                    a.slot
+                    - b.slot
+            );
+
+
+        // The first yet-to-bat batter is next under
+        // automatic selection once the draft is saved.
+        const nextId =
+            draft[0]
+            || null;
+
+
+        elements
+            .battingOrderList
+            .innerHTML =
+            rows
+                .map(
+                    (row) => {
+
+                        const status =
+                            row.draftIndex === null
+                                ? lineupStatusLabel(
+                                    row.entry.status
+                                )
+                                : (
+                                    row.entry.player.id
+                                    === nextId
+                                        ? "Next in"
+                                        : ""
+                                );
+
+
+                        return `
+                            <li
+                                class="
+                                    batting-order-row
+                                    ${
+                                        row.draftIndex === null
+                                            ? "is-locked"
+                                            : ""
+                                    }
+                                "
+                            >
+                                <span class="order-badge">
+                                    ${row.slot}
+                                </span>
+
+                                <span>
+                                    ${escapeHtml(
+                                        row
+                                            .entry
+                                            .player
+                                            .full_name
+                                    )}
+                                </span>
+
+                                ${
+                                    status
+                                        ? (
+                                            `
+                                            <small class="muted">
+                                                ${escapeHtml(
+                                                    status
+                                                )}
+                                            </small>
+                                            `
+                                        )
+                                        : ""
+                                }
+
+                                ${
+                                    row.draftIndex === null
+                                        ? ""
+                                        : (
+                                            `
+                                            <span class="batting-order-actions">
+                                                <button
+                                                    type="button"
+                                                    data-order-move="up"
+                                                    data-player-id="${row.entry.player.id}"
+                                                    aria-label="Move up"
+                                                    ${
+                                                        locked
+                                                        || row.draftIndex === 0
+                                                            ? "disabled"
+                                                            : ""
+                                                    }
+                                                >
+                                                    ↑
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    data-order-move="down"
+                                                    data-player-id="${row.entry.player.id}"
+                                                    aria-label="Move down"
+                                                    ${
+                                                        locked
+                                                        || row.draftIndex
+                                                            === draft.length - 1
+                                                            ? "disabled"
+                                                            : ""
+                                                    }
+                                                >
+                                                    ↓
+                                                </button>
+                                            </span>
+                                            `
+                                        )
+                                }
+                            </li>
+                        `;
+                    }
+                )
+                .join("");
+
+
+        const dirty =
+            orderIsDirty();
+
+
+        const movable =
+            draft.length
+            >= 2;
+
+
+        elements
+            .battingOrderHelp
+            .textContent =
+            !movable
+                ? (
+                    "Fewer than two batters are "
+                    + "yet to bat, so there is "
+                    + "nothing to reorder."
+                )
+                : (
+                    dirty
+                        ? (
+                            "Unsaved changes. Save to use "
+                            + "this order at the next wicket."
+                        )
+                        : ""
+                );
+
+
+        elements.battingOrderReason.disabled =
+            locked
+            || !movable;
+
+        elements.saveBattingOrder.disabled =
+            locked
+            || !dirty;
+
+        elements.resetBattingOrder.disabled =
+            state.busy
+            || !dirty;
+    }
+
+
+    async function refreshLineup() {
+
+        try {
+
+            const lineup =
+                await window.API
+                    .scoringBattingOrderGet(
+                        matchId
+                    );
+
+
+            state.lineup =
+                lineup;
+
+
+            applyLineupOrder(
+                lineup
+            );
+
+
+            // Keep an unsaved draft only while it
+            // still covers exactly the same batters.
+            const currentIds =
+                yetToBatIds(
+                    lineup
+                );
+
+
+            const draftStillValid =
+                state.orderDraft
+                && state.orderDraft.length
+                    === currentIds.length
+                && state.orderDraft.every(
+                    (id) =>
+                        currentIds.includes(
+                            id
+                        )
+                );
+
+
+            if (
+                !draftStillValid
+            ) {
+                state.orderDraft =
+                    null;
+            }
+
+
+            renderBattingOrder();
+
+
+            if (
+                state.scoring
+            ) {
+
+                renderStage5Controls(
+                    state.scoring
+                );
+
+                renderRetirementControls(
+                    state.scoring
+                );
+
+            }
+
+        }
+        catch (
+            error
+        ) {
+
+            if (
+                elements.battingOrderList
+            ) {
+
+                elements
+                    .battingOrderList
+                    .innerHTML =
+                    `
+                    <li class="muted">
+                        ${escapeHtml(
+                            error.message
+                            || "Batting order unavailable."
+                        )}
+                    </li>
+                    `;
+
+            }
+
+        }
+    }
+
+
+    // Re-read the lineup whenever an event may
+    // have changed who has batted.
+    function refreshLineupIfChanged(
+        scoring
+    ) {
+
+        const key =
+            [
+                scoring.innings_id,
+                scoring.next_sequence,
+                scoring.wickets,
+                scoring.striker?.id,
+                scoring.non_striker?.id,
+                (
+                    scoring.retirements
+                    || []
+                )
+                    .map(
+                        (item) =>
+                            item.id
+                    )
+                    .join("."),
+            ]
+                .join("|");
+
+
+        if (
+            key
+            === state.lineupKey
+        ) {
+            return;
+        }
+
+
+        state.lineupKey =
+            key;
+
+
+        refreshLineup();
+    }
+
+
+    function moveBatter(
+        playerId,
+        direction
+    ) {
+
+        if (
+            !state.lineup
+            || state.busy
+        ) {
+            return;
+        }
+
+
+        const draft = [
+            ...(
+                state.orderDraft
+                || yetToBatIds(
+                    state.lineup
+                )
+            ),
+        ];
+
+
+        const index =
+            draft.indexOf(
+                playerId
+            );
+
+
+        const target =
+            direction === "up"
+                ? index - 1
+                : index + 1;
+
+
+        if (
+            index < 0
+            || target < 0
+            || target >= draft.length
+        ) {
+            return;
+        }
+
+
+        [
+            draft[index],
+            draft[target],
+        ] = [
+            draft[target],
+            draft[index],
+        ];
+
+
+        state.orderDraft =
+            draft;
+
+
+        renderBattingOrder();
+    }
+
+
+    function resetBattingOrder() {
+
+        state.orderDraft =
+            null;
+
+        renderBattingOrder();
+    }
+
+
+    async function saveBattingOrder() {
+
+        if (
+            state.busy
+            || !orderIsDirty()
+        ) {
+            return;
+        }
+
+
+        const reason =
+            elements
+                .battingOrderReason
+                .value
+                .trim();
+
+
+        if (
+            reason.length < 3
+        ) {
+
+            showError(
+                "Give a reason for the batting "
+                + "order change (at least 3 characters)."
+            );
+
+            return;
+        }
+
+
+        clearError();
+
+        setBusy(
+            true
+        );
+
+
+        try {
+
+            const lineup =
+                await window.API
+                    .scoringBattingOrderUpdate(
+                        matchId,
+                        {
+                            ordered_player_ids:
+                                state.orderDraft,
+
+                            reason:
+                                reason,
+                        }
+                    );
+
+
+            state.lineup =
+                lineup;
+
+            state.orderDraft =
+                null;
+
+
+            applyLineupOrder(
+                lineup
+            );
+
+
+            elements
+                .battingOrderReason
+                .value =
+                "";
+
+
+            window.showToast(
+                "Batting order updated."
+            );
+
+        }
+        catch (
+            error
+        ) {
+
+            showError(
+                error.message
+                ||
+                "Batting order could "
+                + "not be saved."
+            );
+
+        }
+        finally {
+
+            setBusy(
+                false
+            );
+
+        }
     }
 
 
@@ -2317,6 +3818,241 @@
     }
 
 
+    const DELIVERY_TIMEOUT_MS =
+        15000;
+
+
+    const DELIVERY_RETRY_DELAYS_MS = [
+        500,
+        1500,
+    ];
+
+
+    function newClientEventId() {
+
+        if (
+            window.crypto
+            && typeof window.crypto.randomUUID
+                === "function"
+        ) {
+
+            return window.crypto.randomUUID();
+
+        }
+
+
+        // randomUUID needs a secure context;
+        // build an RFC 4122 v4 UUID otherwise.
+        const bytes =
+            window.crypto.getRandomValues(
+                new Uint8Array(16)
+            );
+
+        bytes[6] =
+            (bytes[6] & 0x0f) | 0x40;
+
+        bytes[8] =
+            (bytes[8] & 0x3f) | 0x80;
+
+        const hex =
+            Array.from(
+                bytes,
+                (byte) =>
+                    byte
+                        .toString(16)
+                        .padStart(2, "0")
+            ).join("");
+
+        return [
+            hex.slice(0, 8),
+            hex.slice(8, 12),
+            hex.slice(12, 16),
+            hex.slice(16, 20),
+            hex.slice(20),
+        ].join("-");
+
+    }
+
+
+    function isRetryableError(error) {
+
+        // No status: network failure or timeout,
+        // so the server may or may not have
+        // recorded the ball.
+        return (
+            !error
+            || error.status === undefined
+            || [502, 503, 504]
+                .includes(error.status)
+        );
+
+    }
+
+
+    function wait(ms) {
+
+        return new Promise(
+            (resolve) =>
+                window.setTimeout(
+                    resolve,
+                    ms
+                )
+        );
+
+    }
+
+
+    async function sendDeliveryOnce(
+        payload
+    ) {
+
+        const controller =
+            new AbortController();
+
+        const timer =
+            window.setTimeout(
+                () => controller.abort(),
+                DELIVERY_TIMEOUT_MS
+            );
+
+        try {
+
+            return await window.API
+                .scoringRecordDelivery(
+                    matchId,
+                    payload,
+                    {
+                        signal:
+                            controller.signal,
+                    }
+                );
+
+        }
+        finally {
+
+            window.clearTimeout(
+                timer
+            );
+
+        }
+
+    }
+
+
+    async function submitDelivery(
+        payload
+    ) {
+
+        const body =
+            JSON.stringify(
+                payload
+            );
+
+
+        // Only a genuinely new scoring action
+        // gets a new UUID. Resubmitting the same
+        // event after an unconfirmed failure
+        // reuses the pending one.
+        if (
+            !state.pendingEvent
+            || state.pendingEvent.body
+                !== body
+        ) {
+
+            state.pendingEvent = {
+                body,
+                clientEventId:
+                    newClientEventId(),
+            };
+
+        }
+
+
+        const request = {
+            ...payload,
+            client_event_id:
+                state.pendingEvent
+                    .clientEventId,
+        };
+
+
+        for (
+            let attempt = 0;
+            ;
+            attempt += 1
+        ) {
+
+            try {
+
+                const scoring =
+                    await sendDeliveryOnce(
+                        request
+                    );
+
+                state.pendingEvent =
+                    null;
+
+                return scoring;
+
+            }
+            catch (
+                error
+            ) {
+
+                if (
+                    !isRetryableError(
+                        error
+                    )
+                ) {
+
+                    // The server answered
+                    // definitively.
+                    state.pendingEvent =
+                        null;
+
+                    throw error;
+
+                }
+
+
+                if (
+                    attempt
+                    >= DELIVERY_RETRY_DELAYS_MS
+                        .length
+                ) {
+
+                    // Keep pendingEvent so a
+                    // manual retry stays
+                    // idempotent.
+                    const failure =
+                        new Error(
+                            "Connection problem — "
+                            + "the ball may not have "
+                            + "been saved. Submit it "
+                            + "again to retry safely."
+                        );
+
+                    failure.cause =
+                        error;
+
+                    throw failure;
+
+                }
+
+
+                await wait(
+                    DELIVERY_RETRY_DELAYS_MS[
+                        attempt
+                    ]
+                );
+
+            }
+
+        }
+
+    }
+
+
     async function recordRuns(
         runs
     ) {
@@ -2344,14 +4080,12 @@
         try {
 
             const scoring =
-                await window.API
-                    .scoringRecordDelivery(
-                        matchId,
-                        {
-                            runs:
-                                runs,
-                        }
-                    );
+                await submitDelivery(
+                    {
+                        runs:
+                            runs,
+                    }
+                );
 
 
             render(
@@ -2550,11 +4284,9 @@
         try {
 
             const scoring =
-                await window.API
-                    .scoringRecordDelivery(
-                        matchId,
-                        payload
-                    );
+                await submitDelivery(
+                    payload
+                );
 
 
             render(
@@ -2783,19 +4515,6 @@
             );
 
 
-        if (
-            !finalWicket
-            && !nextBatterId
-        ) {
-
-            showError(
-                "Select the next batter."
-            );
-
-
-            return;
-
-        }
 
 
         if (
@@ -2867,6 +4586,10 @@
             !finalWicket
             && nextBatterId
         ) {
+
+            // Scorer override of the batting order.
+            wicket.selection_mode =
+                "manual";
 
             wicket.next_batter_id =
                 nextBatterId;
@@ -2952,11 +4675,9 @@
         try {
 
             const scoring =
-                await window.API
-                    .scoringRecordDelivery(
-                        matchId,
-                        payload
-                    );
+                await submitDelivery(
+                    payload
+                );
 
 
             render(
@@ -3661,6 +5382,126 @@
         );
 
 
+    // =========================
+    // STAGE 10 EVENTS
+    // =========================
+
+    if (
+        elements.retirementPanel
+    ) {
+
+        elements
+            .retireType
+            .addEventListener(
+                "change",
+                () => {
+
+                    if (
+                        state.scoring
+                    ) {
+
+                        renderRetirementControls(
+                            state.scoring
+                        );
+
+                    }
+
+                }
+            );
+
+
+        elements
+            .recordRetirement
+            .addEventListener(
+                "click",
+                recordRetirement
+            );
+
+
+        elements
+            .retirementList
+            .addEventListener(
+                "click",
+                (event) => {
+
+                    const button =
+                        event.target.closest(
+                            "[data-undo-retirement]"
+                        );
+
+
+                    if (
+                        button
+                    ) {
+
+                        undoRetirement(
+                            button
+                                .dataset
+                                .undoRetirement
+                        );
+
+                    }
+
+                }
+            );
+
+    }
+
+
+    if (
+        elements.battingOrderList
+    ) {
+
+        elements
+            .battingOrderList
+            .addEventListener(
+                "click",
+                (event) => {
+
+                    const button =
+                        event.target.closest(
+                            "[data-order-move]"
+                        );
+
+
+                    if (
+                        button
+                    ) {
+
+                        moveBatter(
+                            button
+                                .dataset
+                                .playerId,
+
+                            button
+                                .dataset
+                                .orderMove
+                        );
+
+                    }
+
+                }
+            );
+
+
+        elements
+            .saveBattingOrder
+            .addEventListener(
+                "click",
+                saveBattingOrder
+            );
+
+
+        elements
+            .resetBattingOrder
+            .addEventListener(
+                "click",
+                resetBattingOrder
+            );
+
+    }
+
+
     if (
         window.MatchLive
     ) {
@@ -3680,6 +5521,18 @@
                     render(
                         event.scoring
                     );
+
+                }
+
+
+                // Another scorer reordered the lineup;
+                // the snapshot itself does not carry it.
+                if (
+                    event.event_type
+                    === "batting_order_changed"
+                ) {
+
+                    refreshLineup();
 
                 }
 

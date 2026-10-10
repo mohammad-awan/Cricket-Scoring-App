@@ -17,6 +17,7 @@ def test_all_stage2_entities_are_registered() -> None:
             "deliveries",
             "delivery_corrections",
             "audit_logs",
+            "batter_retirements",
         }
 
     assert expected_tables == set(Base.metadata.tables)

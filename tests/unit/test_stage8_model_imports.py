@@ -36,6 +36,7 @@ def test_stage8_public_model_imports_and_mapper_configuration() -> None:
 
     assert set(Base.metadata.tables) == {
         "audit_logs",
+        "batter_retirements",
         "deliveries",
         "delivery_corrections",
         "innings",

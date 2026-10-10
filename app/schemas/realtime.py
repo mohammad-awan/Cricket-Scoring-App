@@ -14,6 +14,9 @@ class LiveEventType(str, Enum):
     BOWLER_CHANGED = "bowler_changed"
     INNINGS_ENDED = "innings_ended"
     INNINGS_STARTED = "innings_started"
+    BATTING_ORDER_CHANGED = "batting_order_changed"
+    RETIREMENT_RECORDED = "retirement_recorded"
+    RETIREMENT_CORRECTED = "retirement_corrected"
 
 
 class LiveMatchEvent(BaseModel):

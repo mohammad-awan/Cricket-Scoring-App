@@ -1,3 +1,4 @@
+from app.services.scoring.batting_order import get_live_batting_order, rearrange_batting_order
 from app.services.scoring.bowling import change_bowler
 from app.services.scoring.calculations import (
     advance_batters,
@@ -15,7 +16,8 @@ from app.services.scoring.chase import chase_target, result_summary
 from app.services.scoring.corrections import undo_delivery
 from app.services.scoring.delivery import record_delivery
 from app.services.scoring.innings import end_innings, start_next_innings
-from app.services.scoring.state import get_scoring_state, rebuild_from_deliveries
+from app.services.scoring.retirements import create_retirement, undo_retirement
+from app.services.scoring.state import get_scoring_state, rebuild_from_deliveries, rebuild_innings_state
 from app.services.scoring.types import ChaseState, DeliveryComponents, DerivedState, RUN_OUTCOMES
 
 
@@ -28,19 +30,24 @@ __all__ = [
     "ball_position",
     "bowler_change_required",
     "change_bowler",
+    "create_retirement",
     "chase_target",
     "current_run_rate",
     "delivery_components",
     "end_innings",
+    "get_live_batting_order",
     "get_scoring_state",
     "max_innings",
     "max_wickets",
     "overs_display",
     "overs_parts",
     "previous_over_bowler_id",
+    "rearrange_batting_order",
     "rebuild_from_deliveries",
+    "rebuild_innings_state",
     "record_delivery",
     "result_summary",
     "start_next_innings",
     "undo_delivery",
+    "undo_retirement",
 ]

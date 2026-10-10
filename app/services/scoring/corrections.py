@@ -13,8 +13,7 @@ from app.services.scoring.chase import (
     close_innings,
     innings_finished,
 )
-from app.services.scoring.state import current_state, rebuild_from_deliveries
-from app.services.scoring.types import DerivedState
+from app.services.scoring.state import current_state, rebuild_innings_state
 
 
 async def undo_delivery(
@@ -133,6 +132,25 @@ async def undo_delivery(
                 "delivery"
             )
 
+        retirements = (
+            await repository
+            .get_official_retirements(
+                innings.id
+            )
+        )
+
+        if any(
+            item.after_delivery_number
+            >= delivery.delivery_number
+            for item in retirements
+        ):
+
+            raise ConflictError(
+                "A retirement was recorded "
+                "after this delivery. Undo "
+                "the retirement first"
+            )
+
         # ======================
         # PRESERVE HISTORY
         # ======================
@@ -206,41 +224,30 @@ async def undo_delivery(
             )
         )
 
-        if remaining:
-
-            rebuilt = (
-                rebuild_from_deliveries(
-                    innings,
-                    remaining,
-                    balls_per_over=(
-                        match
-                        .balls_per_over
-                    ),
-                )
-            )
-
-        else:
+        if not remaining:
 
             # The now-void delivery
             # stores the exact state
             # immediately before it.
-            rebuilt = DerivedState(
-                total_runs=0,
+            innings.striker_id = (
+                delivery.striker_id
+            )
 
-                legal_balls=0,
+            innings.non_striker_id = (
+                delivery.non_striker_id
+            )
 
-                wickets=0,
-
-                striker_id=(
-                    delivery
-                    .striker_id
-                ),
-
-                non_striker_id=(
-                    delivery
-                    .non_striker_id
+        rebuilt = (
+            rebuild_innings_state(
+                innings,
+                remaining,
+                retirements,
+                balls_per_over=(
+                    match
+                    .balls_per_over
                 ),
             )
+        )
 
         innings.total_runs = (
             rebuilt.total_runs

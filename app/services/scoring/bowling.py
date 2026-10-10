@@ -7,7 +7,8 @@ from app.repositories.scoring import ScoringRepository
 from app.schemas.scoring import BowlerChange, ScoringStateRead
 from app.services.common import add_audit_log, service_transaction
 from app.services.scoring.calculations import overs_complete, previous_over_bowler_id
-from app.services.scoring.state import current_state, ensure_scoreable, rebuild_from_deliveries
+from app.services.scoring.state import current_state, ensure_scoreable, rebuild_innings_state
+from app.domain.bowling import validate_bowler_quota
 
 
 async def change_bowler(
@@ -66,9 +67,10 @@ async def change_bowler(
         )
 
         derived = (
-            rebuild_from_deliveries(
+            rebuild_innings_state(
                 innings,
                 deliveries,
+                await repository.get_official_retirements(innings.id),
                 balls_per_over=(
                     match
                     .balls_per_over
@@ -164,6 +166,22 @@ async def change_bowler(
             raise NotFoundError(
                 "Bowler not found"
             )
+
+        if payload.bowler_id in {
+            derived.striker_id,
+            derived.non_striker_id,
+        }:
+            raise ValidationError(
+                "A current batter cannot be selected "
+                "as the bowler."
+            )
+
+        validate_bowler_quota(
+            match=match,
+            deliveries=deliveries,
+            bowler_id=payload.bowler_id,
+            starting_new_over=True,
+        )
 
         innings.current_bowler_id = (
             payload.bowler_id

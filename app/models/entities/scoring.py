@@ -174,6 +174,18 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
         server_default=func.now(),
     )
+    # Client-generated idempotency key for
+    # duplicate-submission protection.
+    client_event_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=True,
+    )
+    # SHA-256 of the canonical request body, used to
+    # tell a genuine retry from a reused key.
+    client_event_fingerprint: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
     # =========================
     # RELATIONSHIPS
     # =========================
@@ -244,6 +256,11 @@ class Delivery(UUIDPrimaryKeyMixin, TimestampMixin, Base):
                 "uq_deliveries_"
                 "innings_delivery_number"
             ),
+        ),
+        UniqueConstraint(
+            "match_id",
+            "client_event_id",
+            name="uq_deliveries_match_client_event",
         ),
         CheckConstraint(
             "delivery_number > 0",

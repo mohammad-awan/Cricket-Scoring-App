@@ -15,6 +15,7 @@ from app.services.match_setup.rules import (
     derive_first_innings_teams,
 )
 from app.services.match_setup.validators import validate_match_references
+from app.domain.batting_order import validate_batting_order
 
 
 async def mark_match_ready(
@@ -163,6 +164,29 @@ async def mark_match_ready(
                     "is no longer in the "
                     "active squad"
                 )
+
+            # Stage 10:
+            # A match cannot become READY until
+            # incoming batters can be determined.
+            team_a_selections = [
+                selection
+                for selection in match.players
+                if selection.team_id == match.team_a_id
+            ]
+            team_b_selections = [
+                selection
+                for selection in match.players
+                if selection.team_id == match.team_b_id
+            ]
+
+            validate_batting_order(
+                team_a_selections,
+                players_per_side=match.players_per_side,
+            )
+            validate_batting_order(
+                team_b_selections,
+                players_per_side=match.players_per_side,
+            )
 
             first_innings = next(
                 (
