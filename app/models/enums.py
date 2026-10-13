@@ -25,8 +25,14 @@ class VenueStatus(str, Enum):
 
 class TournamentStatus(str, Enum):
     DRAFT = "draft"
+    REGISTRATION_OPEN = "registration_open"
+    REGISTRATION_CLOSED = "registration_closed"
+    SCHEDULED = "scheduled"
+    LIVE = "live"
     ACTIVE = "active"
     COMPLETED = "completed"
+    SUSPENDED = "suspended"
+    CANCELLED = "cancelled"
     ARCHIVED = "archived"
 
 

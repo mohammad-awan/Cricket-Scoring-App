@@ -15,6 +15,7 @@ from app.services.match_setup.rules import (
     derive_first_innings_teams,
 )
 from app.services.match_setup.validators import validate_match_references
+from app.services.match_setup.tournament_snapshot import lock_match_tournament_rules
 from app.domain.batting_order import validate_batting_order
 
 
@@ -273,6 +274,13 @@ async def mark_match_ready(
                     "bowler is no longer "
                     "in the bowling team"
                 )
+
+            # Stage 11: validate against the tournament roster/format
+            # and snapshot the governing rule version onto the match.
+            await lock_match_tournament_rules(
+                session,
+                match,
+            )
 
             match.status = MatchStatus.READY
             match.updated_at = datetime.now(UTC)

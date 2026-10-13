@@ -18,6 +18,13 @@ def test_all_stage2_entities_are_registered() -> None:
             "delivery_corrections",
             "audit_logs",
             "batter_retirements",
+            "tournament_assets",
+            "tournament_audit_events",
+            "tournament_groups",
+            "tournament_rosters",
+            "tournament_rule_sets",
+            "tournament_teams",
+            "tournament_venues",
         }
 
     assert expected_tables == set(Base.metadata.tables)

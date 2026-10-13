@@ -12,7 +12,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import (
     Base,
@@ -85,6 +85,29 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
         default=1,
         server_default="1",
+    )
+    tournament_ruleset_id: Mapped[UUID | None] = (
+        mapped_column(
+            PostgreSQLUUID(as_uuid=True),
+            ForeignKey(
+                "tournament_rule_sets.id",
+                ondelete="RESTRICT",
+            ),
+            nullable=True,
+        )
+    )
+    effective_rules: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    effective_rules_checksum: Mapped[str | None] = (
+        mapped_column(
+            String(64),
+            nullable=True,
+        )
+    )
+    rules_locked_at: Mapped[datetime | None] = (
+        mapped_column(
+            DateTime(timezone=True),
+            nullable=True,
+        )
     )
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[MatchStatus] = mapped_column(
@@ -167,6 +190,14 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "team_a_id <> team_b_id",
             name="matches_teams_must_differ",
         ),
+        CheckConstraint(
+            "(tournament_ruleset_id IS NULL AND effective_rules IS NULL "
+            "AND effective_rules_checksum IS NULL AND rules_locked_at IS NULL) "
+            "OR (tournament_ruleset_id IS NOT NULL AND effective_rules IS NOT NULL "
+            "AND effective_rules_checksum IS NOT NULL AND rules_locked_at IS NOT NULL)",
+            name="matches_rule_snapshot_complete",
+        ),
+        Index("ix_matches_tournament_ruleset_id", "tournament_ruleset_id"),
         CheckConstraint(
             "total_overs IS NULL OR total_overs > 0",
             name="matches_total_overs_positive_when_set",

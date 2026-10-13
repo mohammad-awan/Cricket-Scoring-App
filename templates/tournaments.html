@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}
+Tournaments | Cricket Intelligence Platform
+{% endblock %}
+
+{% block content %}
+
+<div id="tournaments-page">
+
+    <section class="page-heading page-heading-actions">
+        <div>
+            <p class="eyebrow">Stage 11 · Competitions</p>
+            <h1>Tournaments</h1>
+            <p class="page-subtitle">
+                Define international, domestic, school, indoor or gully competitions —
+                branding, entry rules, formats and versioned cricket rules.
+            </p>
+        </div>
+
+        <div class="action-row">
+            <button class="button button-secondary" id="organizer-token" type="button">Organizer token</button>
+            <a class="button button-primary" href="/competitions/new">+ New tournament</a>
+        </div>
+    </section>
+
+    <section class="stats-grid" id="tournament-stats"></section>
+
+    <section class="panel master-panel">
+        <div class="toolbar">
+            <label class="search-box">
+                <span class="sr-only">Search</span>
+                <input id="search-input" type="search" placeholder="Search by name, season, organizer…" autocomplete="off">
+            </label>
+
+            <select id="status-filter" class="status-filter" aria-label="Status">
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="registration_open">Registration open</option>
+                <option value="registration_closed">Registration closed</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="live">Live</option>
+                <option value="suspended">Suspended</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="active">Active (legacy)</option>
+                <option value="archived">Archived</option>
+            </select>
+
+            <label class="checkbox-field">
+                <input id="include-archived" type="checkbox">
+                Include archived
+            </label>
+
+            <button class="button button-secondary button-small" id="refresh-list" type="button">Refresh</button>
+        </div>
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tournament</th>
+                        <th>Organizer</th>
+                        <th>Dates</th>
+                        <th>Status</th>
+                        <th class="actions-column">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+
+            <div class="table-state" id="table-loading">Loading tournaments...</div>
+            <div class="table-state hidden" id="table-empty">No tournaments match these filters.</div>
+        </div>
+
+        <div class="pagination-bar">
+            <span id="pagination-summary">0 tournaments</span>
+            <div class="pagination-actions">
+                <button class="button button-secondary button-small" id="previous-page" type="button">Previous</button>
+                <span id="page-indicator">Page 1</span>
+                <button class="button button-secondary button-small" id="next-page" type="button">Next</button>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
+<script src="{{ url_for('static', path='js/tournament-common.js') }}?v={{ asset_version('js/tournament-common.js') }}"></script>
+<script src="{{ url_for('static', path='js/tournaments.js') }}?v={{ asset_version('js/tournaments.js') }}"></script>
+{% endblock %}

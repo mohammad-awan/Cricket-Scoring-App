@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ "Edit" if tournament_id else "New" }} tournament | Cricket Intelligence Platform
+{% endblock %}
+
+{% block content %}
+
+<div id="tournament-wizard" data-tournament-id="{{ tournament_id }}">
+
+    <section class="page-heading page-heading-actions">
+        <div>
+            <a class="back-link" href="{{ '/competitions/' ~ tournament_id if tournament_id else '/competitions' }}">← {{ "Back to tournament" if tournament_id else "All tournaments" }}</a>
+            <p class="eyebrow">Stage 11 · Tournament wizard</p>
+            <h1 id="wizard-title">{{ "Edit tournament" if tournament_id else "New tournament" }}</h1>
+            <p class="page-subtitle">
+                Work through each step; every step saves independently, so you can
+                return later. Nothing becomes official until registration opens.
+            </p>
+        </div>
+
+        <button class="button button-secondary" id="organizer-token" type="button">Organizer token</button>
+    </section>
+
+    <ol class="wizard-steps" id="wizard-steps"></ol>
+
+    <div id="wizard-lock" class="notice notice-warning hidden" style="margin-bottom:20px"></div>
+
+    <div id="wizard-body"></div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
+<script src="{{ url_for('static', path='js/tournament-common.js') }}?v={{ asset_version('js/tournament-common.js') }}"></script>
+<script src="{{ url_for('static', path='js/tournament-wizard.js') }}?v={{ asset_version('js/tournament-wizard.js') }}"></script>
+{% endblock %}

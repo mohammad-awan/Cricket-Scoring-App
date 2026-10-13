@@ -1061,10 +1061,75 @@
     }
 
 
+    // Stage 11: a tournament with rules dictates the match format, and the
+    // server rejects explicit values that disagree. Prefill and lock them.
+    const FORMAT_FIELDS = {
+        players_per_side: "players_per_side",
+        total_overs: "overs_per_innings",
+        balls_per_over: "balls_per_over",
+        innings_per_team: "innings_per_team",
+    };
+
+    let tournamentFormatRequest = 0;
+
+
+    function applyTournamentFormat(rules) {
+
+        Object.entries(FORMAT_FIELDS).forEach(([field, ruleKey]) => {
+
+            const input = elements.form.elements[field];
+
+            if (rules) {
+                input.value = rules[ruleKey];
+            }
+
+            input.readOnly = Boolean(rules);
+            input.title = rules ? "Set by the tournament rules" : "";
+
+        });
+
+    }
+
+
+    async function onTournamentChange() {
+
+        const tournamentId = elements.tournament.value;
+        const request = ++tournamentFormatRequest;
+
+        if (!tournamentId) {
+            applyTournamentFormat(null);
+            return;
+        }
+
+        try {
+
+            const ruleset = await API.tournament.currentRules(tournamentId);
+
+            if (request === tournamentFormatRequest) {
+                applyTournamentFormat(ruleset ? ruleset.rules : null);
+            }
+
+        } catch {
+
+            if (request === tournamentFormatRequest) {
+                applyTournamentFormat(null);
+            }
+
+        }
+
+    }
+
+
+    elements.tournament.addEventListener("change", onTournamentChange);
+
+
     function openModal() {
 
 
         elements.form.reset();
+
+
+        applyTournamentFormat(null);
 
 
         elements.formError

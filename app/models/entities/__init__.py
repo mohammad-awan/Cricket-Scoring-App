@@ -14,7 +14,16 @@ from app.models.entities.players import Player
 from app.models.entities.retirements import BatterRetirement
 from app.models.entities.scoring import Delivery, DeliveryCorrection
 from app.models.entities.teams import Team, TeamPlayer
-from app.models.entities.tournaments import Tournament
+from app.models.entities.tournaments import (
+    Tournament,
+    TournamentRuleSet,
+    TournamentTeam,
+    TournamentGroup,
+    TournamentRoster,
+    TournamentVenue,
+    TournamentAsset,
+    TournamentAuditEvent,
+)
 from app.models.entities.venues import Venue
 
 
@@ -30,5 +39,12 @@ __all__ = [
     "Team",
     "TeamPlayer",
     "Tournament",
+    "TournamentAsset",
+    "TournamentAuditEvent",
+    "TournamentGroup",
+    "TournamentRoster",
+    "TournamentRuleSet",
+    "TournamentTeam",
+    "TournamentVenue",
     "Venue",
 ]

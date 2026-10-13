@@ -13,6 +13,7 @@ from app.services.common import add_audit_log, integrity_conflict, service_trans
 from app.utils.text import clean_optional
 from app.services.match_setup.presenters import match_setup_read, reload_match
 from app.services.match_setup.validators import validate_match_references
+from app.services.match_setup.tournament_snapshot import apply_tournament_fixture_rules
 
 
 async def create_match(
@@ -57,6 +58,24 @@ async def create_match(
                 )
             )
 
+            format_fields = ("players_per_side", "total_overs", "balls_per_over", "innings_per_team")
+
+            match_format = await apply_tournament_fixture_rules(
+                session,
+                tournament_id=payload.tournament_id,
+                team_a_id=payload.team_a_id,
+                team_b_id=payload.team_b_id,
+                venue_id=payload.venue_id,
+                config={
+                    field: getattr(payload, field)
+                    for field in format_fields
+                },
+                explicit_fields=(
+                    payload.model_fields_set
+                    & set(format_fields)
+                ),
+            )
+
             title = clean_optional(
                 payload.title
             )
@@ -97,19 +116,19 @@ async def create_match(
                 ),
 
                 players_per_side=(
-                    payload.players_per_side
+                    match_format["players_per_side"]
                 ),
 
                 total_overs=(
-                    payload.total_overs
+                    match_format["total_overs"]
                 ),
 
                 balls_per_over=(
-                    payload.balls_per_over
+                    match_format["balls_per_over"]
                 ),
 
                 innings_per_team=(
-                    payload.innings_per_team
+                    match_format["innings_per_team"]
                 ),
 
                 scheduled_at=(
@@ -404,6 +423,48 @@ async def update_match(
                     tournament_id
                 ),
             )
+
+            if tournament_id is not None:
+                format_fields = ("players_per_side", "total_overs", "balls_per_over", "innings_per_team")
+
+                match_format = await apply_tournament_fixture_rules(
+                    session,
+                    tournament_id=tournament_id,
+                    team_a_id=team_a_id,
+                    team_b_id=team_b_id,
+                    venue_id=venue_id,
+                    config={
+                        field: data.get(
+                            field,
+                            getattr(match, field),
+                        )
+                        for field in format_fields
+                    },
+                    explicit_fields=(
+                        set(data)
+                        & set(format_fields)
+                    ),
+                )
+
+                if (
+                    match_format["players_per_side"]
+                    != match.players_per_side
+                    and match.players
+                ):
+                    raise ConflictError(
+                        "Players per side cannot be "
+                        "changed after a playing team "
+                        "has been selected"
+                    )
+
+                data.update(
+                    {
+                        field: value
+                        for field, value in match_format.items()
+                        if field in data
+                        or value != getattr(match, field)
+                    }
+                )
 
             for field in (
                 "match_number",

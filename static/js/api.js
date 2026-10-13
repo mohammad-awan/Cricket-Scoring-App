@@ -50,6 +50,35 @@
     }
 
 
+    // Stage 11: organizer endpoints accept an X-Organizer-Token header.
+    // The token is kept only for this browser session.
+    const ORGANIZER_TOKEN_KEY = "cip.organizerToken";
+
+
+    function organizerToken() {
+
+        try {
+
+            return sessionStorage.getItem(ORGANIZER_TOKEN_KEY) || "";
+
+        } catch {
+
+            return "";
+
+        }
+
+    }
+
+
+    function organizerHeaders() {
+
+        const token = organizerToken();
+
+        return token ? { "X-Organizer-Token": token } : {};
+
+    }
+
+
     async function request(
 
         path,
@@ -71,6 +100,9 @@
 
                     "Content-Type":
                         "application/json",
+
+
+                    ...organizerHeaders(),
 
 
                     ...(options.headers || {}),
@@ -882,6 +914,125 @@
                 `${query ? `?${query}` : ""}`
 
             );
+
+        },
+
+
+        // =========================
+        // STAGE 11 - TOURNAMENTS
+        // =========================
+
+        organizerToken,
+
+
+        setOrganizerToken(token) {
+
+            try {
+
+                if (token) {
+
+                    sessionStorage.setItem(ORGANIZER_TOKEN_KEY, token);
+
+                } else {
+
+                    sessionStorage.removeItem(ORGANIZER_TOKEN_KEY);
+
+                }
+
+            } catch {
+
+                // Storage unavailable (private mode); token stays unset.
+
+            }
+
+        },
+
+
+        tournament: {
+
+            get: (id) => request(`/tournaments/${id}/details`),
+
+            create: (data) => request("/tournaments", { method: "POST", body: JSON.stringify(data) }),
+
+            updateBasics: (id, data) => request(`/tournaments/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+
+            configure: (id, data) => request(`/tournaments/${id}/configuration`, { method: "PATCH", body: JSON.stringify(data) }),
+
+            readiness: (id) => request(`/tournaments/${id}/readiness`),
+
+            transitions: (id) => request(`/tournaments/${id}/transitions`),
+
+            transition: (id, data) => request(`/tournaments/${id}/transitions`, { method: "POST", body: JSON.stringify(data) }),
+
+            publish: (id, publish) => request(`/tournaments/${id}/publication`, { method: "POST", body: JSON.stringify({ publish }) }),
+
+            audit: (id) => request(`/tournaments/${id}/audit?limit=50`),
+
+            preset: (formatCode) => request(`/tournaments/presets/${formatCode}`),
+
+            validateRules: (rules) => request("/tournaments/rules/validate", { method: "POST", body: JSON.stringify({ rules }) }),
+
+            rules: (id) => request(`/tournaments/${id}/rules`),
+
+            createRules: (id, rules) => request(`/tournaments/${id}/rules`, { method: "POST", body: JSON.stringify({ rules }) }),
+
+            propagate: (id, data) => request(`/tournaments/${id}/rules/propagate`, { method: "POST", body: JSON.stringify(data) }),
+
+            async currentRules(id) {
+
+                try {
+
+                    return await request(`/tournaments/${id}/rules/current`);
+
+                } catch (error) {
+
+                    if (error.status === 404) {
+
+                        return null;
+
+                    }
+
+                    throw error;
+
+                }
+
+            },
+
+            teams: (id, status) => request(`/tournaments/${id}/teams${status ? `?registration_status=${status}` : ""}`),
+
+            register: (id, data) => request(`/tournaments/${id}/teams`, { method: "POST", body: JSON.stringify(data) }),
+
+            invite: (id, data) => request(`/tournaments/${id}/teams/invitations`, { method: "POST", body: JSON.stringify(data) }),
+
+            decide: (id, membershipId, data) => request(`/tournaments/${id}/teams/${membershipId}/decision`, { method: "POST", body: JSON.stringify(data) }),
+
+            withdraw: (id, membershipId, reason) => request(`/tournaments/${id}/teams/${membershipId}/withdrawal`, { method: "POST", body: JSON.stringify({ reason }) }),
+
+            assignGroup: (id, membershipId, groupId) => request(`/tournaments/${id}/teams/${membershipId}/group`, { method: "PUT", body: JSON.stringify({ group_id: groupId }) }),
+
+            setCaptain: (id, membershipId, playerId) => request(`/tournaments/${id}/teams/${membershipId}/captain`, { method: "PUT", body: JSON.stringify({ player_id: playerId }) }),
+
+            roster: (id, membershipId) => request(`/tournaments/${id}/teams/${membershipId}/roster`),
+
+            rosterAdd: (id, membershipId, data) => request(`/tournaments/${id}/teams/${membershipId}/roster`, { method: "POST", body: JSON.stringify(data) }),
+
+            rosterRemove: (id, membershipId, playerId) => request(`/tournaments/${id}/teams/${membershipId}/roster/${playerId}`, { method: "DELETE" }),
+
+            rosterAvailability: (id, membershipId, playerId, data) => request(`/tournaments/${id}/teams/${membershipId}/roster/${playerId}/availability`, { method: "PATCH", body: JSON.stringify(data) }),
+
+            lockRosters: (id, reason) => request(`/tournaments/${id}/rosters/lock`, { method: "POST", body: JSON.stringify({ reason: reason || null }) }),
+
+            groups: (id) => request(`/tournaments/${id}/groups`),
+
+            createGroup: (id, data) => request(`/tournaments/${id}/groups`, { method: "POST", body: JSON.stringify(data) }),
+
+            deleteGroup: (id, groupId) => request(`/tournaments/${id}/groups/${groupId}`, { method: "DELETE" }),
+
+            venues: (id) => request(`/tournaments/${id}/venues`),
+
+            addVenue: (id, venueId) => request(`/tournaments/${id}/venues`, { method: "POST", body: JSON.stringify({ venue_id: venueId }) }),
+
+            removeVenue: (id, venueId) => request(`/tournaments/${id}/venues/${venueId}`, { method: "DELETE" }),
 
         },
 

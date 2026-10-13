@@ -116,12 +116,17 @@
             </a>
 
 
+            <p class="nav-section">
+                Competitions
+            </p>
+
+
             <a
                 class="nav-link
-                {% if request.url.path == '/master-data/tournaments' %}
+                {% if request.url.path.startswith('/competitions') %}
                 active
                 {% endif %}"
-                href="/master-data/tournaments"
+                href="/competitions"
             >
                 <span class="nav-icon">
                     C

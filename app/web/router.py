@@ -121,3 +121,60 @@ async def player_detail_page(request: Request, player_id: str):
                 player_id,
         },
     )
+
+
+TOURNAMENT_SECTIONS = {
+    "overview",
+    "identity",
+    "rules",
+    "teams",
+    "squads",
+    "venues",
+}
+
+
+@router.get("/competitions")
+async def tournaments_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="tournaments.html",
+        context={},
+    )
+
+
+@router.get("/competitions/new")
+async def tournament_create_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="tournament_wizard.html",
+        context={"tournament_id": ""},
+    )
+
+
+@router.get("/competitions/{tournament_id}/edit")
+async def tournament_edit_page(request: Request, tournament_id: str):
+    return templates.TemplateResponse(
+        request=request,
+        name="tournament_wizard.html",
+        context={"tournament_id": tournament_id},
+    )
+
+
+@router.get("/competitions/{tournament_id}")
+@router.get("/competitions/{tournament_id}/{section}")
+async def tournament_detail_page(
+    request: Request,
+    tournament_id: str,
+    section: str = "overview",
+):
+    if section not in TOURNAMENT_SECTIONS:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="tournament_detail.html",
+        context={
+            "tournament_id": tournament_id,
+            "section": section,
+        },
+    )

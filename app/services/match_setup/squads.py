@@ -14,6 +14,7 @@ from app.schemas.match_setup import (
 )
 from app.services.common import add_audit_log, integrity_conflict, service_transaction
 from app.services.match_setup.presenters import match_setup_read, reload_match
+from app.services.match_setup.tournament_snapshot import validate_tournament_lineup
 
 
 async def get_active_squad(
@@ -207,6 +208,13 @@ async def set_playing_team(
                         else ""
                     )
                 )
+
+            await validate_tournament_lineup(
+                session,
+                match,
+                team_id,
+                requested_ids,
+            )
 
             selections = [
                 MatchPlayer(

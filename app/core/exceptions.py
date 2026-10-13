@@ -18,6 +18,11 @@ class NotFoundError(AppError):
         super().__init__(message, status.HTTP_404_NOT_FOUND)
 
 
+class PermissionDeniedError(AppError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status.HTTP_403_FORBIDDEN)
+
+
 class ConflictError(AppError):
     def __init__(self, message: str) -> None:
         super().__init__(message, status.HTTP_409_CONFLICT)

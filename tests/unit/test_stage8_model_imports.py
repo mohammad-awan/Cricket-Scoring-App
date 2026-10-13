@@ -46,6 +46,13 @@ def test_stage8_public_model_imports_and_mapper_configuration() -> None:
         "team_players",
         "teams",
         "tournaments",
+        "tournament_assets",
+        "tournament_audit_events",
+        "tournament_groups",
+        "tournament_rosters",
+        "tournament_rule_sets",
+        "tournament_teams",
+        "tournament_venues",
         "venues",
     }
 

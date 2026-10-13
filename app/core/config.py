@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     database_max_overflow: int = Field(default=10, ge=0)
     database_pool_recycle: int = Field(default=1800, ge=30)
 
+    # Shared secret guarding tournament organizer endpoints until real
+    # user authentication exists. When unset, organizer endpoints are
+    # only reachable in development/test environments.
+    organizer_api_token: SecretStr | None = None
+
     @field_validator("database_url", mode="before")
     @classmethod
     def normalize_database_url(
