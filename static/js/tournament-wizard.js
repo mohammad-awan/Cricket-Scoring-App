@@ -30,6 +30,8 @@
         tournament: null,
         rules: null,
         venues: [],
+        series: [],
+        assets: [],
         step: 0,
         editor: null,
     };
@@ -162,20 +164,44 @@
                 ${formPanel(
                     "Identity & branding",
                     "Public identity, sponsorship and contact details.",
-                    UI.renderFields(UI.IDENTITY_FIELDS, tournament),
+                    UI.renderFields(UI.IDENTITY_FIELDS, tournament, { series_id: UI.seriesOptions(state.series) }),
                     { disabled: configLocked(), submitDisabled: configLocked() },
                 )}
-                <aside class="panel">
-                    <div class="panel-header t-panel-header"><div><h2>Logo & cover</h2><p>Brand preview</p></div></div>
-                    <div class="panel-body t-stack">
-                        <div class="name-cell">${UI.logoMark(tournament.name)}<strong>${UI.escapeHtml(tournament.name)}</strong></div>
-                        <div class="notice notice-info">
-                            Logo and cover uploads use controlled object storage with file-type and size validation.
-                            Storage is not configured on this server yet, so the generated monogram is used as the fallback.
-                        </div>
-                    </div>
+                <aside class="t-stack">
+                    <section class="panel">
+                        <div class="panel-header t-panel-header"><div><h2>Logo & cover</h2><p>Uploaded images replace the monogram</p></div></div>
+                        <div class="panel-body" data-role="branding"></div>
+                    </section>
+                    ${configLocked() ? "" : `
+                    <section class="panel">
+                        <div class="panel-header t-panel-header"><div><h2>Series</h2><p>Group editions of a recurring competition</p></div></div>
+                        <div class="panel-body"><button class="button button-secondary button-small" type="button" data-action="new-series">+ New series</button></div>
+                    </section>`}
                 </aside>
             </div>`;
+
+        UI.mountBrandingPanel(elements.body.querySelector('[data-role="branding"]'), {
+            tournamentId: state.id,
+            name: tournament.name,
+            assets: state.assets,
+            disabled: tournament.status === "archived",
+            onChange: (assets) => {
+                state.assets = assets;
+            },
+        });
+    }
+
+
+    async function addSeriesToForm() {
+        const created = await UI.promptNewSeries();
+        if (!created) {
+            return;
+        }
+        state.series = [...state.series, created].sort((a, b) => a.name.localeCompare(b.name));
+        const select = elements.body.querySelector('select[name="series_id"]');
+        if (select) {
+            select.add(new Option(created.name, created.id, true, true));
+        }
     }
 
 
@@ -315,12 +341,14 @@
         if (!state.id) {
             return;
         }
-        const [tournament, rules] = await Promise.all([
+        const [tournament, rules, assets] = await Promise.all([
             API.tournament.get(state.id),
             API.tournament.currentRules(state.id),
+            API.tournament.assets(state.id).catch(() => []),
         ]);
         state.tournament = tournament;
         state.rules = rules;
+        state.assets = assets;
         elements.title.textContent = `Edit ${tournament.name}`;
 
         const locked = configLocked();
@@ -370,6 +398,11 @@
         const nav = event.target.closest("[data-nav]");
         if (nav) {
             go(state.step + (nav.dataset.nav === "back" ? -1 : 1));
+            return;
+        }
+
+        if (event.target.closest('[data-action="new-series"]')) {
+            await addSeriesToForm();
             return;
         }
 
@@ -428,11 +461,13 @@
         UI.bindOrganizerButton(document.getElementById("organizer-token"));
 
         try {
-            const [venues] = await Promise.all([
+            const [venues, series] = await Promise.all([
                 API.listAll("venues").catch(() => []),
+                API.tournamentSeries.list().then((page) => page.items).catch(() => []),
                 loadTournament(),
             ]);
             state.venues = venues;
+            state.series = series;
         } catch (error) {
             elements.body.innerHTML = `<div class="notice notice-danger">${UI.escapeHtml(UI.errorText(error))}</div>`;
             return;

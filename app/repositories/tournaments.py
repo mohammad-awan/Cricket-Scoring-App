@@ -5,11 +5,16 @@ from app.models import (
     Match,
     MatchPlayer,
     MatchStatus,
+    Player,
+    Team,
     Tournament,
+    TournamentAsset,
     TournamentAuditEvent,
     TournamentGroup,
+    TournamentPointDeduction,
     TournamentRoster,
     TournamentRuleSet,
+    TournamentSeries,
     TournamentTeam,
     TournamentVenue,
 )
@@ -146,6 +151,78 @@ class TournamentRepository(MasterDataRepository[Tournament]):
         )
         return list(result.all())
 
+    async def page_registrations(
+        self,
+        tournament_id: UUID,
+        *,
+        page: int,
+        page_size: int,
+        registration_status: str | None = None,
+        is_reserve: bool | None = None,
+        search: str | None = None,
+    ) -> tuple[list[TournamentTeam], int]:
+        conditions = [TournamentTeam.tournament_id == tournament_id]
+
+        if registration_status is not None:
+            conditions.append(TournamentTeam.registration_status == registration_status)
+
+        if is_reserve is not None:
+            conditions.append(TournamentTeam.is_reserve.is_(is_reserve))
+
+        if search:
+            pattern = f"%{search.lower()}%"
+            conditions.append(
+                or_(
+                    func.lower(func.coalesce(TournamentTeam.display_name, "")).like(pattern),
+                    func.lower(Team.name).like(pattern),
+                    func.lower(func.coalesce(Team.short_name, "")).like(pattern),
+                    func.lower(func.coalesce(TournamentTeam.manager_name, "")).like(pattern),
+                )
+            )
+
+        base = (
+            select(TournamentTeam)
+            .join(Team, Team.id == TournamentTeam.team_id)
+            .where(*conditions)
+        )
+        total = int(
+            await self.session.scalar(
+                select(func.count()).select_from(base.subquery())
+            )
+            or 0
+        )
+        result = await self.session.scalars(
+            base.order_by(
+                TournamentTeam.seed.asc().nulls_last(),
+                TournamentTeam.created_at,
+                TournamentTeam.id,
+            )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        return list(result.all()), total
+
+    async def get_membership_locked(
+        self,
+        tournament_id: UUID,
+        membership_id: UUID,
+    ) -> TournamentTeam | None:
+        return await self.session.scalar(
+            select(TournamentTeam)
+            .where(
+                TournamentTeam.tournament_id == tournament_id,
+                TournamentTeam.id == membership_id,
+            )
+            .with_for_update()
+        )
+
+    async def get_replacement_for(self, membership_id: UUID) -> TournamentTeam | None:
+        return await self.session.scalar(
+            select(TournamentTeam).where(
+                TournamentTeam.replaces_membership_id == membership_id
+            )
+        )
+
     async def count_registrations(
         self,
         tournament_id: UUID,
@@ -228,6 +305,28 @@ class TournamentRepository(MasterDataRepository[Tournament]):
             .limit(1)
         )
         return await self.session.scalar(statement) is not None
+
+    async def players_on_other_rosters(
+        self,
+        tournament_id: UUID,
+        *,
+        exclude_membership_id: UUID,
+    ) -> set[UUID]:
+        """Players already on another active team roster in the tournament."""
+
+        result = await self.session.scalars(
+            select(TournamentRoster.player_id)
+            .join(
+                TournamentTeam,
+                TournamentRoster.tournament_team_id == TournamentTeam.id,
+            )
+            .where(
+                TournamentTeam.tournament_id == tournament_id,
+                TournamentTeam.id != exclude_membership_id,
+                TournamentTeam.registration_status.in_(ACTIVE_REGISTRATION_STATUSES),
+            )
+        )
+        return set(result.all())
 
     async def available_roster_player_ids(
         self,
@@ -415,3 +514,101 @@ class TournamentRepository(MasterDataRepository[Tournament]):
             .limit(limit)
         )
         return list(result.all())
+
+    # Players (eligibility)
+
+    async def players_by_ids(self, player_ids: set[UUID]) -> dict[UUID, Player]:
+        if not player_ids:
+            return {}
+
+        result = await self.session.scalars(
+            select(Player).where(Player.id.in_(player_ids))
+        )
+        return {player.id: player for player in result.all()}
+
+    # Point deductions
+
+    async def list_deductions(
+        self,
+        tournament_id: UUID,
+        *,
+        include_revoked: bool = True,
+    ) -> list[TournamentPointDeduction]:
+        statement = select(TournamentPointDeduction).where(
+            TournamentPointDeduction.tournament_id == tournament_id
+        )
+        if not include_revoked:
+            statement = statement.where(TournamentPointDeduction.revoked_at.is_(None))
+
+        result = await self.session.scalars(
+            statement.order_by(TournamentPointDeduction.created_at.desc())
+        )
+        return list(result.all())
+
+    async def get_deduction_locked(
+        self,
+        tournament_id: UUID,
+        deduction_id: UUID,
+    ) -> TournamentPointDeduction | None:
+        return await self.session.scalar(
+            select(TournamentPointDeduction)
+            .where(
+                TournamentPointDeduction.tournament_id == tournament_id,
+                TournamentPointDeduction.id == deduction_id,
+            )
+            .with_for_update()
+        )
+
+    # Branding assets
+
+    async def current_assets(self, tournament_id: UUID) -> list[TournamentAsset]:
+        result = await self.session.scalars(
+            select(TournamentAsset)
+            .where(
+                TournamentAsset.tournament_id == tournament_id,
+                TournamentAsset.is_current.is_(True),
+            )
+            .order_by(TournamentAsset.kind)
+        )
+        return list(result.all())
+
+    async def current_asset(self, tournament_id: UUID, kind: str) -> TournamentAsset | None:
+        return await self.session.scalar(
+            select(TournamentAsset).where(
+                TournamentAsset.tournament_id == tournament_id,
+                TournamentAsset.kind == kind,
+                TournamentAsset.is_current.is_(True),
+            )
+        )
+
+    async def asset_by_key(self, object_key: str) -> TournamentAsset | None:
+        return await self.session.scalar(
+            select(TournamentAsset).where(TournamentAsset.object_key == object_key)
+        )
+
+    # Series
+
+    async def list_editions(self, series_id: UUID) -> list[Tournament]:
+        result = await self.session.scalars(
+            select(Tournament)
+            .where(Tournament.series_id == series_id)
+            .order_by(
+                Tournament.edition_number.asc().nulls_last(),
+                Tournament.start_date.asc().nulls_last(),
+                Tournament.created_at,
+            )
+        )
+        return list(result.all())
+
+
+class TournamentSeriesRepository(MasterDataRepository[TournamentSeries]):
+    model = TournamentSeries
+    search_fields = (
+        TournamentSeries.name,
+        TournamentSeries.slug,
+        TournamentSeries.organizer,
+    )
+
+    def build_conditions(self, *, search: str | None = None, include_archived: bool = False) -> list:
+        # Series have no archive lifecycle; only search narrows the list.
+        return super().build_conditions(search=search, include_archived=True)

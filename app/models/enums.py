@@ -18,6 +18,11 @@ class PlayerStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class PlayerSex(str, Enum):
+    MALE = "male"
+    FEMALE = "female"
+
+
 class VenueStatus(str, Enum):
     ACTIVE = "active"
     ARCHIVED = "archived"

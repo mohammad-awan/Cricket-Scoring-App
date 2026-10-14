@@ -149,6 +149,18 @@
                 },
 
                 {
+                    name: "sex",
+                    label: "Sex",
+                    type: "select",
+
+                    options: [
+                        ["", "Not set"],
+                        ["male", "Male"],
+                        ["female", "Female"],
+                    ],
+                },
+
+                {
                     name: "batting_hand",
                     label: "Batting hand",
                     type: "select",

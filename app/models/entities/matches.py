@@ -73,6 +73,8 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=11,
         server_default="11",
     )
+    # Fewest players a team may field; NULL means a full side is required.
+    minimum_players_to_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_overs: Mapped[int | None] = mapped_column(Integer, nullable=True)
     balls_per_over: Mapped[int] = mapped_column(
         Integer,
@@ -205,6 +207,11 @@ class Match(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "players_per_side >= 2",
             name="matches_players_per_side_minimum",
+        ),
+        CheckConstraint(
+            "minimum_players_to_start IS NULL OR "
+            "(minimum_players_to_start >= 2 AND minimum_players_to_start <= players_per_side)",
+            name="matches_minimum_players_valid",
         ),
         CheckConstraint(
             "balls_per_over > 0",

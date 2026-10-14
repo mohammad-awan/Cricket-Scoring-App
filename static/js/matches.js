@@ -1065,6 +1065,7 @@
     // server rejects explicit values that disagree. Prefill and lock them.
     const FORMAT_FIELDS = {
         players_per_side: "players_per_side",
+        minimum_players_to_start: "minimum_players_to_start",
         total_overs: "overs_per_innings",
         balls_per_over: "balls_per_over",
         innings_per_team: "innings_per_team",
@@ -1259,6 +1260,20 @@
                         .players_per_side
                         .value
                 ),
+
+
+            minimum_players_to_start:
+                form.elements
+                    .minimum_players_to_start
+                    .value === ""
+
+                    ? null
+
+                    : Number(
+                        form.elements
+                            .minimum_players_to_start
+                            .value
+                    ),
 
 
             total_overs:

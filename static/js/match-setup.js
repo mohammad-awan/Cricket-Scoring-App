@@ -331,7 +331,7 @@
                 +
                 " · "
                 +
-                `${match.players_per_side} players per side`
+                `${sideSizeLabel(match)} players per side`
                 +
                 " · "
                 +
@@ -436,7 +436,7 @@
                         +
                         " playing team "
                         +
-                        `(${match.players_per_side})`
+                        `(${sideSizeLabel(match)})`
                     ),
             },
 
@@ -450,7 +450,7 @@
                         +
                         " playing team "
                         +
-                        `(${match.players_per_side})`
+                        `(${sideSizeLabel(match)})`
                     ),
             },
 
@@ -636,15 +636,44 @@
     }
 
 
+    // Teams may field from minimum_players_to_start up to a full side.
+    function minimumPlayers(match) {
+
+        return (
+            match.minimum_players_to_start
+            || match.players_per_side
+        );
+
+    }
+
+
+    function sideSizeLabel(match) {
+
+        const minimum = minimumPlayers(match);
+
+        return minimum === match.players_per_side
+            ? `${match.players_per_side}`
+            : `${minimum}–${match.players_per_side}`;
+
+    }
+
+
     function squadCountLabel(
         count,
-        required
+        required,
+        minimum = required
     ) {
 
         return (
             `${count} / ${required}`
             +
             " players selected"
+            +
+            (
+                minimum < required
+                    ? ` · minimum ${minimum}`
+                    : ""
+            )
         );
 
     }
@@ -683,6 +712,10 @@
 
         const required =
             match.players_per_side;
+
+
+        const minimum =
+            minimumPlayers(match);
 
 
         const selectedSet =
@@ -883,7 +916,10 @@
         const canSave =
             (
                 selection.order.length
-                === required
+                >= minimum
+                &&
+                selection.order.length
+                <= required
                 &&
                 !locked
             );
@@ -915,7 +951,8 @@
                     ${escapeHtml(
                         squadCountLabel(
                             selection.order.length,
-                            required
+                            required,
+                            minimum
                         )
                     )}
                 </span>
@@ -940,7 +977,7 @@
                                 for this team yet.
 
                                 Add at least
-                                ${required}
+                                ${minimum}
                                 players on the
 
                                 <a href="/master-data/teams">

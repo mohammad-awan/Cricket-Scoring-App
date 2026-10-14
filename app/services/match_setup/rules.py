@@ -1,5 +1,6 @@
 from __future__ import annotations
 from uuid import UUID
+from app.domain.playing_side import side_size_allowed
 from app.core.exceptions import ValidationError
 from app.models import Match
 from app.schemas.match_setup import MatchReadinessRead
@@ -86,14 +87,14 @@ def evaluate_readiness(
         and match.toss_decision is not None
     )
 
-    team_a_players_complete = (
-        len(team_a_ids)
-        == match.players_per_side
+    team_a_players_complete = side_size_allowed(
+        match,
+        len(team_a_ids),
     )
 
-    team_b_players_complete = (
-        len(team_b_ids)
-        == match.players_per_side
+    team_b_players_complete = side_size_allowed(
+        match,
+        len(team_b_ids),
     )
 
     first_innings = next(

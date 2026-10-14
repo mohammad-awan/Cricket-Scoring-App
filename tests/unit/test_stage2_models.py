@@ -21,8 +21,10 @@ def test_all_stage2_entities_are_registered() -> None:
             "tournament_assets",
             "tournament_audit_events",
             "tournament_groups",
+            "tournament_point_deductions",
             "tournament_rosters",
             "tournament_rule_sets",
+            "tournament_series",
             "tournament_teams",
             "tournament_venues",
         }

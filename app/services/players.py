@@ -50,6 +50,7 @@ async def create_player(session: AsyncSession, payload: PlayerCreate) -> Player:
                     nationality=(
                         nationality
                     ),
+                    sex=payload.sex,
                     external_id=(
                         external_id
                     ),
@@ -147,6 +148,9 @@ async def update_player(session: AsyncSession, player_id: UUID, payload: PlayerU
 
             if "nationality" in data:
                 player.nationality = clean_optional(data["nationality"])
+
+            if "sex" in data:
+                player.sex = data["sex"]
 
             final_bowling_arm = data.get(
                 "bowling_arm",

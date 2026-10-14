@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.playing_side import side_size_allowed, side_size_text
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.models import AuditAction, MatchPlayer, MatchStatus
 from app.repositories.match_setup import MatchSetupRepository
@@ -142,15 +143,13 @@ async def set_playing_team(
                     "has been created"
                 )
 
-            if (
-                len(
-                    payload.players
-                )
-                != match.players_per_side
+            if not side_size_allowed(
+                match,
+                len(payload.players),
             ):
                 raise ValidationError(
-                    "This match requires exactly "
-                    f"{match.players_per_side} "
+                    "This match requires "
+                    f"{side_size_text(match)} "
                     "players per side, but "
                     f"{len(payload.players)} "
                     "were provided"

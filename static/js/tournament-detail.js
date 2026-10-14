@@ -40,6 +40,8 @@
         venues: new Map(),
         memberships: [],
         groups: [],
+        assets: [],
+        series: [],
         teamFilter: { search: "", status: "", page: 1 },
         editor: null,
     };
@@ -128,14 +130,25 @@
         reasonField: document.getElementById("action-reason-field"),
         reasonLabel: document.getElementById("action-reason-label"),
         reason: document.getElementById("action-reason"),
+        choiceField: document.getElementById("action-choice-field"),
+        choiceLabel: document.getElementById("action-choice-label"),
+        choice: document.getElementById("action-choice"),
         confirm: document.getElementById("action-confirm"),
         resolve: null,
     };
 
+    // Value of the optional dropdown from the last confirmed dialog.
+    let lastChoice = "";
 
-    function ask({ title, message = "", reason = false, reasonRequired = false, reasonLabel = "Reason", confirmLabel = "Confirm", danger = false }) {
+
+    function ask({ title, message = "", reason = false, reasonRequired = false, reasonLabel = "Reason", confirmLabel = "Confirm", danger = false, choices = null, choiceLabel = "Choose" }) {
         dialog.title.textContent = title;
         dialog.message.textContent = message;
+        dialog.choiceField.classList.toggle("hidden", !choices);
+        dialog.choiceLabel.textContent = choiceLabel;
+        dialog.choice.innerHTML = (choices || [])
+            .map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`)
+            .join("");
         dialog.reasonField.classList.toggle("hidden", !reason);
         dialog.reasonLabel.textContent = reasonRequired ? `${reasonLabel} (required)` : reasonLabel;
         dialog.reason.value = "";
@@ -165,6 +178,7 @@
         if (!dialog.form.reportValidity()) {
             return;
         }
+        lastChoice = dialog.choice.value;
         closeDialog(dialog.reason.value.trim());
     });
 
@@ -186,26 +200,30 @@
     // =========================
 
     async function loadCore() {
-        const [tournament, transitions, rules] = await Promise.all([
+        const [tournament, transitions, rules, assets] = await Promise.all([
             API.tournament.get(state.id),
             API.tournament.transitions(state.id),
             API.tournament.currentRules(state.id),
+            API.tournament.assets(state.id).catch(() => []),
         ]);
         state.tournament = tournament;
         state.transitions = transitions;
         state.rules = rules;
+        state.assets = assets;
         document.title = `${tournament.name} | Cricket Intelligence Platform`;
         renderHero();
     }
 
 
     async function loadReferenceData() {
-        const [teams, venues] = await Promise.all([
+        const [teams, venues, series] = await Promise.all([
             API.listAll("teams").catch(() => []),
             API.listAll("venues", { include_archived: true }).catch(() => []),
+            API.tournamentSeries.list().then((page) => page.items).catch(() => []),
         ]);
         state.teams = new Map(teams.map((team) => [team.id, team]));
         state.venues = new Map(venues.map((venue) => [venue.id, venue]));
+        state.series = series;
     }
 
 
@@ -228,8 +246,12 @@
             t.location,
         ].filter(Boolean);
 
+        const cover = UI.assetUrl(state.assets, "cover");
+        hero.classList.toggle("has-cover", Boolean(cover));
+        hero.style.setProperty("--hero-cover", cover ? `url("${encodeURI(cover)}")` : "none");
+
         hero.innerHTML = `
-            ${UI.logoMark(t.name)}
+            ${UI.logoMark(t.name, false, UI.assetUrl(state.assets, "logo"))}
             <div class="tournament-hero-main">
                 <p class="eyebrow">${esc(t.code || t.category || "Tournament")}</p>
                 <h1>${esc(t.name)}</h1>
@@ -254,10 +276,14 @@
 
     async function renderOverview() {
         const t = state.tournament;
-        const [readiness, audit] = await Promise.all([
+        const [readiness, audit, deductions, editions] = await Promise.all([
             API.tournament.readiness(state.id),
             API.tournament.audit(state.id).catch((error) => error),
+            API.tournament.deductions(state.id).catch(() => []),
+            t.series_id ? API.tournamentSeries.editions(t.series_id).catch(() => []) : Promise.resolve([]),
+            loadMemberships(),
         ]);
+        const series = state.series.find((item) => item.id === t.series_id);
 
         const currentIndex = UI.LIFECYCLE_PATH.indexOf(t.status);
         const track = UI.LIFECYCLE_PATH.map((status, index) => {
@@ -291,6 +317,7 @@
             ["Team limits", `${t.minimum_teams} – ${t.maximum_teams ?? "no limit"} (+${t.reserve_team_limit} reserve)`],
             ["Roster lock", UI.formatDateTime(t.roster_lock_at, t.timezone)],
             ["Primary venue", state.venues.get(t.primary_venue_id)?.name || "—"],
+            ["Series", series ? `${series.name}${t.edition_number ? ` — edition ${t.edition_number}` : ""}` : null],
             ["Website", t.website],
             ["Contact", [t.contact_email, t.contact_phone].filter(Boolean).join(" · ")],
         ];
@@ -349,9 +376,63 @@
                             ${readiness.warnings.length ? listNotice("warning", "Warnings", readiness.warnings) : ""}
                         </div>
                     `)}
+                    ${deductionsPanel(deductions)}
+                    ${editions.length > 1 ? panel("Other editions", esc(series?.name || ""), `
+                        <ul class="plain-list">${editions.filter((item) => item.id !== t.id).map((item) => `
+                            <li><span><a href="/competitions/${item.id}"><strong>${esc(item.name)}</strong></a>
+                            <small>${esc([item.edition_number ? `Edition ${item.edition_number}` : null, item.season].filter(Boolean).join(" · "))}</small></span>
+                            ${UI.statusBadge(item.status)}</li>`).join("")}</ul>
+                    `) : ""}
                     ${panel("Audit trail", "Latest 50 events", auditBody)}
                 </div>
             </div>`;
+    }
+
+
+    function deductionsPanel(deductions) {
+        const t = state.tournament;
+        const approved = state.memberships.filter((m) => m.registration_status === "approved");
+        const canDeduct = !["draft", "cancelled", "archived"].includes(t.status) && approved.length > 0;
+        const active = deductions.filter((item) => !item.revoked_at);
+        const membershipName = (id) => {
+            const membership = state.memberships.find((m) => m.id === id);
+            return membership ? teamName(membership) : "Unknown team";
+        };
+
+        const list = deductions.length
+            ? `<ul class="plain-list">${deductions.map((item) => `
+                <li class="${item.revoked_at ? "revoked" : ""}">
+                    <span>
+                        <strong>−${item.points} · ${esc(membershipName(item.tournament_team_id))}</strong>
+                        <small>${esc(item.reason)}</small>
+                        ${item.revoked_at ? `<small>Revoked: ${esc(item.revoked_reason)}</small>` : ""}
+                    </span>
+                    ${item.revoked_at
+                        ? UI.statusBadge("withdrawn", "Revoked")
+                        : t.status === "archived" ? "" : `<button class="table-action table-action-danger" type="button" data-revoke-deduction="${item.id}">Revoke</button>`}
+                </li>`).join("")}</ul>`
+            : `<p class="muted" style="margin:0">No deductions.</p>`;
+
+        const form = canDeduct ? `
+            <form class="t-stack" data-form="deduction" style="margin-top:14px" novalidate>
+                <div class="form-grid">
+                    <label class="form-field form-field-wide"><span>Team <em>*</em></span>
+                        <select name="tournament_team_id" required>
+                            <option value="">Select a team…</option>
+                            ${approved.map((m) => `<option value="${m.id}">${esc(teamName(m))}</option>`).join("")}
+                        </select>
+                    </label>
+                    <label class="form-field"><span>Points <em>*</em></span><input name="points" type="number" min="1" max="1000" required></label>
+                    <label class="form-field form-field-wide"><span>Reason <em>*</em></span><textarea name="reason" rows="2" minlength="3" maxlength="1000" required placeholder="e.g. Slow over rate v Team B"></textarea></label>
+                </div>
+                <div><button class="button button-secondary button-small" type="submit">Deduct points</button></div>
+            </form>` : "";
+
+        return panel(
+            "Point deductions",
+            `${active.length} active · revoked entries stay on record`,
+            list + form,
+        );
     }
 
 
@@ -408,22 +489,42 @@
                         <div class="panel-header t-panel-header"><div><h2>Identity, branding & contacts</h2><p>${locked ? "Locked once the tournament is scheduled." : "Code, category, scope, sponsorship and contacts."}</p></div></div>
                         <div class="panel-body">
                             <fieldset style="border:0;margin:0;padding:0" ${locked ? "disabled" : ""}>
-                                <div class="form-grid">${UI.renderFields(UI.IDENTITY_FIELDS, t)}</div>
+                                <div class="form-grid">${UI.renderFields(UI.IDENTITY_FIELDS, t, { series_id: UI.seriesOptions(state.series) })}</div>
                             </fieldset>
                         </div>
                         <div class="wizard-footer"><span></span><button class="button button-primary" type="submit" ${locked ? "disabled" : ""}>Save identity</button></div>
                     </form>
                 </div>
                 <aside class="t-stack">
-                    ${panel("Logo & cover", "Brand preview", `
-                        <div class="t-stack">
-                            <div class="name-cell">${UI.logoMark(t.name)}<span><strong>${esc(t.name)}</strong><small>${esc(t.trophy_name || "No trophy name")}</small></span></div>
-                            ${notice("info", "Image uploads go through controlled object storage with file-type and size validation. Storage is not configured on this server yet, so the generated monogram is shown as the fallback.")}
-                        </div>
-                    `)}
-                    ${panel("Display safety", "", `<p class="muted" style="margin:0">Descriptions and terms are always displayed as plain text, so pasted HTML or scripts are never rendered.</p>`)}
+                    ${panel("Logo & cover", "Uploaded images replace the monogram", `<div data-role="branding"></div>`)}
+                    ${locked ? "" : panel("Series", "Group editions of a recurring competition", `<button class="button button-secondary button-small" type="button" data-action="new-series">+ New series</button>`)}
+                    ${panel("Display safety", "", `<p class="muted" style="margin:0">Descriptions and terms are stripped of HTML on the server and always displayed as plain text. Websites must be http(s) links.</p>`)}
                 </aside>
             </div>`;
+
+        UI.mountBrandingPanel(sectionRoot.querySelector('[data-role="branding"]'), {
+            tournamentId: state.id,
+            name: t.name,
+            assets: state.assets,
+            disabled: t.status === "archived",
+            onChange: (assets) => {
+                state.assets = assets;
+                renderHero();
+            },
+        });
+    }
+
+
+    async function addSeries() {
+        const created = await UI.promptNewSeries();
+        if (!created) {
+            return;
+        }
+        state.series = [...state.series, created].sort((a, b) => a.name.localeCompare(b.name));
+        const select = sectionRoot.querySelector('select[name="series_id"]');
+        if (select) {
+            select.add(new Option(created.name, created.id, true, true));
+        }
     }
 
 
@@ -575,6 +676,44 @@
     }
 
 
+    function replacedName(membershipId) {
+        const membership = state.memberships.find((m) => m.id === membershipId);
+        return membership ? teamName(membership) : "a withdrawn team";
+    }
+
+
+    async function promoteReserve(button, membershipId) {
+        const t = state.tournament;
+        const replacedIds = new Set(state.memberships.map((m) => m.replaces_membership_id).filter(Boolean));
+        const withdrawn = state.memberships.filter((m) => m.registration_status === "withdrawn" && !replacedIds.has(m.id));
+        const cutoff = t.replacement_cutoff_at
+            ? ` Replacements close ${UI.formatDateTime(t.replacement_cutoff_at, t.timezone)}.`
+            : "";
+
+        const reason = await ask({
+            title: "Promote reserve team?",
+            message: `The team moves into the main draw if there is space.${cutoff}`,
+            choices: withdrawn.length
+                ? [["", "Not replacing a specific team"], ...withdrawn.map((m) => [m.id, `Replaces ${teamName(m)}`])]
+                : null,
+            choiceLabel: "Replacement for",
+            reason: true,
+            confirmLabel: "Promote",
+        });
+        if (reason === null) {
+            return;
+        }
+
+        const payload = {
+            replaces_membership_id: withdrawn.length && lastChoice ? lastChoice : null,
+            reason: reason || null,
+        };
+        if (await run(button, () => API.tournament.promote(state.id, membershipId, payload), "Reserve team promoted.")) {
+            await renderTeams();
+        }
+    }
+
+
     function teamTableHtml() {
         const rows = filteredMemberships();
         const pages = Math.max(1, Math.ceil(rows.length / TEAM_PAGE_SIZE));
@@ -601,6 +740,9 @@
                     ? `<button class="table-action" type="button" data-decide="${item.id}" data-approve="true">Approve</button>
                        <button class="table-action table-action-danger" type="button" data-decide="${item.id}" data-approve="false">Reject</button>`
                     : "",
+                active && item.is_reserve && !configLocked()
+                    ? `<button class="table-action" type="button" data-promote="${item.id}">Promote</button>`
+                    : "",
                 active ? `<a class="table-action" href="/competitions/${state.id}/squads?team=${item.id}">Squad</a>` : "",
                 active && !configLocked()
                     ? `<button class="table-action table-action-danger" type="button" data-withdraw="${item.id}">Withdraw</button>`
@@ -616,7 +758,7 @@
                         </span>
                     </td>
                     <td>${item.seed ?? "—"}</td>
-                    <td>${UI.statusBadge(item.registration_status)} ${item.is_reserve ? UI.statusBadge("reserve", "Reserve") : ""}</td>
+                    <td>${UI.statusBadge(item.registration_status)} ${item.is_reserve ? UI.statusBadge("reserve", "Reserve") : ""}${item.replaces_membership_id ? `<br><small class="muted">Replaces ${esc(replacedName(item.replaces_membership_id))}</small>` : ""}</td>
                     <td>${groupCell}</td>
                     <td>${item.captain_player_id ? "✓" : "—"}</td>
                     <td><div class="row-actions">${actions || "—"}</div></td>
@@ -788,9 +930,10 @@
             || active.find((m) => m.registration_status === "approved")
             || active[0];
 
-        const [roster, squad] = await Promise.all([
+        const [roster, squad, candidates] = await Promise.all([
             API.tournament.roster(state.id, membership.id),
             API.teamSquad(membership.team_id).catch(() => []),
+            API.tournament.rosterCandidates(state.id, membership.id).catch(() => []),
         ]);
 
         const names = new Map(squad.map((item) => [item.player.id, item.player.full_name]));
@@ -806,8 +949,8 @@
 
         const t = state.tournament;
         const r = state.rules?.rules;
-        const rosterIds = new Set(roster.map((entry) => entry.player_id));
-        const candidates = squad.filter((item) => item.is_active && !rosterIds.has(item.player.id));
+        const eligibleCount = candidates.filter((item) => item.eligible).length;
+        const ineligible = candidates.filter((item) => !item.eligible);
         const lockPassed = t.roster_lock_at && new Date(t.roster_lock_at) <= new Date();
         const editable = !configLocked() && !lockPassed;
         const availableCount = roster.filter((entry) => entry.is_available).length;
@@ -828,6 +971,20 @@
                     </div></td>
                 </tr>`;
         }).join("");
+
+        const policy = r?.eligibility || {};
+        const eligibility = {
+            ageActive: policy.minimum_age != null || policy.maximum_age != null,
+            ageText: policy.minimum_age != null || policy.maximum_age != null
+                ? ` (${policy.minimum_age ?? "any"}–${policy.maximum_age ?? "any"})`
+                : "",
+            sexActive: Boolean(policy.sex && policy.sex !== "open"),
+            sexText: policy.sex && policy.sex !== "open" ? ` (${policy.sex === "female" ? "women's" : "men's"})` : "",
+            overseasActive: r?.overseas_player_limit != null,
+            overseasText: r?.overseas_player_limit != null
+                ? ` (max ${r.overseas_player_limit}; home: ${policy.home_nationality})`
+                : "",
+        };
 
         const sizeWarnings = [];
         if (r) {
@@ -881,10 +1038,17 @@
                             <div class="panel-body"><div class="form-grid">
                                 <label class="form-field form-field-wide"><span>Player <em>*</em></span>
                                     <select name="player_id" required ${full ? "disabled" : ""}>
-                                        <option value="">${full ? "Squad is full" : candidates.length ? "Select a player…" : "No eligible squad players left"}</option>
-                                        ${candidates.map((item) => `<option value="${item.player.id}" data-role="${item.role}">${esc(item.player.full_name)}${item.squad_number ? ` #${item.squad_number}` : ""}</option>`).join("")}
+                                        <option value="">${full ? "Squad is full" : eligibleCount ? "Select a player…" : "No eligible squad players left"}</option>
+                                        ${candidates.map((item) => `<option value="${item.player_id}" data-role="${item.role}" ${item.eligible ? "" : "disabled"} title="${esc(item.reasons.join("; "))}">${esc(item.full_name)}${item.squad_number ? ` #${item.squad_number}` : ""}${item.eligible ? "" : ` — not eligible: ${esc(item.reasons.join("; "))}`}</option>`).join("")}
                                     </select>
                                 </label>
+                                ${ineligible.length ? `
+                                <div class="form-field-wide">
+                                    <p class="form-section-title" style="margin:4px 0 6px">Not eligible (${ineligible.length})</p>
+                                    <ul class="plain-list ineligible-list">${ineligible.map((item) => `
+                                        <li><span><strong>${esc(item.full_name)}</strong>${item.reasons.map((reason) => `<small>${esc(reason)}</small>`).join("")}</span></li>`).join("")}
+                                    </ul>
+                                </div>` : ""}
                                 <label class="form-field form-field-wide"><span>Tournament role</span>
                                     <select name="role">${ROLE_OPTIONS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select>
                                 </label>
@@ -897,8 +1061,9 @@
                                 <li><span>One team per player in this tournament</span>${UI.statusBadge("approved", "Enforced")}</li>
                                 <li><span>Squad size limits from rules</span>${UI.statusBadge("approved", "Enforced")}</li>
                                 <li><span>Match XI drawn only from available squad</span>${UI.statusBadge("approved", "Enforced")}</li>
-                                <li><span>Age / sex / category eligibility</span>${UI.statusBadge("withdrawn", "Not yet")}</li>
-                                <li><span>Overseas player limits</span>${UI.statusBadge("withdrawn", "Not yet")}</li>
+                                <li><span>Age limits${eligibility.ageText}</span>${eligibility.ageActive ? UI.statusBadge("approved", "Enforced") : UI.statusBadge("off", "Not set")}</li>
+                                <li><span>Sex eligibility${eligibility.sexText}</span>${eligibility.sexActive ? UI.statusBadge("approved", "Enforced") : UI.statusBadge("off", "Open")}</li>
+                                <li><span>Overseas players per XI${eligibility.overseasText}</span>${eligibility.overseasActive ? UI.statusBadge("approved", "Enforced") : UI.statusBadge("off", "Not set")}</li>
                             </ul>
                         `)}
                     </div>
@@ -1016,6 +1181,21 @@
                 break;
             }
 
+            case "deduction": {
+                if (!form.reportValidity()) {
+                    return;
+                }
+                const saved = await run(submitter, () => API.tournament.deduct(state.id, {
+                    tournament_team_id: form.elements.tournament_team_id.value,
+                    points: Number(form.elements.points.value),
+                    reason: form.elements.reason.value.trim(),
+                }), "Points deducted and recorded in the audit trail.");
+                if (saved) {
+                    await renderOverview();
+                }
+                break;
+            }
+
             case "venue-add": {
                 if (!form.reportValidity()) {
                     return;
@@ -1107,6 +1287,15 @@
             const publish = !state.tournament.is_published;
             if (await run(button, () => API.tournament.publish(state.id, publish), publish ? "Tournament published." : "Tournament unpublished.")) {
                 await refresh();
+            }
+        } else if (data.action === "new-series") {
+            await addSeries();
+        } else if (data.promote) {
+            await promoteReserve(button, data.promote);
+        } else if (data.revokeDeduction) {
+            const reason = await ask({ title: "Revoke deduction?", message: "The deduction stays on record as revoked and no longer counts.", reason: true, reasonRequired: true, confirmLabel: "Revoke", danger: true });
+            if (reason !== null && await run(button, () => API.tournament.revokeDeduction(state.id, data.revokeDeduction, reason), "Deduction revoked.")) {
+                await renderOverview();
             }
         } else if (data.action === "save-rules") {
             await saveRules(button);

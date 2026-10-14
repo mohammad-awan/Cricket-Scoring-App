@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.playing_side import minimum_players
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.models import AuditAction, MatchStatus
 from app.repositories.match_setup import MatchSetupRepository
@@ -144,7 +145,12 @@ async def mark_match_ready(
                 len(
                     team_a_memberships
                 )
-                != match.players_per_side
+                != len(
+                    playing_team_ids(
+                        match,
+                        match.team_a_id,
+                    )
+                )
             ):
                 raise ValidationError(
                     "Team A playing team "
@@ -157,7 +163,12 @@ async def mark_match_ready(
                 len(
                     team_b_memberships
                 )
-                != match.players_per_side
+                != len(
+                    playing_team_ids(
+                        match,
+                        match.team_b_id,
+                    )
+                )
             ):
                 raise ValidationError(
                     "Team B playing team "
@@ -183,10 +194,12 @@ async def mark_match_ready(
             validate_batting_order(
                 team_a_selections,
                 players_per_side=match.players_per_side,
+                minimum_players=minimum_players(match),
             )
             validate_batting_order(
                 team_b_selections,
                 players_per_side=match.players_per_side,
+                minimum_players=minimum_players(match),
             )
 
             first_innings = next(

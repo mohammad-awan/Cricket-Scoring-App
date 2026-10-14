@@ -13,6 +13,7 @@ from app.models import Innings, Match
 from app.repositories.scoring import ScoringRepository
 from app.schemas.scoring import WicketCreate
 from app.services.scoring.calculations import max_wickets
+from app.domain.playing_side import batting_side_size, minimum_players
 from app.services.scoring.types import DeliveryComponents, DerivedState
 
 
@@ -55,7 +56,11 @@ async def validate_wicket(
     )
 
     selections = await repository.get_playing_xi(match.id, innings.batting_team_id)
-    ordered_ids = validate_batting_order(selections, players_per_side=match.players_per_side)
+    ordered_ids = validate_batting_order(
+        selections,
+        players_per_side=match.players_per_side,
+        minimum_players=minimum_players(match),
+    )
 
     if dismissed_id not in ordered_ids:
         raise ValidationError("Dismissed player does not belong to the batting XI.")
@@ -85,10 +90,12 @@ async def validate_wicket(
 
     wickets_after = before.wickets + 1
 
-    if wickets_after > max_wickets(match.players_per_side):
+    wicket_limit = max_wickets(batting_side_size(match, innings))
+
+    if wickets_after > wicket_limit:
         raise ValidationError("Maximum wickets already reached.")
 
-    final_wicket = wickets_after >= max_wickets(match.players_per_side)
+    final_wicket = wickets_after >= wicket_limit
 
     next_batter_id = select_next_batter(
         ordered_ids,

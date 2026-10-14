@@ -25,6 +25,7 @@ from app.services.scoring.calculations import (
 from app.services.scoring.chase import chase_state, innings_finished, result_summary
 from app.services.scoring.presenters import delivery_read, player_or_error
 from app.services.scoring.types import DerivedState
+from app.domain.playing_side import batting_side_size
 
 
 def rebuild_from_deliveries(
@@ -635,12 +636,12 @@ async def state_response(
             ),
 
             players_per_side=(
-                match.players_per_side
+                batting_side_size(match, innings)
             ),
         )
 
     wicket_limit = max_wickets(
-        match.players_per_side
+        batting_side_size(match, innings)
     )
 
     return ScoringStateRead(

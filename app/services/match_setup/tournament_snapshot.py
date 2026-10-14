@@ -25,6 +25,11 @@ from app.domain.tournament_rules import (
 )
 from app.models import Match, Tournament, TournamentRuleSet, TournamentStatus
 from app.repositories.tournaments import TournamentRepository
+from app.domain.playing_side import minimum_players
+from app.services.tournament_eligibility import (
+    overseas_limit_errors,
+    players_eligibility_errors,
+)
 
 
 FIXTURE_TOURNAMENT_STATUSES = frozenset(
@@ -162,10 +167,13 @@ async def validate_tournament_lineup(
     player_ids: set[UUID],
 ) -> None:
     repository = TournamentRepository(session)
+    ruleset = await governing_rules(repository, match.tournament_id)
 
-    if await governing_rules(repository, match.tournament_id) is None:
+    if ruleset is None:
         return
 
+    rules = TournamentRules.model_validate(ruleset.rules)
+    tournament = await session.get(Tournament, match.tournament_id)
     roster_ids = await repository.available_roster_player_ids(
         match.tournament_id,
         team_id,
@@ -176,6 +184,18 @@ async def validate_tournament_lineup(
         roster_ids=roster_ids,
         captain_count=0,
     )
+    errors.extend(
+        await overseas_limit_errors(
+            repository,
+            rules,
+            team_label="Selected",
+            player_ids=player_ids,
+        )
+    )
+    if tournament is not None:
+        errors.extend(
+            await players_eligibility_errors(repository, tournament, rules, player_ids)
+        )
     if errors:
         raise ValidationError("; ".join(errors))
 
@@ -215,6 +235,7 @@ async def lock_match_tournament_rules(
         rules,
         {
             "players_per_side": match.players_per_side,
+            "minimum_players_to_start": minimum_players(match),
             "total_overs": match.total_overs,
             "balls_per_over": match.balls_per_over,
             "innings_per_team": match.innings_per_team,
@@ -242,6 +263,18 @@ async def lock_match_tournament_rules(
                 ),
                 captain_count=sum(1 for item in selections if item.is_captain),
             )
+        )
+        selected_ids = [item.player_id for item in selections]
+        errors.extend(
+            await overseas_limit_errors(
+                repository,
+                rules,
+                team_label=label,
+                player_ids=selected_ids,
+            )
+        )
+        errors.extend(
+            await players_eligibility_errors(repository, tournament, rules, selected_ids)
         )
 
     if errors:

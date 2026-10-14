@@ -6,6 +6,7 @@ from app.models import Innings, Match
 from app.models.enums import InningsStatus, MatchStatus
 from app.services.scoring.calculations import overs_complete, max_innings, max_wickets
 from app.services.scoring.types import ChaseState
+from app.domain.playing_side import batting_side_size
 
 
 def chase_target(
@@ -217,7 +218,7 @@ def innings_finished(
     if (
         wickets
         >= max_wickets(
-            match.players_per_side
+            batting_side_size(match, innings)
         )
     ):
         return True
@@ -280,7 +281,7 @@ def finalize_match_result(
 
         match.result_margin = max(
             (
-                match.players_per_side
+                batting_side_size(match, innings)
                 - 1
                 - wickets
             ),

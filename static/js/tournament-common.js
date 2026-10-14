@@ -69,9 +69,11 @@
     }
 
 
-    // Logo uploads need object storage (not configured yet); this is the
-    // documented fallback mark.
-    function logoMark(name, small = false) {
+    // Uploaded logo when available; otherwise the monogram fallback.
+    function logoMark(name, small = false, url = null) {
+        if (url) {
+            return `<img class="tournament-logo tournament-logo-image${small ? " small" : ""}" src="${escapeHtml(url)}" alt="" loading="lazy">`;
+        }
         return `<span class="tournament-logo${small ? " small" : ""}" aria-hidden="true">${escapeHtml(initials(name))}</span>`;
     }
 
@@ -177,6 +179,9 @@
         { name: "contact_email", label: "Contact email", type: "email", max: 254 },
         { name: "contact_phone", label: "Contact phone", type: "tel", max: 40 },
         { name: "terms", label: "Terms & conditions", type: "textarea", wide: true },
+        { section: "Series & edition" },
+        { name: "series_id", label: "Competition series", type: "select", options: [], hint: "Links recurring editions, e.g. 2025 and 2026" },
+        { name: "edition_number", label: "Edition number", type: "number", min: 1, placeholder: "e.g. 7" },
     ];
 
     const PARTICIPATION_FIELDS = [
@@ -332,6 +337,85 @@
         ["postponed", "Postponed"],
     ];
 
+    const EXTRAS = [
+        ["wide", "Wides"],
+        ["no_ball", "No-balls"],
+        ["bye", "Byes"],
+        ["leg_bye", "Leg byes"],
+    ];
+
+    const QUOTA_POLICIES = [
+        ["engine_default", "Engine default (one fifth of the overs)"],
+        ["fixed", "Fixed overs per bowler"],
+        ["unlimited", "No limit"],
+    ];
+
+    // How special results feed each ranking metric (applied in Stage 13).
+    const STANDINGS_OPTIONS = [
+        ["abandoned_match_points", "Abandoned match points", [["no_result", "Same as no result"], ["none", "No points"]]],
+        ["forfeit_net_run_rate", "Forfeit in net run rate", [["excluded", "Excluded"], ["winner_credited_full_overs", "Winner credited full overs"]]],
+        ["all_out_net_run_rate_overs", "Bowled-out side, NRR overs", [["full_quota", "Full overs quota"], ["overs_faced", "Overs actually faced"]]],
+        ["dls_net_run_rate_basis", "DLS results in NRR", [["revised_target", "Revised target & overs"], ["actual_scores", "Actual scores"]]],
+        ["head_to_head_scope", "Head-to-head uses", [["completed_matches", "Completed matches only"], ["all_results", "All results"]]],
+        ["wickets_metric", "Wickets tie-breaker", [["most_wickets_taken", "Most wickets taken"], ["fewest_wickets_lost", "Fewest wickets lost"]]],
+    ];
+
+    const RULE_DEFAULTS = {
+        bowler_quota_policy: "engine_default",
+        overs_per_bowler: null,
+        permitted_extras: EXTRAS.map(([value]) => value),
+        eligibility: { minimum_age: null, maximum_age: null, age_reference_date: null, sex: "open", home_nationality: null },
+        standings_policy: {
+            abandoned_match_points: "no_result",
+            abandoned_in_net_run_rate: "excluded",
+            forfeit_counts_as_win: true,
+            forfeit_net_run_rate: "excluded",
+            all_out_net_run_rate_overs: "full_quota",
+            partial_overs: "ball_fraction",
+            dls_net_run_rate_basis: "revised_target",
+            head_to_head_scope: "completed_matches",
+            wickets_metric: "most_wickets_taken",
+            point_deductions_affect: "points_only",
+        },
+    };
+
+
+    // Rule versions saved before these settings existed lack them.
+    function withRuleDefaults(rules) {
+        const next = structuredClone(rules);
+        Object.entries(RULE_DEFAULTS).forEach(([key, value]) => {
+            if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+                next[key] = { ...structuredClone(value), ...(next[key] || {}) };
+            } else if (next[key] === undefined) {
+                next[key] = structuredClone(value);
+            }
+        });
+        return next;
+    }
+
+
+    function selectField(name, label, value, options, hint = "") {
+        return `
+            <label class="form-field">
+                <span>${escapeHtml(label)}</span>
+                <select data-rule="${name}">
+                    ${options.map(([v, l]) => `<option value="${escapeHtml(v)}" ${v === value ? "selected" : ""}>${escapeHtml(l)}</option>`).join("")}
+                </select>
+                ${hint ? `<small class="field-hint">${escapeHtml(hint)}</small>` : ""}
+            </label>`;
+    }
+
+
+    function textField(name, label, value, { type = "text", hint = "", placeholder = "" } = {}) {
+        return `
+            <label class="form-field">
+                <span>${escapeHtml(label)}</span>
+                <input type="${type}" data-rule="${name}" value="${escapeHtml(value ?? "")}" placeholder="${escapeHtml(placeholder)}">
+                ${hint ? `<small class="field-hint">${escapeHtml(hint)}</small>` : ""}
+            </label>`;
+    }
+
+
     // The explicit capability matrix: what the Stage 3–10 scoring engine
     // can honour. `active` says whether the current rules use the feature.
     const CAPABILITIES = [
@@ -339,11 +423,11 @@
         { label: "Custom players per side", supported: true, active: () => true },
         { label: "Points table & tie-breaker definitions", supported: true, active: () => true, note: "Standings are computed in Stage 13" },
         { label: "Win / tie outcomes", supported: true, active: (r) => r.allowed_outcomes.some((o) => o === "win" || o === "tie") },
-        { label: "Non-6-ball overs", supported: false, active: (r) => r.balls_per_over !== 6 },
-        { label: "Multiple innings per team", supported: false, active: (r) => r.innings_per_team !== 1 },
-        { label: "Starting with fewer than a full side", supported: false, active: (r) => r.minimum_players_to_start !== r.players_per_side },
-        { label: "Hundred-style sets & bowler allocation", supported: false, active: (r) => r.format_code === "hundred" },
-        { label: "Indoor cricket scoring", supported: false, active: (r) => r.format_code === "indoor" },
+        { label: "Non-6-ball overs", supported: true, active: (r) => r.balls_per_over !== 6 },
+        { label: "Multiple innings per team", supported: true, active: (r) => r.innings_per_team !== 1, note: "Innings end all out or at the overs limit; declarations and follow-ons are not available yet" },
+        { label: "Starting with fewer than a full side", supported: true, active: (r) => r.minimum_players_to_start !== r.players_per_side, note: "All out when the side's own batters run out" },
+        { label: "Hundred-style format", supported: true, active: (r) => r.format_code === "hundred", note: "5-ball overs and a 20-ball bowler limit; bowlers change ends every 5 balls" },
+        { label: "Indoor format", supported: true, active: (r) => r.format_code === "indoor", note: "Standard runs and wickets; net-zone scoring is not modelled" },
         { label: "Super over / tie-break", supported: false, active: (r) => r.super_over_enabled },
         { label: "DLS / target adjustment", supported: false, active: (r) => r.dls_enabled },
         { label: "Impact player substitutions", supported: false, active: (r) => r.impact_player_enabled },
@@ -351,7 +435,10 @@
         { label: "Powerplay enforcement", supported: false, active: (r) => r.powerplay_segments.length > 0 },
         { label: "Per-match rule overrides", supported: false, active: (r) => r.allow_match_overrides },
         { label: "Outcomes beyond win / tie", supported: false, active: (r) => r.allowed_outcomes.some((o) => o !== "win" && o !== "tie") },
-        { label: "Overseas-player limits", supported: false, active: (r) => r.overseas_player_limit !== null },
+        { label: "Custom bowler quota", supported: true, active: (r) => r.bowler_quota_policy !== "engine_default", note: "Enforced from each match's locked rules" },
+        { label: "Restricted extras", supported: true, active: (r) => r.permitted_extras.length < EXTRAS.length, note: "Disallowed extras are rejected while scoring" },
+        { label: "Age / sex eligibility", supported: true, active: (r) => r.eligibility.minimum_age !== null || r.eligibility.maximum_age !== null || r.eligibility.sex !== "open" },
+        { label: "Overseas-player limits", supported: true, active: (r) => r.overseas_player_limit !== null, note: "Checked when each playing XI is picked" },
         { label: "Best-of-N finals", supported: false, active: (r) => r.best_of_finals > 1 },
         { label: "Bonus points", supported: false, active: (r) => r.points.bonus_points_enabled },
     ];
@@ -397,7 +484,7 @@
         }
 
         function setRules(next) {
-            rules = structuredClone(next);
+            rules = withRuleDefaults(next);
             tieOrder = [
                 ...rules.tie_breakers,
                 ...TIE_BREAKERS.map(([value]) => value).filter((value) => !rules.tie_breakers.includes(value)),
@@ -443,22 +530,34 @@
                             ${numberField("balls_per_over", "Legal balls per over", r.balls_per_over, { min: 1, hint: "Normally 6" })}
                             ${numberField("innings_per_team", "Innings per team", r.innings_per_team, { min: 1 })}
                             ${numberField("players_per_side", "Players per side", r.players_per_side, { min: 2 })}
-                            ${numberField("minimum_players_to_start", "Minimum players to start", r.minimum_players_to_start, { min: 2 })}
-                            <label class="form-field">
-                                <span>Bowler quota policy</span>
-                                <input type="text" value="Scoring engine default" disabled>
-                            </label>
+                            ${numberField("minimum_players_to_start", "Minimum players to start", r.minimum_players_to_start, { min: 2, hint: "A team may field this many up to the full side" })}
+                            ${selectField("bowler_quota_policy", "Bowler quota", r.bowler_quota_policy, QUOTA_POLICIES)}
+                            ${r.bowler_quota_policy === "fixed" ? numberField("overs_per_bowler", "Overs per bowler", r.overs_per_bowler, { min: 1 }) : ""}
                             ${numberField("mandatory_break_minutes", "Innings break (minutes)", r.mandatory_break_minutes)}
                             ${numberField("innings_time_minutes", "Innings time allowance (minutes)", r.innings_time_minutes, { min: 1, placeholder: "No limit" })}
                             ${numberField("timeout_minutes", "Strategic timeout (minutes)", r.timeout_minutes)}
                         </div>
+                        <p class="field-hint" style="margin:12px 0 0">Break, timeout and time allowances are published schedule guidance for officials; the scorer does not run a match clock.</p>
+                        <p class="form-section-title" style="margin:16px 0 8px">Permitted extras</p>
+                        <div class="toggle-grid">
+                            ${EXTRAS.map(([v, l]) => `
+                                <label class="checkbox-field">
+                                    <input type="checkbox" data-extra="${v}" ${r.permitted_extras.includes(v) ? "checked" : ""}>
+                                    ${escapeHtml(l)}
+                                </label>`).join("")}
+                        </div>
                     </fieldset>
 
                     <fieldset ${disabled}>
-                        <legend>Squad rules</legend>
+                        <legend>Squad rules & eligibility</legend>
                         <div class="form-grid">
                             ${numberField("minimum_roster_size", "Minimum squad size", r.minimum_roster_size, { min: 2 })}
                             ${numberField("maximum_roster_size", "Maximum squad size", r.maximum_roster_size, { min: 2 })}
+                            ${numberField("eligibility.minimum_age", "Minimum age", r.eligibility.minimum_age, { min: 5, placeholder: "No limit" })}
+                            ${numberField("eligibility.maximum_age", "Maximum age", r.eligibility.maximum_age, { min: 5, placeholder: "No limit", hint: "e.g. 19 for an U19 event" })}
+                            ${textField("eligibility.age_reference_date", "Age measured on", r.eligibility.age_reference_date, { type: "date", hint: "Defaults to the tournament start date" })}
+                            ${selectField("eligibility.sex", "Competition", r.eligibility.sex, [["open", "Open (any player)"], ["male", "Men's"], ["female", "Women's"]])}
+                            ${textField("eligibility.home_nationality", "Home nationality", r.eligibility.home_nationality, { placeholder: "e.g. Pakistan", hint: "Other nationalities count as overseas" })}
                             ${numberField("overseas_player_limit", "Overseas players per XI", r.overseas_player_limit, { placeholder: "No limit" })}
                         </div>
                     </fieldset>
@@ -488,6 +587,15 @@
                                     </li>`;
                             }).join("")}
                         </ol>
+                    </fieldset>
+
+                    <fieldset ${disabled}>
+                        <legend>How special results affect the table</legend>
+                        <p class="field-hint" style="margin:0 0 10px">Stored with each rule version and applied when standings are calculated. Partial overs always count as balls ÷ balls per over; point deductions only reduce points.</p>
+                        <div class="form-grid">
+                            ${STANDINGS_OPTIONS.map(([key, label, choices]) => selectField(`standings_policy.${key}`, label, r.standings_policy[key], choices)).join("")}
+                        </div>
+                        <div style="margin-top:12px">${toggle("standings_policy.forfeit_counts_as_win", "Forfeits count as a win for the wins tie-breaker", r.standings_policy.forfeit_counts_as_win)}</div>
                     </fieldset>
 
                     <fieldset ${disabled}>
@@ -532,6 +640,9 @@
             if (input.type === "number") {
                 return input.value === "" ? null : Number(input.value);
             }
+            if (input.type === "text" || input.type === "date") {
+                return input.value.trim() === "" ? null : input.value.trim();
+            }
             return input.value;
         }
 
@@ -541,12 +652,21 @@
             container.querySelectorAll("[data-rule]").forEach((input) => {
                 const name = input.dataset.rule;
                 const value = readValue(name);
-                if (name.startsWith("points.")) {
-                    next.points[name.slice(7)] = value ?? 0;
-                } else {
+                const dot = name.indexOf(".");
+                if (dot === -1) {
                     next[name] = value;
+                    return;
                 }
+                const group = name.slice(0, dot);
+                next[group] = { ...(next[group] || {}) };
+                next[group][name.slice(dot + 1)] = group === "points" ? (value ?? 0) : value;
             });
+
+            if (next.bowler_quota_policy !== "fixed") {
+                next.overs_per_bowler = null;
+            }
+            next.permitted_extras = EXTRAS.map(([value]) => value).filter((value) =>
+                container.querySelector(`[data-extra="${value}"]`)?.checked);
 
             if (next.structure !== "groups_knockout" && next.structure !== "hybrid") {
                 next.teams_per_group = null;
@@ -561,8 +681,6 @@
                 const to = container.querySelector(`[data-pp="${index}"][data-pp-key="to_over"]`)?.value;
                 return { from_over: from ? Number(from) : null, to_over: to ? Number(to) : null };
             });
-            next.bowler_quota_policy = "engine_default";
-
             rules = next;
             return next;
         }
@@ -622,7 +740,7 @@
         container.addEventListener("input", () => scheduleValidation());
         container.addEventListener("change", (event) => {
             const target = event.target;
-            if (target.matches('[data-rule="structure"]') || target.matches("[data-tie]")) {
+            if (target.matches('[data-rule="structure"]') || target.matches('[data-rule="bowler_quota_policy"]') || target.matches("[data-tie]")) {
                 collect();
                 render();
             }
@@ -688,6 +806,131 @@
 
 
     // =========================
+    // BRANDING & SERIES
+    // =========================
+
+    const ASSET_KINDS = [
+        ["logo", "Logo", "Square image, shown in lists and headers"],
+        ["cover", "Cover", "Wide banner image"],
+    ];
+    const ACCEPTED_IMAGES = "image/png,image/jpeg,image/webp";
+    const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+
+    function assetUrl(assets, kind) {
+        return (assets || []).find((asset) => asset.kind === kind)?.url || null;
+    }
+
+
+    /**
+     * Logo & cover upload panel body. The server re-checks size and the
+     * real image type; the client checks only to give fast feedback.
+     *
+     * options: { tournamentId, name, assets, disabled, onChange }
+     */
+    function mountBrandingPanel(container, options) {
+        const render = () => {
+            const assets = options.assets || [];
+            container.innerHTML = `
+                <div class="t-stack">
+                    ${ASSET_KINDS.map(([kind, label, hint]) => {
+                        const url = assetUrl(assets, kind);
+                        const preview = kind === "logo"
+                            ? logoMark(options.name, false, url)
+                            : url
+                                ? `<img class="tournament-cover-preview" src="${escapeHtml(url)}" alt="">`
+                                : `<div class="tournament-cover-preview empty">No cover image</div>`;
+                        return `
+                            <div class="asset-row">
+                                <div class="asset-preview">${preview}</div>
+                                <div class="asset-meta">
+                                    <strong>${escapeHtml(label)}</strong>
+                                    <small class="field-hint">${escapeHtml(hint)}. PNG, JPEG or WebP, up to 2 MB.</small>
+                                    ${options.disabled ? "" : `
+                                        <div class="action-row">
+                                            <label class="button button-secondary button-small">
+                                                ${url ? "Replace" : "Upload"}
+                                                <input type="file" class="sr-only" accept="${ACCEPTED_IMAGES}" data-asset-upload="${kind}">
+                                            </label>
+                                            ${url ? `<button class="button button-secondary button-small" type="button" data-asset-clear="${kind}">Remove</button>` : ""}
+                                        </div>`}
+                                </div>
+                            </div>`;
+                    }).join("")}
+                    <p class="field-hint" style="margin:0">Images are verified by their contents on the server and served with safe headers. SVG is not accepted.</p>
+                </div>`;
+        };
+
+        container.addEventListener("change", async (event) => {
+            const input = event.target.closest("[data-asset-upload]");
+            const file = input?.files?.[0];
+            if (!file) {
+                return;
+            }
+            if (file.size > MAX_IMAGE_BYTES) {
+                showToast("Images must be 2 MB or smaller.", "error");
+                input.value = "";
+                return;
+            }
+            input.disabled = true;
+            try {
+                await API.tournament.uploadAsset(options.tournamentId, input.dataset.assetUpload, file);
+                options.assets = await API.tournament.assets(options.tournamentId);
+                showToast("Image uploaded.");
+                render();
+                options.onChange?.(options.assets);
+            } catch (error) {
+                showToast(errorText(error), "error");
+                input.disabled = false;
+                input.value = "";
+            }
+        });
+
+        container.addEventListener("click", async (event) => {
+            const button = event.target.closest("[data-asset-clear]");
+            if (!button) {
+                return;
+            }
+            button.disabled = true;
+            try {
+                await API.tournament.clearAsset(options.tournamentId, button.dataset.assetClear);
+                options.assets = await API.tournament.assets(options.tournamentId);
+                showToast("Image removed.");
+                render();
+                options.onChange?.(options.assets);
+            } catch (error) {
+                showToast(errorText(error), "error");
+                button.disabled = false;
+            }
+        });
+
+        render();
+    }
+
+
+    function seriesOptions(series) {
+        return (series || []).map((item) => [item.id, item.name]);
+    }
+
+
+    // Creates a series from a name prompt; resolves to the series or null.
+    async function promptNewSeries() {
+        const name = window.prompt("Name of the recurring competition (e.g. National T20 Cup):");
+        if (!name || !name.trim()) {
+            return null;
+        }
+        try {
+            const created = await API.tournamentSeries.create({ name: name.trim() });
+            showToast(`Series "${created.name}" created.`);
+            return created;
+        } catch (error) {
+            showToast(errorText(error), "error");
+            return null;
+        }
+    }
+
+
+    // =========================
     // ORGANIZER TOKEN
     // =========================
 
@@ -742,6 +985,10 @@
         renderFields,
         readFields,
         mountRulesEditor,
+        mountBrandingPanel,
+        assetUrl,
+        seriesOptions,
+        promptNewSeries,
         bindOrganizerButton,
     };
 

@@ -16,6 +16,7 @@ from app.schemas.retirements import RetirementCreate, RetirementUndo
 from app.schemas.scoring import ScoringStateRead
 from app.services.common import add_audit_log, integrity_conflict, service_transaction
 from app.services.scoring.calculations import max_wickets, overs_complete
+from app.domain.playing_side import batting_side_size, minimum_players
 from app.services.scoring.chase import (
     chase_state,
     clear_match_result,
@@ -74,7 +75,7 @@ async def create_retirement(
             if overs_complete(match, before.legal_balls):
                 raise ConflictError("The configured over limit has been reached for this innings")
 
-            wicket_limit = max_wickets(match.players_per_side)
+            wicket_limit = max_wickets(batting_side_size(match, innings))
 
             if before.wickets >= wicket_limit:
                 raise ConflictError("The batting side is already all out")
@@ -86,7 +87,11 @@ async def create_retirement(
             )
 
             selections = await repository.get_playing_xi(match.id, innings.batting_team_id)
-            ordered_ids = validate_batting_order(selections, players_per_side=match.players_per_side)
+            ordered_ids = validate_batting_order(
+                selections,
+                players_per_side=match.players_per_side,
+                minimum_players=minimum_players(match),
+            )
 
             delivery_dismissed, retired = batter_status(deliveries, retirements, before)
 

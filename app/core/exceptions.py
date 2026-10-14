@@ -33,6 +33,16 @@ class ValidationError(AppError):
         super().__init__(message, status.HTTP_422_UNPROCESSABLE_CONTENT)
 
 
+class PayloadTooLargeError(AppError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status.HTTP_413_CONTENT_TOO_LARGE)
+
+
+class UnsupportedMediaTypeError(AppError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+
 async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 

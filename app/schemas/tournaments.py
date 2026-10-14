@@ -6,6 +6,16 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.models.enums import TournamentStatus
 from app.schemas.common import strip_required_text, strip_text
 from app.domain.tournament_rules import TournamentRules
+from app.utils.text import (
+    sanitize_plain_text,
+    validate_email,
+    validate_http_url,
+    validate_phone,
+)
+
+
+def _sanitize(value: str | None) -> str | None:
+    return sanitize_plain_text(value)
 
 
 class TournamentCreate(BaseModel):
@@ -27,6 +37,8 @@ class TournamentCreate(BaseModel):
         "description",
         mode="before",
     )(strip_text)
+
+    _sanitize_description = field_validator("description")(_sanitize)
 
     @model_validator(mode="after")
     def validate_dates(self) -> Self:
@@ -63,6 +75,8 @@ class TournamentUpdate(BaseModel):
         "description",
         mode="before",
     )(strip_text)
+
+    _sanitize_description = field_validator("description")(_sanitize)
 
     @model_validator(mode="after")
     def validate_update(self) -> Self:
@@ -123,6 +137,8 @@ class CompetitionConfig(BaseModel):
     roster_lock_at: datetime | None = None
     replacement_cutoff_at: datetime | None = None
     primary_venue_id: UUID | None = None
+    series_id: UUID | None = None
+    edition_number: int | None = Field(default=None, ge=1)
 
     @field_validator("timezone")
     @classmethod
@@ -224,6 +240,8 @@ class CompetitionConfigUpdate(BaseModel):
     roster_lock_at: datetime | None = None
     replacement_cutoff_at: datetime | None = None
     primary_venue_id: UUID | None = None
+    series_id: UUID | None = None
+    edition_number: int | None = Field(default=None, ge=1)
 
     _strip_text = field_validator(
         "code",
@@ -239,6 +257,20 @@ class CompetitionConfigUpdate(BaseModel):
         "trophy_name",
         mode="before",
     )(strip_text)
+
+    # Format checks apply to supplied values only, so legacy stored
+    # values never block unrelated configuration changes.
+    _website = field_validator("website")(validate_http_url)
+    _email = field_validator("contact_email")(validate_email)
+    _phone = field_validator("contact_phone")(validate_phone)
+    _terms = field_validator("terms")(_sanitize)
+
+    @field_validator("timezone")
+    @classmethod
+    def valid_timezone(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return CompetitionConfig.valid_timezone(value)
 
     @model_validator(mode="after")
     def validate_update(self) -> Self:
@@ -283,6 +315,8 @@ class TournamentDetailRead(TournamentRead):
     replacement_cutoff_at: datetime | None
     is_published: bool
     primary_venue_id: UUID | None
+    series_id: UUID | None
+    edition_number: int | None
 
 
 class RuleVersionCreate(BaseModel):
@@ -334,6 +368,7 @@ class TournamentTeamRead(BaseModel):
     captain_player_id: UUID | None
     manager_name: str | None
     group_id: UUID | None
+    replaces_membership_id: UUID | None
 
 
 class RegistrationDecision(BaseModel):
@@ -351,6 +386,17 @@ class RosterAdd(BaseModel):
         default="batter",
         pattern="^(batter|bowler|all_rounder|wicket_keeper)$",
     )
+
+
+class RosterCandidateRead(BaseModel):
+    """An active squad player who could join the tournament roster."""
+
+    player_id: UUID
+    full_name: str
+    role: str
+    squad_number: int | None
+    eligible: bool
+    reasons: list[str]
 
 
 class RosterRead(BaseModel):
@@ -495,3 +541,118 @@ class TournamentTransitionsRead(BaseModel):
     current: TournamentStatus
     allowed: list[TournamentStatus]
     reason_required: list[TournamentStatus]
+
+
+class ReservePromotionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # The withdrawn entry this reserve takes over, if any.
+    replaces_membership_id: UUID | None = None
+    reason: str | None = Field(default=None, max_length=1000)
+
+
+class PointDeductionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tournament_team_id: UUID
+    points: int = Field(ge=1, le=1000)
+    reason: str = Field(min_length=3, max_length=1000)
+    match_id: UUID | None = None
+
+    _strip_reason = field_validator("reason", mode="before")(strip_required_text)
+
+
+class PointDeductionRevoke(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=3, max_length=1000)
+
+    _strip_reason = field_validator("reason", mode="before")(strip_required_text)
+
+
+class PointDeductionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    tournament_id: UUID
+    tournament_team_id: UUID
+    match_id: UUID | None
+    points: int
+    reason: str
+    created_by: str | None
+    created_at: datetime
+    revoked_at: datetime | None
+    revoked_by: str | None
+    revoked_reason: str | None
+
+
+class TournamentAssetRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    tournament_id: UUID
+    kind: str
+    url: str
+    content_type: str
+    byte_size: int
+    sha256: str
+    original_filename: str | None
+    created_at: datetime
+
+
+class TournamentSeriesCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=160)
+    slug: str | None = Field(default=None, max_length=180)
+    organizer: str | None = Field(default=None, max_length=160)
+    description: str | None = None
+
+    _strip_required = field_validator("name", mode="before")(strip_required_text)
+    _strip_optional = field_validator(
+        "slug",
+        "organizer",
+        "description",
+        mode="before",
+    )(strip_text)
+    _sanitize_description = field_validator("description")(_sanitize)
+
+
+class TournamentSeriesUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    organizer: str | None = Field(default=None, max_length=160)
+    description: str | None = None
+
+    _strip_required = field_validator("name", mode="before")(strip_required_text)
+    _strip_optional = field_validator(
+        "organizer",
+        "description",
+        mode="before",
+    )(strip_text)
+    _sanitize_description = field_validator("description")(_sanitize)
+
+
+class TournamentSeriesRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    slug: str
+    organizer: str | None
+    description: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class TournamentEditionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    season: str | None
+    edition_number: int | None
+    status: TournamentStatus
+    start_date: date | None
+    end_date: date | None

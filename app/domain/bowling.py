@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from math import ceil
 from uuid import UUID
 from app.core.exceptions import ValidationError
+from app.domain.tournament_rules import bowler_quota_overs
 from app.models import Delivery, Match
 from app.models.enums import MatchType
 
@@ -17,6 +18,9 @@ def bowler_ball_quota(match: Match) -> int | None:
 
     Other limited-overs formats: same policy.
     Test matches: no limited-overs quota.
+
+    A tournament match follows the quota in
+    its locked rule snapshot (Stage 11).
     """
     if match.match_type == MatchType.TEST:
         return None
@@ -24,7 +28,18 @@ def bowler_ball_quota(match: Match) -> int | None:
     if match.total_overs is None:
         return None
 
-    overs_per_bowler = ceil(match.total_overs / 5)
+    effective_rules = getattr(match, "effective_rules", None)
+
+    if effective_rules:
+        overs_per_bowler = bowler_quota_overs(
+            effective_rules,
+            match.total_overs,
+        )
+        if overs_per_bowler is None:
+            return None
+    else:
+        overs_per_bowler = ceil(match.total_overs / 5)
+
     return overs_per_bowler * match.balls_per_over
 
 

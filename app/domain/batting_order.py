@@ -6,19 +6,31 @@ from app.models import MatchPlayer
 from app.schemas.scoring import BatterSelectionMode
 
 
-def validate_batting_order(selections: Iterable[MatchPlayer], *, players_per_side: int) -> list[UUID]:
+def validate_batting_order(
+    selections: Iterable[MatchPlayer],
+    *,
+    players_per_side: int,
+    minimum_players: int | None = None,
+) -> list[UUID]:
     """
     Return player IDs in batting order.
 
-    A ready team must have exactly the required
-    number of players and positions 1..N.
+    A ready team fields between minimum_players
+    (default: a full side) and players_per_side
+    players, with batting positions 1..N for the
+    N players it actually fields.
     """
     players = list(selections)
+    minimum = minimum_players or players_per_side
 
-    if len(players) != players_per_side:
+    if not minimum <= len(players) <= players_per_side:
+        expected = (
+            f"exactly {players_per_side}"
+            if minimum == players_per_side
+            else f"between {minimum} and {players_per_side}"
+        )
         raise ValidationError(
-            f"Expected Exactly {players_per_side}"
-            "players in the Playing team"
+            f"Expected {expected} players in the playing team"
         )
 
     players_ids = [p.player_id for p in players]
@@ -36,12 +48,12 @@ def validate_batting_order(selections: Iterable[MatchPlayer], *, players_per_sid
             "a batting order before match readiness"
         )
 
-    expected = set(range(1, players_per_side+1))
+    expected = set(range(1, len(players) + 1))
 
     if set(positions) != expected:
         raise ValidationError(
-            "Batting order must contain every"
-            f"position from 1 to {players_per_side} exactly once"
+            "Batting order must contain every "
+            f"position from 1 to {len(players)} exactly once"
         )
 
     return [

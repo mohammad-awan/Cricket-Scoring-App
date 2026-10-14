@@ -16,7 +16,8 @@ from app.db.base import (
     UUIDPrimaryKeyMixin,
 )
 from app.models.enums import (
-    PlayerStatus, 
+    PlayerSex,
+    PlayerStatus,
     db_enum,
     BattingHand,
     BowlingStyle,
@@ -36,6 +37,8 @@ class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     short_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     nationality: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    # Used only for tournament sex eligibility (Stage 11).
+    sex: Mapped[PlayerSex | None] = mapped_column(db_enum(PlayerSex, "player_sex"), nullable=True)
     external_id: Mapped[str | None] = mapped_column(String(80), nullable=True, unique=True)
     batting_hand: Mapped[BattingHand | None] = mapped_column(db_enum(BattingHand, "batting_hand"), nullable=True)
     bowling_arm: Mapped[BowlingArm | None] = mapped_column(db_enum(BowlingArm, "bowling_arm"), nullable=True)

@@ -2,6 +2,7 @@ from __future__ import annotations
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError
+from app.domain.tournament_rules import ALL_EXTRAS
 from app.models import Match
 from app.repositories.match_setup import MatchSetupRepository
 from app.schemas.match_setup import (
@@ -63,6 +64,10 @@ def match_setup_read(
             match.players_per_side
         ),
 
+        minimum_players_to_start=(
+            match.minimum_players_to_start
+        ),
+
         total_overs=(
             match.total_overs
         ),
@@ -119,7 +124,14 @@ def match_setup_read(
                 match
             )
         ),
+
+        permitted_extras=permitted_extras(match),
     )
+
+
+def permitted_extras(match: Match) -> list[str]:
+    rules = match.effective_rules or {}
+    return list(rules.get("permitted_extras", ALL_EXTRAS))
 
 
 async def reload_match(

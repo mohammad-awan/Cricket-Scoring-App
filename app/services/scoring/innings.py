@@ -389,7 +389,14 @@ async def start_next_innings(
                 InningsStatus.COMPLETED
             )
 
+            batting_side = await repository.get_playing_xi(
+                match.id,
+                batting_team_id,
+            )
+
             innings = Innings(
+                batting_side_size=len(batting_side),
+
                 match_id=(
                     match.id
                 ),

@@ -17,10 +17,13 @@ from app.models import (
     Team,
     TeamPlayer,
     Tournament,
+    TournamentAsset,
     TournamentAuditEvent,
     TournamentGroup,
+    TournamentPointDeduction,
     TournamentRoster,
     TournamentRuleSet,
+    TournamentSeries,
     TournamentStatus,
     TournamentTeam,
     TournamentVenue,
@@ -72,6 +75,7 @@ class World:
     team_ids: list[UUID]
     players: dict[UUID, list[UUID]]
     extra_tournament_ids: list[UUID] = field(default_factory=list)
+    series_ids: list[UUID] = field(default_factory=list)
 
 
 async def build_world(
@@ -214,6 +218,17 @@ async def cleanup(world: World) -> None:
                 TournamentTeam.tournament_id.in_(tournament_ids)
             )
 
+            await session.execute(
+                delete(TournamentPointDeduction).where(
+                    TournamentPointDeduction.tournament_id.in_(tournament_ids)
+                )
+            )
+            await session.execute(
+                delete(TournamentAsset).where(
+                    TournamentAsset.tournament_id.in_(tournament_ids)
+                )
+            )
+
             if match_ids:
                 await session.execute(delete(Innings).where(Innings.match_id.in_(match_ids)))
                 await session.execute(
@@ -246,6 +261,10 @@ async def cleanup(world: World) -> None:
                 )
             )
             await session.execute(delete(Tournament).where(Tournament.id.in_(tournament_ids)))
+            if world.series_ids:
+                await session.execute(
+                    delete(TournamentSeries).where(TournamentSeries.id.in_(world.series_ids))
+                )
             await session.execute(
                 delete(TeamPlayer).where(TeamPlayer.team_id.in_(world.team_ids))
             )

@@ -20,6 +20,8 @@ STAGE11_TABLES = {
     "tournament_venues",
     "tournament_assets",
     "tournament_audit_events",
+    "tournament_series",
+    "tournament_point_deductions",
 }
 
 
@@ -28,7 +30,8 @@ async def test_database_is_at_stage11_revision() -> None:
     async with AsyncSessionFactory() as session:
         version = await session.scalar(text("SELECT version_num FROM alembic_version"))
 
-    assert version == "20261013_0011"
+    # Stage 11 spans two revisions; the completion revision is the head.
+    assert version == "20261015_0013"
 
 
 @pytest.mark.asyncio

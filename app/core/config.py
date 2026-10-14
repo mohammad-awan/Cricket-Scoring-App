@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     # only reachable in development/test environments.
     organizer_api_token: SecretStr | None = None
 
+    # Local object storage for uploaded tournament branding images.
+    # Keys are content-addressed, so the directory can later be synced
+    # to S3/Supabase Storage without renaming files.
+    media_root: str = "media"
+    tournament_asset_max_bytes: int = Field(default=2 * 1024 * 1024, ge=1024)
+
     @field_validator("database_url", mode="before")
     @classmethod
     def normalize_database_url(

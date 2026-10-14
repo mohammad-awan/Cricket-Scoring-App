@@ -1,20 +1,30 @@
 from __future__ import annotations
 from typing import Annotated
+from urllib.parse import unquote
 from uuid import UUID
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Header, Query, Request, status
+from fastapi.responses import FileResponse
 from app.api.dependencies import OrganizerDependency, QueryDependency, SessionDependency
+from app.core.config import get_settings
+from app.core.exceptions import PayloadTooLargeError
 from app.domain.tournament_rules import FormatCode, TournamentRules, rules_preset
 from app.schemas.common import PageResponse
 from app.schemas.tournaments import (
     CompetitionConfigUpdate,
     GroupCreate,
+    PointDeductionCreate,
+    PointDeductionRead,
+    PointDeductionRevoke,
     RegistrationDecision,
+    ReservePromotionRequest,
     RosterAdd,
+    RosterCandidateRead,
     RosterRead,
     RulePropagationRead,
     RulePropagationRequest,
     RuleVersionCreate,
     RuleVersionRead,
+    TournamentAssetRead,
     TournamentAuditRead,
     TournamentCaptainUpdate,
     TournamentCreate,
@@ -37,6 +47,8 @@ from app.schemas.tournaments import (
     TransitionRequest,
     VenueAssign,
 )
+from app.services import tournament_assets as asset_services
+from app.services import tournament_discipline as discipline_services
 from app.services import tournaments as tournament_services
 from app.services.tournaments import archive_tournament, create_tournament, get_tournament, list_tournaments, update_tournament
 
@@ -279,16 +291,24 @@ async def tournament_rule_version_endpoint(
 # Teams
 
 
-@router.get("/{tournament_id}/teams", response_model=list[TournamentTeamRead])
+@router.get("/{tournament_id}/teams", response_model=PageResponse[TournamentTeamRead])
 async def list_tournament_teams_endpoint(
     tournament_id: UUID,
     session: SessionDependency,
     registration_status: RegistrationStatusFilter = None,
-) -> list[TournamentTeamRead]:
-    return await tournament_services.list_tournament_teams(
+    is_reserve: bool | None = None,
+    search: Annotated[str | None, Query(max_length=100)] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> PageResponse[TournamentTeamRead]:
+    return await tournament_services.list_tournament_teams_page(
         session,
         tournament_id,
-        registration_status,
+        page=page,
+        page_size=page_size,
+        registration_status=registration_status,
+        is_reserve=is_reserve,
+        search=search,
     )
 
 
@@ -371,6 +391,27 @@ async def withdraw_tournament_team_endpoint(
     )
 
 
+@router.post(
+    "/{tournament_id}/teams/{membership_id}/promotion",
+    response_model=TournamentTeamRead,
+)
+async def promote_reserve_team_endpoint(
+    tournament_id: UUID,
+    membership_id: UUID,
+    payload: ReservePromotionRequest,
+    session: SessionDependency,
+    actor_id: OrganizerDependency,
+) -> TournamentTeamRead:
+    return await tournament_services.promote_reserve_team(
+        session,
+        tournament_id,
+        membership_id,
+        payload.replaces_membership_id,
+        payload.reason,
+        actor_id=actor_id,
+    )
+
+
 @router.put(
     "/{tournament_id}/teams/{membership_id}/group",
     response_model=TournamentTeamRead,
@@ -424,6 +465,22 @@ async def list_tournament_roster_endpoint(
     session: SessionDependency,
 ) -> list[RosterRead]:
     return await tournament_services.list_tournament_roster(
+        session,
+        tournament_id,
+        membership_id,
+    )
+
+
+@router.get(
+    "/{tournament_id}/teams/{membership_id}/roster/candidates",
+    response_model=list[RosterCandidateRead],
+)
+async def list_roster_candidates_endpoint(
+    tournament_id: UUID,
+    membership_id: UUID,
+    session: SessionDependency,
+) -> list[RosterCandidateRead]:
+    return await tournament_services.list_roster_candidates(
         session,
         tournament_id,
         membership_id,
@@ -594,4 +651,169 @@ async def remove_tournament_venue_endpoint(
         tournament_id,
         venue_id,
         actor_id=actor_id,
+    )
+
+
+# Disciplinary point deductions (public read for standings transparency)
+
+
+@router.get("/{tournament_id}/deductions", response_model=list[PointDeductionRead])
+async def list_point_deductions_endpoint(
+    tournament_id: UUID,
+    session: SessionDependency,
+    include_revoked: bool = True,
+) -> list[PointDeductionRead]:
+    return await discipline_services.list_point_deductions(
+        session,
+        tournament_id,
+        include_revoked,
+    )
+
+
+@router.post(
+    "/{tournament_id}/deductions",
+    response_model=PointDeductionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_point_deduction_endpoint(
+    tournament_id: UUID,
+    payload: PointDeductionCreate,
+    session: SessionDependency,
+    actor_id: OrganizerDependency,
+) -> PointDeductionRead:
+    return await discipline_services.create_point_deduction(
+        session,
+        tournament_id,
+        payload,
+        actor_id=actor_id,
+    )
+
+
+@router.post(
+    "/{tournament_id}/deductions/{deduction_id}/revocation",
+    response_model=PointDeductionRead,
+)
+async def revoke_point_deduction_endpoint(
+    tournament_id: UUID,
+    deduction_id: UUID,
+    payload: PointDeductionRevoke,
+    session: SessionDependency,
+    actor_id: OrganizerDependency,
+) -> PointDeductionRead:
+    return await discipline_services.revoke_point_deduction(
+        session,
+        tournament_id,
+        deduction_id,
+        payload.reason,
+        actor_id=actor_id,
+    )
+
+
+# Branding assets
+
+
+async def read_limited_body(request: Request, max_bytes: int) -> bytes:
+    """Read the raw request body, refusing anything over max_bytes
+    without buffering it all first."""
+
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > max_bytes:
+        raise PayloadTooLargeError(f"Images must be {max_bytes // 1024} KB or smaller")
+
+    chunks: list[bytes] = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > max_bytes:
+            raise PayloadTooLargeError(f"Images must be {max_bytes // 1024} KB or smaller")
+        chunks.append(chunk)
+
+    return b"".join(chunks)
+
+
+@router.get("/{tournament_id}/assets", response_model=list[TournamentAssetRead])
+async def list_tournament_assets_endpoint(
+    tournament_id: UUID,
+    session: SessionDependency,
+) -> list[TournamentAssetRead]:
+    return await asset_services.list_tournament_assets(session, tournament_id)
+
+
+@router.put(
+    "/{tournament_id}/assets/{kind}",
+    response_model=TournamentAssetRead,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                media_type: {"schema": {"type": "string", "format": "binary"}}
+                for media_type in ("image/png", "image/jpeg", "image/webp")
+            },
+        }
+    },
+)
+async def upload_tournament_asset_endpoint(
+    tournament_id: UUID,
+    kind: str,
+    request: Request,
+    session: SessionDependency,
+    actor_id: OrganizerDependency,
+    x_filename: Annotated[str | None, Header(max_length=600)] = None,
+) -> TournamentAssetRead:
+    """Upload a logo or cover image as the raw request body."""
+
+    asset_services.ensure_asset_kind(kind)
+    data = await read_limited_body(request, get_settings().tournament_asset_max_bytes)
+
+    return await asset_services.upload_tournament_asset(
+        session,
+        tournament_id,
+        kind,
+        data,
+        declared_type=request.headers.get("content-type"),
+        filename=unquote(x_filename) if x_filename else None,
+        actor_id=actor_id,
+    )
+
+
+@router.delete("/{tournament_id}/assets/{kind}")
+async def clear_tournament_asset_endpoint(
+    tournament_id: UUID,
+    kind: str,
+    session: SessionDependency,
+    actor_id: OrganizerDependency,
+) -> dict[str, bool]:
+    return await asset_services.clear_tournament_asset(
+        session,
+        tournament_id,
+        kind,
+        actor_id=actor_id,
+    )
+
+
+@router.get("/{tournament_id}/assets/{kind}", response_class=FileResponse)
+async def tournament_asset_file_endpoint(
+    tournament_id: UUID,
+    kind: str,
+    session: SessionDependency,
+    v: str | None = None,
+) -> FileResponse:
+    path, asset = await asset_services.current_asset_file(session, tournament_id, kind)
+
+    # A versioned URL always names the same bytes, so it can be cached hard.
+    cache = (
+        "public, max-age=31536000, immutable"
+        if v == asset.sha256[:12]
+        else "no-cache"
+    )
+
+    return FileResponse(
+        path,
+        media_type=asset.content_type,
+        headers={
+            "Cache-Control": cache,
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'none'; sandbox",
+            "Content-Disposition": "inline",
+        },
     )

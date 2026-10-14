@@ -23,6 +23,8 @@ from app.services.scoring.chase import chase_state, close_innings, innings_finis
 from app.services.scoring.state import current_state, ensure_scoreable, rebuild_innings_state
 from app.services.scoring.wickets import validate_wicket
 from app.domain.bowling import validate_bowler_quota
+from app.domain.tournament_rules import disallowed_extras
+from app.domain.playing_side import batting_side_size
 
 
 CLIENT_EVENT_CONSTRAINT = "uq_deliveries_match_client_event"
@@ -127,7 +129,7 @@ async def record_delivery(session: AsyncSession, match_id: UUID, payload: Delive
                     "this innings"
                 )
 
-            if before.wickets >= max_wickets(match.players_per_side):
+            if before.wickets >= max_wickets(batting_side_size(match, innings)):
                 raise ConflictError("The batting side is already all out")
 
             if innings.current_bowler_id is None:
@@ -163,6 +165,20 @@ async def record_delivery(session: AsyncSession, match_id: UUID, payload: Delive
                 raise ValidationError(
                     "Current bowler must belong "
                     "to the bowling playing XI."
+                )
+
+            # Stage 11: a tournament match may restrict which extras exist.
+            blocked = disallowed_extras(
+                match.effective_rules,
+                wide=payload.wide_runs > 0,
+                no_ball=payload.no_ball,
+                bye=payload.bye_runs > 0,
+                leg_bye=payload.leg_bye_runs > 0,
+            )
+            if blocked:
+                raise ValidationError(
+                    "Tournament rules do not permit these extras: "
+                    + ", ".join(item.replace("_", " ") for item in blocked)
                 )
 
             components = delivery_components(payload)

@@ -26,6 +26,7 @@ from app.models import (
     TournamentGroup,
     TournamentRoster,
     TournamentRuleSet,
+    TournamentSeries,
     TournamentStatus,
     TournamentTeam,
     TournamentVenue,
@@ -39,10 +40,12 @@ from app.schemas.tournaments import (
     CompetitionConfig,
     CompetitionConfigUpdate,
     RosterAdd,
+    RosterCandidateRead,
     RulePropagationRequest,
     RuleVersionCreate,
     TournamentCreate,
     TournamentRead,
+    TournamentTeamRead,
     TournamentTeamRegister,
     TournamentUpdate,
 )
@@ -52,6 +55,10 @@ from app.services.common import (
     integrity_conflict,
     list_master_data,
     service_transaction,
+)
+from app.services.tournament_eligibility import (
+    player_errors,
+    players_eligibility_errors,
 )
 from app.utils.text import clean_optional, clean_required, slugify
 
@@ -710,6 +717,10 @@ async def configure_tournament(
         if errors:
             raise ConflictError("; ".join(errors))
 
+        series_id = updates.get("series_id")
+        if series_id is not None and await session.get(TournamentSeries, series_id) is None:
+            raise NotFoundError("Tournament series not found")
+
         venue_id = updates.get("primary_venue_id")
         if venue_id is not None:
             await require_active_venue(session, venue_id)
@@ -993,14 +1004,25 @@ async def validate_tournament_readiness(
                     f"maximum is {rules.maximum_roster_size}"
                 )
 
-            if len(available) < rules.players_per_side:
+            if len(available) < rules.minimum_players_to_start:
                 errors.append(
-                    f"{label} has fewer than {rules.players_per_side} "
+                    f"{label} has fewer than {rules.minimum_players_to_start} "
                     "available players"
                 )
 
             if membership.captain_player_id is None:
                 warnings.append(f"{label} has no tournament captain")
+
+            # Rules or player records may have changed since rostering.
+            errors.extend(
+                f"{label}: {message}"
+                for message in await players_eligibility_errors(
+                    repository,
+                    tournament,
+                    rules,
+                    [entry.player_id for entry in roster],
+                )
+            )
 
         if rules.structure == "groups_knockout":
             if any(item.group_id is None for item in approved_main):
@@ -1285,6 +1307,111 @@ async def list_tournament_teams(
     )
 
 
+async def list_tournament_teams_page(
+    session: AsyncSession,
+    tournament_id: UUID,
+    *,
+    page: int,
+    page_size: int,
+    registration_status: str | None = None,
+    is_reserve: bool | None = None,
+    search: str | None = None,
+) -> PageResponse[TournamentTeamRead]:
+    await get_tournament(session, tournament_id)
+    items, total = await TournamentRepository(session).page_registrations(
+        tournament_id,
+        page=page,
+        page_size=page_size,
+        registration_status=registration_status,
+        is_reserve=is_reserve,
+        search=search.strip() if search else None,
+    )
+
+    return PageResponse[TournamentTeamRead](
+        items=[TournamentTeamRead.model_validate(item) for item in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        pages=max(1, -(-total // page_size)),
+    )
+
+
+async def promote_reserve_team(
+    session: AsyncSession,
+    tournament_id: UUID,
+    membership_id: UUID,
+    replaces_membership_id: UUID | None = None,
+    reason: str | None = None,
+    *,
+    actor_id: str | None = None,
+) -> TournamentTeam:
+    """Move a reserve entry into the main draw.
+
+    Allowed until fixtures are scheduled and, when set, until the
+    tournament's replacement cutoff. Optionally records the withdrawn
+    entry the reserve replaces (each withdrawal can be replaced once).
+    """
+
+    repository = TournamentRepository(session)
+
+    async with tournament_transaction(session, "Tournament reserve promotion"):
+        tournament = await locked_tournament(repository, tournament_id)
+        ensure_configuration_editable(tournament)
+
+        if (
+            tournament.replacement_cutoff_at is not None
+            and datetime.now(UTC) >= tournament.replacement_cutoff_at
+        ):
+            raise ConflictError("The tournament replacement cutoff has passed")
+
+        membership = await require_membership(repository, tournament_id, membership_id)
+
+        if membership.registration_status not in ACTIVE_REGISTRATION_STATUSES:
+            raise ConflictError("Only active reserve entries can be promoted")
+
+        if not membership.is_reserve:
+            raise ConflictError("This team is already in the main draw")
+
+        if replaces_membership_id is not None:
+            if replaces_membership_id == membership_id:
+                raise ValidationError("A team cannot replace itself")
+
+            replaced = await require_membership(
+                repository,
+                tournament_id,
+                replaces_membership_id,
+            )
+            if replaced.registration_status != "withdrawn":
+                raise ConflictError("Only a withdrawn team can be replaced")
+
+            if await repository.get_replacement_for(replaces_membership_id) is not None:
+                raise ConflictError("This withdrawn team has already been replaced")
+
+        if tournament.maximum_teams is not None:
+            main = await repository.count_registrations(tournament_id, is_reserve=False)
+            if main >= tournament.maximum_teams:
+                raise ConflictError("The main draw is full")
+
+        membership.is_reserve = False
+        membership.replaces_membership_id = replaces_membership_id
+
+        tournament_audit(
+            session,
+            tournament_id,
+            "reserve_promoted",
+            {
+                "membership_id": str(membership_id),
+                "replaces_membership_id": (
+                    str(replaces_membership_id) if replaces_membership_id else None
+                ),
+                "reason": reason,
+            },
+            actor_id=actor_id,
+        )
+
+        return await _refreshed(session, membership)
+
+
 async def decide_tournament_registration(
     session: AsyncSession,
     tournament_id: UUID,
@@ -1519,6 +1646,54 @@ async def list_tournament_roster(
     return await repository.list_roster(membership_id)
 
 
+async def list_roster_candidates(
+    session: AsyncSession,
+    tournament_id: UUID,
+    membership_id: UUID,
+) -> list[RosterCandidateRead]:
+    """Active squad players not yet on this roster, each marked with the
+    reasons (if any) the roster add would be refused."""
+
+    repository = TournamentRepository(session)
+    tournament = await get_tournament(session, tournament_id)
+    membership = await require_membership(repository, tournament_id, membership_id)
+
+    ruleset = await repository.latest_rules(tournament_id)
+    rules = TournamentRules.model_validate(ruleset.rules) if ruleset else None
+
+    on_roster = {entry.player_id for entry in await repository.list_roster(membership_id)}
+    elsewhere = await repository.players_on_other_rosters(
+        tournament_id,
+        exclude_membership_id=membership_id,
+    )
+    squad = await MatchSetupRepository(session).get_active_squad(membership.team_id)
+
+    candidates = []
+    for item in squad:
+        if item.player_id in on_roster:
+            continue
+
+        reasons = []
+        if item.player_id in elsewhere:
+            reasons.append("Already on another team's roster in this tournament")
+
+        if rules is not None:
+            reasons.extend(player_errors(item.player, tournament, rules, label="Player"))
+
+        candidates.append(
+            RosterCandidateRead(
+                player_id=item.player_id,
+                full_name=item.player.full_name,
+                role=item.role.value,
+                squad_number=item.squad_number,
+                eligible=not reasons,
+                reasons=reasons,
+            )
+        )
+
+    return candidates
+
+
 async def add_tournament_roster_player(
     session: AsyncSession,
     tournament_id: UUID,
@@ -1584,6 +1759,10 @@ async def add_tournament_roster_player(
 
         if len(roster) >= rules.maximum_roster_size:
             raise ConflictError("Maximum tournament squad size reached")
+
+        ineligible = player_errors(player, tournament, rules)
+        if ineligible:
+            raise ValidationError("; ".join(ineligible))
 
         item = TournamentRoster(
             tournament_team_id=membership_id,

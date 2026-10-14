@@ -40,10 +40,31 @@ def test_presets_never_enable_unsupported_options(format_code: str) -> None:
     assert rules.minimum_players_to_start == rules.players_per_side
 
 
-@pytest.mark.parametrize("format_code", ["hundred", "indoor"])
-def test_special_formats_are_blocked_for_activation(format_code: str) -> None:
-    with pytest.raises(ValidationError):
-        validate_for_activation(rules_preset(format_code))
+@pytest.mark.parametrize("format_code", sorted(FORMAT_PRESETS))
+def test_every_format_preset_can_be_activated(format_code: str) -> None:
+    validate_for_activation(rules_preset(format_code))
+
+
+def test_hundred_and_indoor_presets_use_engine_settings() -> None:
+    hundred = rules_preset("hundred")
+    indoor = rules_preset("indoor")
+
+    assert (hundred.balls_per_over, hundred.overs_per_innings) == (5, 20)
+    assert (hundred.bowler_quota_policy, hundred.overs_per_bowler) == ("fixed", 4)
+    assert (indoor.players_per_side, indoor.overs_per_bowler) == (8, 2)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"balls_per_over": 8},
+        {"balls_per_over": 4},
+        {"innings_per_team": 2},
+        {"minimum_players_to_start": 6, "minimum_roster_size": 6},
+    ],
+)
+def test_flexible_formats_are_activatable(overrides: dict) -> None:
+    validate_for_activation(TournamentRules(**overrides))
 
 
 @pytest.mark.parametrize(
@@ -54,11 +75,8 @@ def test_special_formats_are_blocked_for_activation(format_code: str) -> None:
         {"impact_player_enabled": True},
         {"reduced_overs_enabled": True},
         {"allow_match_overrides": True},
-        {"overseas_player_limit": 4},
         {"best_of_finals": 3},
         {"allowed_outcomes": ["win", "tie", "no_result"]},
-        {"balls_per_over": 8},
-        {"innings_per_team": 2},
         {"powerplay_segments": [{"from_over": 1, "to_over": 6}]},
     ],
 )
@@ -121,6 +139,7 @@ def test_match_config_follows_rules() -> None:
 
     assert match_config_from_rules(rules) == {
         "players_per_side": 8,
+        "minimum_players_to_start": 8,
         "total_overs": 10,
         "balls_per_over": 6,
         "innings_per_team": 1,

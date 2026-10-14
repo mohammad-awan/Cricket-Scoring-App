@@ -23,6 +23,8 @@ from app.models.entities.tournaments import (
     TournamentVenue,
     TournamentAsset,
     TournamentAuditEvent,
+    TournamentPointDeduction,
+    TournamentSeries,
 )
 from app.models.entities.venues import Venue
 
@@ -42,8 +44,10 @@ __all__ = [
     "TournamentAsset",
     "TournamentAuditEvent",
     "TournamentGroup",
+    "TournamentPointDeduction",
     "TournamentRoster",
     "TournamentRuleSet",
+    "TournamentSeries",
     "TournamentTeam",
     "TournamentVenue",
     "Venue",

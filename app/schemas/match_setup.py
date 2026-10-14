@@ -44,6 +44,10 @@ class MatchCreate(BaseModel):
     # Minimums below are structural only.
     players_per_side: int = Field(default=11, ge=2)
 
+    # Fewest players a team may field (short-handed, gully or indoor
+    # cricket). None means a full side is required.
+    minimum_players_to_start: int | None = Field(default=None, ge=2)
+
     # None means unlimited overs.
     total_overs: int | None = Field(
         default=None,
@@ -74,6 +78,14 @@ class MatchCreate(BaseModel):
                 "Team A and Team B must be different"
             )
 
+        if (
+            self.minimum_players_to_start is not None
+            and self.minimum_players_to_start > self.players_per_side
+        ):
+            raise ValueError(
+                "minimum_players_to_start cannot exceed players_per_side"
+            )
+
         return self
 
 
@@ -88,6 +100,7 @@ class MatchUpdate(BaseModel):
     venue_id: UUID | None = None
     match_type: MatchType | None = None
     players_per_side: int | None = Field(default=None, ge=2)
+    minimum_players_to_start: int | None = Field(default=None, ge=2)
     total_overs: int | None = Field(default=None, ge=1)
     balls_per_over: int | None = Field(default=None, ge=1)
     innings_per_team: int | None = Field(default=None, ge=1)
@@ -273,6 +286,7 @@ class MatchListRead(BaseModel):
     venue: VenueSummary | None
     match_type: MatchType
     players_per_side: int
+    minimum_players_to_start: int | None = None
     total_overs: int | None
     balls_per_over: int
     innings_per_team: int
@@ -288,6 +302,11 @@ class MatchSetupRead(MatchListRead):
     players: list[MatchPlayerRead]
     innings: list[InningsSetupRead]
     readiness: MatchReadinessRead
+    # Extras the scorer may record; restricted by a tournament's locked
+    # rule snapshot, otherwise all four.
+    permitted_extras: list[str] = Field(
+        default_factory=lambda: ["wide", "no_ball", "bye", "leg_bye"]
+    )
 
 
 class SquadMemberCreate(BaseModel):

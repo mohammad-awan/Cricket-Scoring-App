@@ -1094,6 +1094,107 @@
     }
 
 
+    // Stage 11: a tournament can switch extras off in its rules. Only
+    // permitted types are offered; the server enforces the same rule.
+    const EXTRA_LABELS = {
+        wide: "Wide",
+        no_ball: "No Ball",
+        bye: "Bye",
+        leg_bye: "Leg Bye",
+    };
+
+
+    function applyPermittedExtras() {
+
+        const permitted = new Set(
+            state.match?.permitted_extras
+            || Object.keys(EXTRA_LABELS)
+        );
+
+        const restricted =
+            permitted.size
+            < Object.keys(EXTRA_LABELS).length;
+
+
+        [
+            elements.extraType,
+            elements.wicketExtraType,
+        ].forEach(
+            (select) => {
+
+                if (!select) {
+                    return;
+                }
+
+                const current = select.value;
+
+                // Rebuild from the full list so a later reload with
+                // different rules restores options correctly.
+                const keep = [...select.options]
+                    .filter((option) => option.value === "none");
+
+                select.replaceChildren(
+                    ...keep,
+                    ...Object.entries(EXTRA_LABELS)
+                        .filter(([value]) => permitted.has(value))
+                        .map(([value, label]) => new Option(label, value)),
+                );
+
+                const stillValid = [...select.options]
+                    .some((option) => option.value === current);
+
+                select.value = stillValid
+                    ? current
+                    : select.options[0]?.value ?? "";
+
+            }
+        );
+
+
+        if (elements.extrasPanel) {
+
+            elements.extrasPanel.classList.toggle(
+                "hidden",
+                permitted.size === 0
+            );
+
+            let note = document.getElementById(
+                "extras-rules-note"
+            );
+
+            if (restricted && !note) {
+
+                note = document.createElement("p");
+                note.id = "extras-rules-note";
+                note.className = "field-hint";
+                elements.extrasPanel
+                    .querySelector(".form-grid")
+                    ?.before(note);
+
+            }
+
+            if (note) {
+
+                note.textContent = restricted
+                    ? "Tournament rules allow only: "
+                        + [...permitted]
+                            .map((value) => EXTRA_LABELS[value])
+                            .join(", ")
+                        + "."
+                    : "";
+
+            }
+
+        }
+
+
+        renderExtraControls(true);
+
+        renderWicketExtraControls(true);
+
+    }
+
+
     function renderExtraControls(
         resetSelection = false
     ) {
@@ -3795,6 +3896,9 @@
 
             state.match =
                 match;
+
+
+            applyPermittedExtras();
 
 
             render(

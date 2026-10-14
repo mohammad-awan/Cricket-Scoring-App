@@ -998,7 +998,44 @@
 
             },
 
-            teams: (id, status) => request(`/tournaments/${id}/teams${status ? `?registration_status=${status}` : ""}`),
+            // The endpoint is paginated; this collects every page for the
+            // workspace, which filters and pages the table client-side.
+            async teams(id, status) {
+                const items = [];
+                let page = 1;
+                let pages = 1;
+                do {
+                    const result = await request(`/tournaments/${id}/teams?${queryString({ registration_status: status, page, page_size: 100 })}`);
+                    items.push(...result.items);
+                    pages = result.pages || 1;
+                    page += 1;
+                } while (page <= pages);
+                return items;
+            },
+
+            teamsPage: (id, params = {}) => request(`/tournaments/${id}/teams?${queryString(params)}`),
+
+            promote: (id, membershipId, data) => request(`/tournaments/${id}/teams/${membershipId}/promotion`, { method: "POST", body: JSON.stringify(data) }),
+
+            deductions: (id) => request(`/tournaments/${id}/deductions`),
+
+            deduct: (id, data) => request(`/tournaments/${id}/deductions`, { method: "POST", body: JSON.stringify(data) }),
+
+            revokeDeduction: (id, deductionId, reason) => request(`/tournaments/${id}/deductions/${deductionId}/revocation`, { method: "POST", body: JSON.stringify({ reason }) }),
+
+            assets: (id) => request(`/tournaments/${id}/assets`),
+
+            // Raw-body upload; the server verifies the real image type.
+            uploadAsset: (id, kind, file) => request(`/tournaments/${id}/assets/${kind}`, {
+                method: "PUT",
+                body: file,
+                headers: {
+                    "Content-Type": file.type || "application/octet-stream",
+                    "X-Filename": encodeURIComponent(file.name || ""),
+                },
+            }),
+
+            clearAsset: (id, kind) => request(`/tournaments/${id}/assets/${kind}`, { method: "DELETE" }),
 
             register: (id, data) => request(`/tournaments/${id}/teams`, { method: "POST", body: JSON.stringify(data) }),
 
@@ -1013,6 +1050,8 @@
             setCaptain: (id, membershipId, playerId) => request(`/tournaments/${id}/teams/${membershipId}/captain`, { method: "PUT", body: JSON.stringify({ player_id: playerId }) }),
 
             roster: (id, membershipId) => request(`/tournaments/${id}/teams/${membershipId}/roster`),
+
+            rosterCandidates: (id, membershipId) => request(`/tournaments/${id}/teams/${membershipId}/roster/candidates`),
 
             rosterAdd: (id, membershipId, data) => request(`/tournaments/${id}/teams/${membershipId}/roster`, { method: "POST", body: JSON.stringify(data) }),
 
@@ -1033,6 +1072,17 @@
             addVenue: (id, venueId) => request(`/tournaments/${id}/venues`, { method: "POST", body: JSON.stringify({ venue_id: venueId }) }),
 
             removeVenue: (id, venueId) => request(`/tournaments/${id}/venues/${venueId}`, { method: "DELETE" }),
+
+        },
+
+
+        tournamentSeries: {
+
+            list: (params = {}) => request(`/tournament-series?${queryString({ page_size: 100, ...params })}`),
+
+            create: (data) => request("/tournament-series", { method: "POST", body: JSON.stringify(data) }),
+
+            editions: (seriesId) => request(`/tournament-series/${seriesId}/editions`),
 
         },
 

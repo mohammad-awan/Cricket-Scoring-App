@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import Self
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from app.models.enums import BattingHand, BowlingArm, BowlingStyle, PlayerStatus
+from app.models.enums import BattingHand, BowlingArm, BowlingStyle, PlayerSex, PlayerStatus
 from app.schemas.common import strip_required_text, strip_text
 
 
@@ -14,6 +14,7 @@ class PlayerCreate(BaseModel):
     short_name: str | None = Field(default=None, max_length=80)
     date_of_birth:  date | None = None
     nationality: str | None = Field(default=None, max_length=80)
+    sex: PlayerSex | None = None
     external_id: str | None = Field(default=None, max_length=80)
     batting_hand: BattingHand | None = None
     bowling_arm: BowlingArm | None = None
@@ -91,6 +92,7 @@ class PlayerUpdate(BaseModel):
     short_name: str | None = Field(default=None, max_length=80)
     date_of_birth: date | None = None
     nationality: str | None = Field(default=None, max_length=80)
+    sex: PlayerSex | None = None
     external_id: str | None = Field(default=None, max_length=80)
     batting_hand: BattingHand | None = None
     bowling_arm: BowlingArm | None = None
@@ -187,6 +189,7 @@ class PlayerRead(BaseModel):
     short_name: str | None
     date_of_birth: date | None
     nationality: str | None
+    sex: PlayerSex | None = None
     external_id: str | None
     batting_hand: BattingHand | None
     bowling_arm: BowlingArm | None

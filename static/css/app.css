@@ -5296,3 +5296,72 @@ h2 {
         flex-wrap: wrap;
     }
 }
+
+
+/* =========================
+   Stage 11: branding assets, deductions
+   ========================= */
+
+.tournament-logo-image {
+    display: block;
+    object-fit: contain;
+    padding: 0;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border);
+}
+
+.tournament-hero.has-cover {
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.96) 35%, rgba(255, 255, 255, 0.72)),
+        var(--hero-cover) center / cover no-repeat;
+}
+
+.asset-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.asset-preview {
+    flex: 0 0 120px;
+}
+
+.asset-meta {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.tournament-cover-preview {
+    display: grid;
+    width: 120px;
+    height: 64px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    object-fit: cover;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+}
+
+.tournament-cover-preview.empty {
+    border-style: dashed;
+}
+
+.plain-list li.revoked strong {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+.plain-list li small {
+    display: block;
+}
+
+.ineligible-list li {
+    padding: 7px 0;
+}
+
+.ineligible-list small {
+    color: var(--muted);
+}

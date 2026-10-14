@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.playing_side import side_size_text
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.models import AuditAction, Innings, InningsStatus, MatchStatus
 from app.repositories.match_setup import MatchSetupRepository
@@ -78,8 +79,8 @@ async def setup_opening_innings(
             ):
                 raise ValidationError(
                     "Both playing teams "
-                    "must contain exactly "
-                    f"{match.players_per_side} "
+                    "must contain "
+                    f"{side_size_text(match)} "
                     "players"
                 )
 
@@ -229,6 +230,10 @@ async def setup_opening_innings(
                 audit_action = (
                     AuditAction.UPDATED
                 )
+
+            # The batting XI is locked from here, so its size
+            # decides when this innings is all out.
+            first_innings.batting_side_size = len(batting_xi)
 
             await session.flush()
 

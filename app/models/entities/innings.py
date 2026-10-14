@@ -71,6 +71,9 @@ class Innings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=0,
         server_default="0",
     )
+    # Players in the batting XI when the innings was created. Decides
+    # when the side is all out; NULL means a full side (legacy rows).
+    batting_side_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
     striker_id: Mapped[UUID | None] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
         ForeignKey("players.id", ondelete="SET NULL"),
@@ -150,6 +153,10 @@ class Innings(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint(
             "legal_balls >= 0",
             name="innings_legal_balls_non_negative",
+        ),
+        CheckConstraint(
+            "batting_side_size IS NULL OR batting_side_size >= 2",
+            name="innings_batting_side_size_minimum",
         ),
         CheckConstraint(
             "striker_id IS NULL OR non_striker_id IS NULL OR striker_id <> non_striker_id",

@@ -58,7 +58,7 @@ async def create_match(
                 )
             )
 
-            format_fields = ("players_per_side", "total_overs", "balls_per_over", "innings_per_team")
+            format_fields = ("players_per_side", "minimum_players_to_start", "total_overs", "balls_per_over", "innings_per_team")
 
             match_format = await apply_tournament_fixture_rules(
                 session,
@@ -117,6 +117,10 @@ async def create_match(
 
                 players_per_side=(
                     match_format["players_per_side"]
+                ),
+
+                minimum_players_to_start=(
+                    match_format["minimum_players_to_start"]
                 ),
 
                 total_overs=(
@@ -404,6 +408,16 @@ async def update_match(
                     "has been selected"
                 )
 
+            final_side = data.get("players_per_side", match.players_per_side)
+            final_minimum = data.get(
+                "minimum_players_to_start",
+                match.minimum_players_to_start,
+            )
+            if final_minimum is not None and final_minimum > final_side:
+                raise ValidationError(
+                    "minimum_players_to_start cannot exceed players_per_side"
+                )
+
             await validate_match_references(
                 repository,
 
@@ -425,7 +439,7 @@ async def update_match(
             )
 
             if tournament_id is not None:
-                format_fields = ("players_per_side", "total_overs", "balls_per_over", "innings_per_team")
+                format_fields = ("players_per_side", "minimum_players_to_start", "total_overs", "balls_per_over", "innings_per_team")
 
                 match_format = await apply_tournament_fixture_rules(
                     session,
@@ -474,6 +488,7 @@ async def update_match(
                 "venue_id",
                 "match_type",
                 "players_per_side",
+                "minimum_players_to_start",
                 "total_overs",
                 "balls_per_over",
                 "innings_per_team",
