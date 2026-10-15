@@ -219,7 +219,7 @@ class TournamentRules(BaseModel):
                 "teams_per_group"
             )
 
-        self._validate_bowler_quota()
+        self.validate_bowler_quota()
 
         if len(self.permitted_extras) != len(set(self.permitted_extras)):
             raise ValueError("Permitted extras cannot contain duplicates")
@@ -230,7 +230,7 @@ class TournamentRules(BaseModel):
         if "win" not in self.allowed_outcomes:
             raise ValueError("Allowed outcomes must include win")
 
-        self._validate_powerplays()
+        self.validate_powerplays()
 
         if self.overseas_player_limit is not None:
             if self.eligibility.home_nationality is None:
@@ -245,7 +245,7 @@ class TournamentRules(BaseModel):
 
         return self
 
-    def _validate_bowler_quota(self) -> None:
+    def validate_bowler_quota(self) -> None:
         if self.bowler_quota_policy != "fixed":
             if self.overs_per_bowler is not None:
                 raise ValueError(
@@ -266,7 +266,7 @@ class TournamentRules(BaseModel):
                 "to bowl its full overs"
             )
 
-    def _validate_powerplays(self) -> None:
+    def validate_powerplays(self) -> None:
         previous_end = 0
 
         for segment in sorted(self.powerplay_segments, key=lambda item: item.from_over):
@@ -382,6 +382,26 @@ def scoring_capability_errors(rules: TournamentRules) -> list[str]:
 
     if rules.points.bonus_points_enabled:
         errors.append("Bonus point calculation is not implemented")
+
+    
+    if rules.mandatory_break_minutes > 0:
+        errors.append(
+            "Mandatory break enforcement is not "
+            "implemented in the scoring engine"
+        )
+
+    if rules.innings_time_minutes is not None:
+        errors.append(
+            "Innings time-limit enforcement is not "
+            "implemented in the scoring engine"
+        )
+
+    if rules.timeout_minutes > 0:
+        errors.append(
+            "Timeout workflow is not implemented "
+            "in the scoring engine"
+        )
+
 
     return errors
 

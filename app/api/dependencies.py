@@ -1,10 +1,7 @@
 from __future__ import annotations
-import hmac
 from typing import Annotated
-from fastapi import Depends, Header, Query
+from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.config import get_settings
-from app.core.exceptions import PermissionDeniedError
 from app.db.session import get_db_session
 from app.schemas.common import MasterDataQuery
 
@@ -48,36 +45,20 @@ SessionDependency = Annotated[AsyncSession, Depends(get_db_session)]
 QueryDependency = Annotated[MasterDataQuery, Depends(get_master_data_query)]
 
 
-def require_organizer(
-    x_organizer_token: Annotated[
-        str | None,
-        Header(description="Tournament organizer token"),
-    ] = None,
-) -> str | None:
-    """Interim organizer guard for privileged tournament endpoints.
 
-    Returns the actor id recorded in tournament audit events. Replace
-    with real user authentication and per-tournament ownership checks.
+def require_organizer() -> None:
+    """Public tournament operations.
+
+    No authentication or authorization is required.
+
+    Keep this dependency temporarily so existing tournament
+    route signatures remain compatible.
     """
-
-    settings = get_settings()
-    expected = settings.organizer_api_token
-
-    if expected is None:
-        if settings.environment in {"development", "test"}:
-            return None
-
-        raise PermissionDeniedError(
-            "Organizer authorization is not configured"
-        )
-
-    if x_organizer_token is None or not hmac.compare_digest(
-        x_organizer_token.encode("utf-8"),
-        expected.get_secret_value().encode("utf-8"),
-    ):
-        raise PermissionDeniedError("Organizer authorization required")
-
-    return "organizer"
+    return None
 
 
-OrganizerDependency = Annotated[str | None, Depends(require_organizer)]
+OrganizerDependency = Annotated[None, Depends(require_organizer)]
+
+
+
+

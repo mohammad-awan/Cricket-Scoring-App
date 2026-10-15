@@ -161,6 +161,56 @@ async def get_tournament(session: AsyncSession, tournament_id: UUID) -> Tourname
     return tournament
 
 
+
+# Tournament identity and scheduling safeguards.
+
+IDENTITY_LOCKED_STATUSES = frozenset({
+    TournamentStatus.SCHEDULED,
+    TournamentStatus.LIVE,
+    TournamentStatus.COMPLETED,
+    TournamentStatus.SUSPENDED,
+    TournamentStatus.CANCELLED,
+    TournamentStatus.ARCHIVED,
+})
+
+IDENTITY_LOCKED_FIELDS = frozenset({
+    "name",
+    "slug",
+    "season",
+    "start_date",
+    "end_date",
+})
+
+TERMINAL_TOURNAMENT_STATUSES = frozenset({
+    TournamentStatus.COMPLETED,
+    TournamentStatus.CANCELLED,
+    TournamentStatus.ARCHIVED,
+})
+
+
+def validate_tournament_identity_update(tournament: Tournament, changes: dict[str, Any]) -> None:
+    """Reject identity or schedule changes after scheduling.
+
+    Ordinary editable descriptive metadata can remain changeable.
+    Rule changes must go through versioned rule-set services.
+    """
+    if tournament.status == TournamentStatus.ARCHIVED:
+        raise ConflictError("Archived tournaments cannot be updated")
+
+    if tournament.status in TERMINAL_TOURNAMENT_STATUSES:
+        raise ConflictError("Completed or cancelled tournaments are read-only")
+
+    if tournament.status in IDENTITY_LOCKED_STATUSES:
+        changed_fields = {
+            field
+            for field in IDENTITY_LOCKED_FIELDS.intersection(changes)
+            if changes[field] != getattr(tournament, field)
+        }
+
+        if changed_fields:
+            raise ConflictError("Tournament identity or schedule is locked: " + ", ".join(sorted(changed_fields)))
+
+
 async def update_tournament(session: AsyncSession, tournament_id: UUID, payload: TournamentUpdate) -> Tournament:
     repository = TournamentRepository(session)
     data = payload.model_dump(exclude_unset=True)
@@ -170,9 +220,8 @@ async def update_tournament(session: AsyncSession, tournament_id: UUID, payload:
             tournament = await repository.get_by_id(tournament_id)
             if tournament is None:
                 raise NotFoundError("Tournament not found")
-
-            if tournament.status == TournamentStatus.ARCHIVED:
-                raise ConflictError("Archived tournaments cannot be updated")
+ 
+            validate_tournament_identity_update(tournament, data)
 
             name = clean_required(data.get("name", tournament.name))
             season = clean_optional(data.get("season", tournament.season))

@@ -448,9 +448,7 @@
                 return;
             }
         } catch (error) {
-            showError(UI.isForbidden(error)
-                ? `${UI.errorText(error)} — set the organizer token (top right).`
-                : UI.errorText(error));
+            showError(UI.errorText(error));
         }
 
         submit.disabled = false;
@@ -458,8 +456,6 @@
 
 
     async function init() {
-        UI.bindOrganizerButton(document.getElementById("organizer-token"));
-
         try {
             const [venues, series] = await Promise.all([
                 API.listAll("venues").catch(() => []),

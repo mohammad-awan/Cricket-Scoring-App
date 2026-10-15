@@ -50,35 +50,6 @@
     }
 
 
-    // Stage 11: organizer endpoints accept an X-Organizer-Token header.
-    // The token is kept only for this browser session.
-    const ORGANIZER_TOKEN_KEY = "cip.organizerToken";
-
-
-    function organizerToken() {
-
-        try {
-
-            return sessionStorage.getItem(ORGANIZER_TOKEN_KEY) || "";
-
-        } catch {
-
-            return "";
-
-        }
-
-    }
-
-
-    function organizerHeaders() {
-
-        const token = organizerToken();
-
-        return token ? { "X-Organizer-Token": token } : {};
-
-    }
-
-
     async function request(
 
         path,
@@ -100,9 +71,6 @@
 
                     "Content-Type":
                         "application/json",
-
-
-                    ...organizerHeaders(),
 
 
                     ...(options.headers || {}),
@@ -921,32 +889,6 @@
         // =========================
         // STAGE 11 - TOURNAMENTS
         // =========================
-
-        organizerToken,
-
-
-        setOrganizerToken(token) {
-
-            try {
-
-                if (token) {
-
-                    sessionStorage.setItem(ORGANIZER_TOKEN_KEY, token);
-
-                } else {
-
-                    sessionStorage.removeItem(ORGANIZER_TOKEN_KEY);
-
-                }
-
-            } catch {
-
-                // Storage unavailable (private mode); token stays unset.
-
-            }
-
-        },
-
 
         tournament: {
 

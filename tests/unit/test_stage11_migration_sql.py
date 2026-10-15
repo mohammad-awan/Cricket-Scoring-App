@@ -23,6 +23,7 @@ BEFORE_STAGE11 = "20261010_0010"
 STAGE11 = "20261013_0011"
 COMPLETION = "20261014_0012"
 SHORT_SIDES = "20261015_0013"
+MATCH_RULE_GUARDS = "20261015_0014"
 
 
 def alembic_config(buffer: io.StringIO) -> Config:
@@ -40,7 +41,11 @@ def render(direction: str, revision_range: str) -> str:
 def test_completion_revision_is_the_single_head() -> None:
     script = ScriptDirectory.from_config(alembic_config(io.StringIO()))
 
-    assert script.get_heads() == [SHORT_SIDES]
+    # The latest migration must be the only Alembic head.
+    assert script.get_heads() == [MATCH_RULE_GUARDS]
+
+    # Verify the complete Stage 11 migration chain.
+    assert script.get_revision(MATCH_RULE_GUARDS).down_revision == SHORT_SIDES
     assert script.get_revision(SHORT_SIDES).down_revision == COMPLETION
     assert script.get_revision(COMPLETION).down_revision == STAGE11
 

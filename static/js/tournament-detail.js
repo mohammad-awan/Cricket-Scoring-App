@@ -91,11 +91,7 @@
 
 
     function reportError(error) {
-        const message = UI.errorText(error);
-        showToast(
-            UI.isForbidden(error) ? `${message} — set the organizer token in the header.` : message,
-            "error",
-        );
+        showToast(UI.errorText(error), "error");
     }
 
 
@@ -262,11 +258,8 @@
                 </div>
             </div>
             <div class="tournament-hero-actions">
-                <button class="button button-secondary button-small" id="organizer-token" type="button">Organizer token</button>
                 ${t.status === "archived" ? "" : `<a class="button button-secondary button-small" href="/competitions/${t.id}/edit">Open wizard</a>`}
             </div>`;
-
-        UI.bindOrganizerButton(document.getElementById("organizer-token"));
     }
 
 
@@ -339,7 +332,7 @@
             : notice("warning", `No rules configured. <a href="/competitions/${state.id}/rules"><strong>Configure rules →</strong></a>`);
 
         const auditBody = audit instanceof Error
-            ? notice("info", UI.isForbidden(audit) ? "The audit trail is visible to organizers only — set the organizer token." : esc(UI.errorText(audit)))
+            ? notice("info", esc(UI.errorText(audit)))
             : audit.length
                 ? `<ul class="plain-list">${audit.map((event) => `
                     <li>

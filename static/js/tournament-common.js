@@ -138,11 +138,6 @@
     }
 
 
-    function isForbidden(error) {
-        return error?.status === 403;
-    }
-
-
     // =========================
     // FORM FIELD DEFINITIONS
     // =========================
@@ -537,7 +532,13 @@
                             ${numberField("innings_time_minutes", "Innings time allowance (minutes)", r.innings_time_minutes, { min: 1, placeholder: "No limit" })}
                             ${numberField("timeout_minutes", "Strategic timeout (minutes)", r.timeout_minutes)}
                         </div>
-                        <p class="field-hint" style="margin:12px 0 0">Break, timeout and time allowances are published schedule guidance for officials; the scorer does not run a match clock.</p>
+                        <p class="field-hint" style="margin:12px 0 0">
+                            The scoring engine does not enforce breaks,
+                            time limits or strategic timeouts.
+                            Non-default values cannot be activated.
+                            Leave breaks and timeouts at 0 and
+                            the innings time allowance empty.
+                        </p>
                         <p class="form-section-title" style="margin:16px 0 8px">Permitted extras</p>
                         <div class="toggle-grid">
                             ${EXTRAS.map(([v, l]) => `
@@ -930,37 +931,6 @@
     }
 
 
-    // =========================
-    // ORGANIZER TOKEN
-    // =========================
-
-    function bindOrganizerButton(button) {
-        if (!button) {
-            return;
-        }
-
-        const refresh = () => {
-            button.textContent = API.organizerToken() ? "Organizer token ✓" : "Organizer token";
-        };
-
-        button.addEventListener("click", () => {
-            const value = window.prompt(
-                "Organizer token for this browser session.\n" +
-                "Required when the server sets ORGANIZER_API_TOKEN. Leave blank to clear.",
-                API.organizerToken(),
-            );
-            if (value === null) {
-                return;
-            }
-            API.setOrganizerToken(value.trim());
-            refresh();
-            showToast(value.trim() ? "Organizer token saved for this session." : "Organizer token cleared.", "info");
-        });
-
-        refresh();
-    }
-
-
     window.TournamentUI = {
         STATUS_LABELS,
         LIFECYCLE_PATH,
@@ -981,7 +951,6 @@
         toLocalInput,
         fromLocalInput,
         errorText,
-        isForbidden,
         renderFields,
         readFields,
         mountRulesEditor,
@@ -989,7 +958,6 @@
         assetUrl,
         seriesOptions,
         promptNewSeries,
-        bindOrganizerButton,
     };
 
 })();

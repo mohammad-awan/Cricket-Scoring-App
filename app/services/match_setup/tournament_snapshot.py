@@ -82,30 +82,57 @@ async def governing_rules(
     return await repository.latest_rules(tournament_id)
 
 
-async def _team_and_venue_errors(
+async def team_and_venue_errors(
     repository: TournamentRepository,
     tournament_id: UUID,
     *,
     team_a_id: UUID,
     team_b_id: UUID,
     venue_id: UUID | None,
+    require_venue: bool = False,
 ) -> list[str]:
-    errors = []
-    approved = await repository.approved_team_ids(tournament_id)
+    """Validate participating teams and tournament venues.
 
-    for label, team_id in (("Team A", team_a_id), ("Team B", team_b_id)):
-        if team_id not in approved:
-            errors.append(f"{label} is not an approved team in this tournament")
+    Draft fixtures may omit their venue.
+    Ready fixtures must use a configured permitted venue
+    when the tournament has a venue list.
+    """
 
-    if venue_id is not None:
-        permitted = {
-            item.venue_id
-            for item in await repository.list_venues(tournament_id)
-        }
-        if permitted and venue_id not in permitted:
-            errors.append("Venue is not permitted for this tournament")
+    errors: list[str] = []
+
+    if team_a_id == team_b_id:
+        errors.append("A tournament match requires two different teams")
+
+    approved_teams = await repository.approved_team_ids(tournament_id)
+
+    if team_a_id not in approved_teams:
+        errors.append("Team A is not approved for this tournament")
+
+    if team_b_id not in approved_teams:
+        errors.append("Team B is not approved for this tournament")
+
+    assigned_venues = await repository.list_venues(tournament_id)
+
+    permitted_venue_ids = {
+        item.venue_id
+        for item in assigned_venues
+    }
+
+    if venue_id is None:
+        if require_venue and permitted_venue_ids:
+            errors.append(
+                "A permitted tournament venue must be "
+                "selected before the match becomes Ready"
+            )
+
+    elif venue_id not in permitted_venue_ids:
+        errors.append(
+            "The selected venue is not assigned "
+            "to this tournament"
+        )
 
     return errors
+
 
 
 async def apply_tournament_fixture_rules(
@@ -139,7 +166,7 @@ async def apply_tournament_fixture_rules(
         )
 
     rules = TournamentRules.model_validate(ruleset.rules)
-    errors = await _team_and_venue_errors(
+    errors = await team_and_venue_errors(
         repository,
         ruleset.tournament_id,
         team_a_id=team_a_id,
@@ -200,10 +227,7 @@ async def validate_tournament_lineup(
         raise ValidationError("; ".join(errors))
 
 
-async def lock_match_tournament_rules(
-    session: AsyncSession,
-    match: Match,
-) -> None:
+async def lock_match_tournament_rules(session: AsyncSession, match: Match) -> None:
     """Validate a governed match and snapshot its rules before Ready.
 
     Must run inside the mark-ready transaction, with the match row locked.
@@ -242,12 +266,13 @@ async def lock_match_tournament_rules(
         },
     )
     errors.extend(
-        await _team_and_venue_errors(
+        await team_and_venue_errors(
             repository,
             match.tournament_id,
             team_a_id=match.team_a_id,
             team_b_id=match.team_b_id,
             venue_id=match.venue_id,
+            require_venue=True
         )
     )
 
@@ -273,14 +298,10 @@ async def lock_match_tournament_rules(
                 player_ids=selected_ids,
             )
         )
-        errors.extend(
-            await players_eligibility_errors(repository, tournament, rules, selected_ids)
-        )
+        errors.extend(await players_eligibility_errors(repository, tournament, rules, selected_ids))
 
     if errors:
-        raise ValidationError(
-            "Match does not satisfy tournament rules: " + "; ".join(errors)
-        )
+        raise ValidationError("Match does not satisfy tournament rules: " + "; ".join(errors))
 
     match.tournament_ruleset_id = ruleset.id
     match.effective_rules = ruleset.rules

@@ -1,6 +1,6 @@
 """Read-only checks that the live database is at the Stage 11 schema.
-
 Run after ``alembic upgrade head``.
+Includes the Stage 11 match-rule snapshot protection migration.
 """
 
 import pytest
@@ -12,6 +12,7 @@ from tests.integration.stage11_support import live_db
 pytestmark = [pytest.mark.integration, live_db]
 
 
+STAGE11_REVISION = "20261015_0014"
 STAGE11_TABLES = {
     "tournament_rule_sets",
     "tournament_groups",
@@ -27,21 +28,30 @@ STAGE11_TABLES = {
 
 @pytest.mark.asyncio
 async def test_database_is_at_stage11_revision() -> None:
-    async with AsyncSessionFactory() as session:
-        version = await session.scalar(text("SELECT version_num FROM alembic_version"))
+    """Verify that the database is at the latest Stage 11 revision."""
 
-    # Stage 11 spans two revisions; the completion revision is the head.
-    assert version == "20261015_0013"
+    async with AsyncSessionFactory() as session:
+        version = await session.scalar(
+            text(
+                "SELECT version_num "
+                "FROM alembic_version"
+            )
+        )
+
+    assert version == STAGE11_REVISION
 
 
 @pytest.mark.asyncio
 async def test_stage11_tables_columns_and_enum_exist() -> None:
+    """Verify tournament tables, match columns, statuses and trigger."""
+
     async with AsyncSessionFactory() as session:
         tables = set(
             (
                 await session.scalars(
                     text(
-                        "SELECT table_name FROM information_schema.tables "
+                        "SELECT table_name "
+                        "FROM information_schema.tables "
                         "WHERE table_schema = current_schema()"
                     )
                 )
@@ -51,8 +61,10 @@ async def test_stage11_tables_columns_and_enum_exist() -> None:
             (
                 await session.scalars(
                     text(
-                        "SELECT column_name FROM information_schema.columns "
-                        "WHERE table_name = 'matches'"
+                        "SELECT column_name "
+                        "FROM information_schema.columns "
+                        "WHERE table_schema = current_schema() "
+                        "AND table_name = 'matches'"
                     )
                 )
             ).all()
@@ -60,14 +72,21 @@ async def test_stage11_tables_columns_and_enum_exist() -> None:
         statuses = set(
             (
                 await session.scalars(
-                    text("SELECT unnest(enum_range(NULL::tournament_status))::text")
+                    text(
+                        "SELECT unnest("
+                        "enum_range(NULL::tournament_status)"
+                        ")::text"
+                    )
                 )
             ).all()
         )
-        trigger = await session.scalar(
+        rule_sets_trigger = await session.scalar(
             text(
-                "SELECT 1 FROM pg_trigger "
-                "WHERE tgname = 'trg_tournament_rule_sets_immutable'"
+                "SELECT 1 "
+                "FROM pg_trigger "
+                "WHERE tgname = "
+                "'trg_tournament_rule_sets_immutable' "
+                "AND NOT tgisinternal"
             )
         )
 
@@ -79,6 +98,7 @@ async def test_stage11_tables_columns_and_enum_exist() -> None:
         "effective_rules_checksum",
         "rules_locked_at",
     } <= match_columns
+
     assert {
         "draft",
         "active",
@@ -91,16 +111,21 @@ async def test_stage11_tables_columns_and_enum_exist() -> None:
         "suspended",
         "cancelled",
     } <= statuses
-    assert trigger == 1
+
+    assert rule_sets_trigger == 1
 
 
 @pytest.mark.asyncio
 async def test_legacy_matches_have_no_invented_rule_snapshots() -> None:
+    """Verify legacy matches have no inconsistent snapshot metadata."""
+
     async with AsyncSessionFactory() as session:
         inconsistent = await session.scalar(
             text(
-                "SELECT count(*) FROM matches "
-                "WHERE rules_locked_at IS NULL AND tournament_ruleset_id IS NOT NULL"
+                "SELECT count(*) "
+                "FROM matches "
+                "WHERE rules_locked_at IS NULL "
+                "AND tournament_ruleset_id IS NOT NULL"
             )
         )
 

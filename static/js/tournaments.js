@@ -161,7 +161,6 @@
         renderTable();
     });
 
-    UI.bindOrganizerButton(document.getElementById("organizer-token"));
     load();
 
 })();
