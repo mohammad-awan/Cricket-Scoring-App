@@ -1,371 +1,168 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %} Match Setup | Cricket Intelligence
+Platform {% endblock %} {% block content %}
 
+<div id="match-setup-page" data-match-id="{{ match_id }}">
+  <section class="page-heading">
+    <a class="back-link" href="/match-setup"> ← All matches </a>
 
-{% block title %}
-Match Setup | Cricket Intelligence Platform
-{% endblock %}
+    <div class="setup-title-row">
+      <div>
+        <p class="eyebrow">Match centre</p>
 
+        <h1 id="match-title">Loading match…</h1>
 
-{% block content %}
+        <p class="page-subtitle" id="match-subtitle"></p>
+      </div>
 
-<div
-    id="match-setup-page"
-    data-match-id="{{ match_id }}"
->
-
-    <section class="page-heading">
-
-        <a
-            class="back-link"
-            href="/match-setup"
-        >
-            ← All matches
-        </a>
-
-
-        <div class="setup-title-row">
-
-            <div>
-
-                <p class="eyebrow">
-                    Match centre
-</p>
-
-                <h1 id="match-title">
-                    Loading match…
-                </h1>
-
-                <p
-                    class="page-subtitle"
-                    id="match-subtitle"
-                >
-                </p>
-
-            </div>
-
-
-            <!--
+      <!--
                 Stage 4:
                 Open Scoring button appears
                 when match status is READY/LIVE
                 or INNINGS_BREAK.
             -->
-            <div class="setup-heading-actions">
+      <div class="setup-heading-actions">
+        <a
+          class="button button-primary button-small hidden"
+          id="open-scoring"
+          href="/live-scoring/{{ match_id }}"
+        >
+          Open scoring
+        </a>
 
-                <a
-                    class="
-                        button
-                        button-primary
-                        button-small
-                        hidden
-                    "
-                    id="open-scoring"
-                    href="/live-scoring/{{ match_id }}"
-                >
-                    Open scoring
-                </a>
-
-
-                <span
-                    class="status-badge"
-                    id="match-status-badge"
-                >
-                    —
-                </span>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <div
-        class="
-            form-error
-            hidden
-        "
-        id="page-error"
-    >
+        <span class="status-badge" id="match-status-badge"> — </span>
+      </div>
     </div>
+  </section>
 
+  <div class="form-error hidden" id="page-error"></div>
 
-    <section class="setup-grid">
-
-
-        <!-- =========================
+  <section class="setup-grid">
+    <!-- =========================
              READINESS
         ========================== -->
 
-        <article class="panel">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Checklist</p>
 
-            <div class="panel-header">
+          <h2>Readiness</h2>
+        </div>
 
-                <div>
+        <button
+          class="button button-primary button-small"
+          id="mark-ready"
+          type="button"
+          disabled
+        >
+          Mark ready
+        </button>
+      </div>
 
-                    <p class="eyebrow">
-                        Checklist
-                    </p>
+      <ul class="readiness-list" id="readiness-list"></ul>
+    </article>
 
-                    <h2>
-                        Readiness
-                    </h2>
-
-                </div>
-
-
-                <button
-                    class="
-                        button
-                        button-primary
-                        button-small
-                    "
-                    id="mark-ready"
-                    type="button"
-                    disabled
-                >
-                    Mark ready
-                </button>
-
-            </div>
-
-
-            <ul
-                class="readiness-list"
-                id="readiness-list"
-            >
-            </ul>
-
-        </article>
-
-
-        <!-- =========================
+    <!-- =========================
              TOSS
         ========================== -->
 
-        <article class="panel">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Step 1</p>
 
-            <div class="panel-header">
+          <h2>Toss</h2>
+        </div>
+      </div>
 
-                <div>
+      <div class="panel-body">
+        <p class="muted" id="toss-summary">Toss has not been recorded yet.</p>
 
-                    <p class="eyebrow">
-                        Step 1
-                    </p>
-
-                    <h2>
-                        Toss
-                    </h2>
-
-                </div>
-
-            </div>
-
-
-            <div class="panel-body">
-
-                <p
-                    class="muted"
-                    id="toss-summary"
-                >
-                    Toss has not been recorded yet.
-                </p>
-
-
-                <!--
+        <!--
                     Team A / Team B options
                     are generated by
                     match-setup.js
                 -->
-                <div
-                    class="toss-options"
-                    id="toss-winner-options"
-                >
-                </div>
+        <div class="toss-options" id="toss-winner-options"></div>
 
+        <div class="toss-options" id="toss-decision-options">
+          <label class="toss-option">
+            <input type="radio" name="toss-decision" value="bat" />
 
-                <div
-                    class="toss-options"
-                    id="toss-decision-options"
-                >
+            <span> Bat first </span>
+          </label>
 
-                    <label class="toss-option">
+          <label class="toss-option">
+            <input type="radio" name="toss-decision" value="bowl" />
 
-                        <input
-                            type="radio"
-                            name="toss-decision"
-                            value="bat"
-                        >
+            <span> Bowl first </span>
+          </label>
+        </div>
 
-                        <span>
-                            Bat first
-                        </span>
+        <button
+          class="button button-primary button-small"
+          id="save-toss"
+          type="button"
+        >
+          Save toss
+        </button>
+      </div>
+    </article>
 
-                    </label>
-
-
-                    <label class="toss-option">
-
-                        <input
-                            type="radio"
-                            name="toss-decision"
-                            value="bowl"
-                        >
-
-                        <span>
-                            Bowl first
-                        </span>
-
-                    </label>
-
-                </div>
-
-
-                <button
-                    class="
-                        button
-                        button-primary
-                        button-small
-                    "
-                    id="save-toss"
-                    type="button"
-                >
-                    Save toss
-                </button>
-
-            </div>
-
-        </article>
-
-
-        <!-- =========================
+    <!-- =========================
              MATCH DETAILS
         ========================== -->
 
-        <article
-            class="
-                panel
-                setup-grid-wide
-            "
-        >
+    <article class="panel setup-grid-wide">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Match</p>
 
-            <div class="panel-header">
+          <h2>Venue, date &amp; overs</h2>
+        </div>
+      </div>
 
-                <div>
+      <div class="panel-body" id="match-details-body">
+        <p class="muted">Loading…</p>
+      </div>
+    </article>
 
-                    <p class="eyebrow">
-                        Match
-                    </p>
-
-                    <h2>
-                        Venue, date &amp; overs
-                    </h2>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="panel-body"
-                id="match-details-body"
-            >
-
-                <p class="muted">
-                    Loading…
-                </p>
-
-            </div>
-
-        </article>
-
-
-        <!-- =========================
+    <!-- =========================
              PLAYING TEAM A
         ========================== -->
 
-        <article
-            class="
-                panel
-                setup-grid-wide
-            "
-            id="playing-team-a-panel"
-        >
-        </article>
+    <article class="panel setup-grid-wide" id="playing-team-a-panel"></article>
 
-
-        <!-- =========================
+    <!-- =========================
              PLAYING TEAM B
         ========================== -->
 
-        <article
-            class="
-                panel
-                setup-grid-wide
-            "
-            id="playing-team-b-panel"
-        >
-        </article>
+    <article class="panel setup-grid-wide" id="playing-team-b-panel"></article>
 
-
-        <!-- =========================
+    <!-- =========================
              OPENING INNINGS
         ========================== -->
 
-        <article
-            class="
-                panel
-                setup-grid-wide
-            "
-        >
+    <article class="panel setup-grid-wide">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Step 3</p>
 
-            <div class="panel-header">
+          <h2>Opening innings</h2>
+        </div>
+      </div>
 
-                <div>
-
-                    <p class="eyebrow">
-                        Step 3
-                    </p>
-
-                    <h2>
-                        Opening innings
-                    </h2>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="panel-body"
-                id="opening-innings-body"
-            >
-
-                <p class="muted">
-                    Complete the toss and both
-                    playing teams first.
-                </p>
-
-            </div>
-
-        </article>
-
-
-    </section>
-
+      <div class="panel-body" id="opening-innings-body">
+        <p class="muted">Complete the toss and both playing teams first.</p>
+      </div>
+    </article>
+  </section>
 </div>
 
-{% endblock %}
+{% endblock %} {% block scripts %}
 
+<script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
 
-{% block scripts %}
-
-<script
-    src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"
-></script>
-
-<script
-    src="{{ url_for('static', path='js/match-setup.js') }}?v={{ asset_version('js/match-setup.js') }}"
-></script>
+<script src="{{ url_for('static', path='js/match-setup.js') }}?v={{ asset_version('js/match-setup.js') }}"></script>
 
 {% endblock %}

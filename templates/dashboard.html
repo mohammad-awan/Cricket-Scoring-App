@@ -1,31 +1,148 @@
-{% extends "base.html" %}
-{% block title %}Overview | Cricket Intelligence{% endblock %}
-{% block content %}
+{% extends "base.html" %} {% block title %}Overview | Cricket Intelligence{%
+endblock %} {% block content %}
 <section class="page-heading overview-heading">
-    <div><p class="eyebrow">Your cricket headquarters</p><h1>A beautiful day for cricket.</h1><p class="page-subtitle">Your teams, your competitions. Every moment of the game, together.</p></div>
-
+  <div>
+    <p class="eyebrow">Your cricket headquarters</p>
+    <h1>A beautiful day for cricket.</h1>
+    <p class="page-subtitle">
+      Your teams, your competitions. Every moment of the game, together.
+    </p>
+  </div>
 </section>
 <section class="cricket-hero" aria-label="Your cricket workspace">
-    <div class="hero-copy"><span class="hero-kicker"><span aria-hidden="true"></span> FOR THE LOVE OF THE GAME</span><h2>The home of<br>your next <em>great innings.</em></h2><p>From the first ball to the final boundary. Bring your club together and make every game count.</p><a class="button hero-cta" href="/match-setup">Let's play cricket <span aria-hidden="true">&nearr;</span></a><div class="hero-caption">YOUR CLUB. YOUR GROUND. YOUR GAME.</div></div>
-    <div class="hero-ground"><img class="stadium-field" src="{{ url_for('static', path='images/cricket-ground.svg') }}?v={{ asset_version('images/cricket-ground.svg') }}" alt="Green cricket ground with a central pitch, wickets at both ends, two batters and eleven fielders in blue and orange kits, including a bowler, wicketkeeper, slips and boundary fielders."><div class="ground-label"><span>BETWEEN THE BOUNDARIES</span><strong>Where the game comes alive.</strong></div></div>
+  <div class="hero-copy">
+    <span class="hero-kicker"
+      ><span aria-hidden="true"></span> FOR THE LOVE OF THE GAME</span
+    >
+    <h2>The home of<br />your next <em>great innings.</em></h2>
+    <p>
+      From the first ball to the final boundary. Bring your club together and
+      make every game count.
+    </p>
+    <a class="button hero-cta" href="/match-setup"
+      >Let's play cricket <span aria-hidden="true">&nearr;</span></a
+    >
+    <div class="hero-caption">YOUR CLUB. YOUR GROUND. YOUR GAME.</div>
+  </div>
+  <div class="hero-ground">
+    <img
+      class="stadium-field"
+      src="{{ url_for('static', path='images/cricket-ground.svg') }}?v={{ asset_version('images/cricket-ground.svg') }}"
+      alt="Green cricket ground with a central pitch, wickets at both ends, two batters and eleven fielders in blue and orange kits, including a bowler, wicketkeeper, slips and boundary fielders."
+    />
+    <div class="ground-label">
+      <span>BETWEEN THE BOUNDARIES</span
+      ><strong>Where the game comes alive.</strong>
+    </div>
+  </div>
 </section>
 <section class="dashboard-launchpad" aria-label="Quick actions">
-    <div><span class="eyebrow">Match day, made simpler</span><h2>What would you like to do?</h2><p>Start with a match, or get your club ready for the next one.</p></div>
-    <a class="launch-action primary-action" href="/match-setup"><span class="launch-symbol" aria-hidden="true">{{ nav_icon('Matches') }}</span><strong>Manage matches</strong><small>Set up a fixture or continue scoring</small><span aria-hidden="true">&rarr;</span></a>
-    <a class="launch-action" href="/competitions"><span class="launch-symbol" aria-hidden="true">{{ nav_icon('Tournaments') }}</span><strong>Organize a tournament</strong><small>Teams, formats, and competitions</small><span aria-hidden="true">&rarr;</span></a>
+  <div>
+    <span class="eyebrow">Match day, made simpler</span>
+    <h2>What would you like to do?</h2>
+    <p>Start with a match, or get your club ready for the next one.</p>
+  </div>
+  <a class="launch-action primary-action" href="/match-setup"
+    ><span class="launch-symbol" aria-hidden="true"
+      >{{ nav_icon('Matches') }}</span
+    ><strong>Manage matches</strong
+    ><small>Set up a fixture or continue scoring</small
+    ><span aria-hidden="true">&rarr;</span></a
+  >
+  <a class="launch-action" href="/competitions"
+    ><span class="launch-symbol" aria-hidden="true"
+      >{{ nav_icon('Tournaments') }}</span
+    ><strong>Organize a tournament</strong
+    ><small>Teams, formats, and competitions</small
+    ><span aria-hidden="true">&rarr;</span></a
+  >
 </section>
-<div class="section-heading"><h2>Your club at a glance</h2><span>Workspace totals</span></div>
+<div class="section-heading">
+  <h2>Your club at a glance</h2>
+  <span>Workspace totals</span>
+</div>
 <section class="stats-grid">
-{% for resource, label, icon, description, href in [('teams', 'Teams', '&#9873;', 'Your teams, ready to play', '/master-data/teams'), ('players', 'Players', '&#9823;', 'Talent in your squad', '/master-data/players'), ('venues', 'Venues', '&#9678;', 'Grounds for your next game', '/master-data/venues'), ('tournaments', 'Tournaments', '&#9819;', 'Competitions in your workspace', '/competitions')] %}
-<a class="stat-card" href="{{ href }}"><div class="stat-icon" aria-hidden="true">{{ nav_icon(label) }}</div><div><span>{{ label }}</span><strong id="{{ resource }}-total">&mdash;</strong><small>{{ description }}</small></div><span class="stat-arrow" aria-hidden="true">&nearr;</span></a>
-{% endfor %}
+  {% for resource, label, icon, description, href in [('teams', 'Teams',
+  '&#9873;', 'Your teams, ready to play', '/master-data/teams'), ('players',
+  'Players', '&#9823;', 'Talent in your squad', '/master-data/players'),
+  ('venues', 'Venues', '&#9678;', 'Grounds for your next game',
+  '/master-data/venues'), ('tournaments', 'Tournaments', '&#9819;',
+  'Competitions in your workspace', '/competitions')] %}
+  <a class="stat-card" href="{{ href }}"
+    ><div class="stat-icon" aria-hidden="true">{{ nav_icon(label) }}</div>
+    <div>
+      <span>{{ label }}</span><strong id="{{ resource }}-total">&mdash;</strong
+      ><small>{{ description }}</small>
+    </div>
+    <span class="stat-arrow" aria-hidden="true">&nearr;</span></a
+  >
+  {% endfor %}
 </section>
 <section class="dashboard-grid">
-    <article class="panel"><div class="panel-header"><div><p class="eyebrow">Get started</p><h2>Build your next game</h2></div></div><div class="quick-links"><a href="/master-data/teams"><span class="quick-number">01</span><div><strong>Bring your teams together</strong><small>Create teams and organize your squads.</small></div><span aria-hidden="true">&rarr;</span></a><a href="/master-data/players"><span class="quick-number">02</span><div><strong>Meet your players</strong><small>Manage player profiles in one place.</small></div><span aria-hidden="true">&rarr;</span></a><a href="/match-setup"><span class="quick-number">03</span><div><strong>Take it to the field</strong><small>Choose your teams and set up a match.</small></div><span aria-hidden="true">&rarr;</span></a></div></article>
-    <article class="panel"><div class="panel-header"><div><p class="eyebrow">Connectivity</p><h2>System status</h2></div><button class="button button-secondary button-small" id="refresh-health" type="button">Refresh</button></div><div class="health-list"><div class="health-row"><span>Application API</span><span id="api-health" class="status-badge status-loading">Checking...</span></div><div class="health-row"><span>Database</span><span id="database-health" class="status-badge status-loading">Checking...</span></div></div><p class="muted" id="health-detail">Checking your workspace connection.</p></article>
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Get started</p>
+        <h2>Build your next game</h2>
+      </div>
+    </div>
+    <div class="quick-links">
+      <a href="/master-data/teams"
+        ><span class="quick-number">01</span>
+        <div>
+          <strong>Bring your teams together</strong
+          ><small>Create teams and organize your squads.</small>
+        </div>
+        <span aria-hidden="true">&rarr;</span></a
+      ><a href="/master-data/players"
+        ><span class="quick-number">02</span>
+        <div>
+          <strong>Meet your players</strong
+          ><small>Manage player profiles in one place.</small>
+        </div>
+        <span aria-hidden="true">&rarr;</span></a
+      ><a href="/match-setup"
+        ><span class="quick-number">03</span>
+        <div>
+          <strong>Take it to the field</strong
+          ><small>Choose your teams and set up a match.</small>
+        </div>
+        <span aria-hidden="true">&rarr;</span></a
+      >
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Connectivity</p>
+        <h2>System status</h2>
+      </div>
+      <button
+        class="button button-secondary button-small"
+        id="refresh-health"
+        type="button"
+      >
+        Refresh
+      </button>
+    </div>
+    <div class="health-list">
+      <div class="health-row">
+        <span>Application API</span
+        ><span id="api-health" class="status-badge status-loading"
+          >Checking...</span
+        >
+      </div>
+      <div class="health-row">
+        <span>Database</span
+        ><span id="database-health" class="status-badge status-loading"
+          >Checking...</span
+        >
+      </div>
+    </div>
+    <p class="muted" id="health-detail">Checking your workspace connection.</p>
+  </article>
 </section>
-{% endblock %}
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
 <script src="{{ url_for('static', path='js/dashboard.js') }}?v={{ asset_version('js/dashboard.js') }}"></script>
 {% endblock %}
