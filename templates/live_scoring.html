@@ -28,34 +28,14 @@ Live Scoring | Cricket Intelligence Platform
 
 
 
-    <section class="page-heading">
+    <section class="page-heading live-heading">
 
 
 
-        <a
-
-            class="back-link"
-
-            href="/match-setup/{{ match_id }}"
-
-        >
-
-            ← Match setup
-
-        </a>
 
 
-        <a
 
-            class="back-link"
 
-            href="/scorecard/{{ match_id }}"
-
-        >
-
-            Full scorecard →
-
-        </a>
 
 
 
@@ -71,7 +51,7 @@ Live Scoring | Cricket Intelligence Platform
 
                 <p class="eyebrow">
 
-                    Stage 6 · Live Match Lifecycle
+                    Match centre
 
                 </p>
 
@@ -79,7 +59,7 @@ Live Scoring | Cricket Intelligence Platform
 
                 <h1 id="scoring-title">
 
-                    Live Scoring Console
+                    Live scoring
 
                 </h1>
 
@@ -93,8 +73,7 @@ Live Scoring | Cricket Intelligence Platform
 
                 >
 
-                    Loading match context…
-
+                    Loading match context&hellip;
                 </p>
 
 
@@ -391,6 +370,7 @@ Live Scoring | Cricket Intelligence Platform
 
 
 
+    <nav class="scoring-shortcuts" aria-label="Scoring sections"><span>Jump to</span><a href="#delivery-panel">Delivery</a><a href="#extras-panel">Extras</a><a href="#wicket-panel">Wicket</a><a href="#batting-order-panel">Batting order</a><a href="#correction-panel">History</a></nav>
     <section class="scoring-grid">
 
 
@@ -405,7 +385,423 @@ Live Scoring | Cricket Intelligence Platform
 
 
 
-        <article class="panel">
+        <article
+
+            class="
+
+                panel
+
+                scoring-grid-wide
+
+                next-innings-panel
+
+                hidden
+
+            "
+
+            id="next-innings-panel"
+
+        >
+
+
+
+            <div class="panel-header">
+
+
+
+                <div>
+
+
+
+                    <p class="eyebrow">
+
+                        Innings break
+
+                    </p>
+
+
+
+                    <h2 id="next-innings-title">
+
+                        Start next innings
+
+                    </h2>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+
+
+            <div class="form-grid next-innings-grid">
+
+
+
+                <label class="form-field">
+
+
+
+                    <span>
+
+                        Striker <em>*</em>
+
+                    </span>
+
+
+
+                    <select
+
+                        id="next-striker"
+
+                    ></select>
+
+
+
+                </label>
+
+
+
+
+
+                <label class="form-field">
+
+
+
+                    <span>
+
+                        Non-striker <em>*</em>
+
+                    </span>
+
+
+
+                    <select
+
+                        id="next-non-striker"
+
+                    ></select>
+
+
+
+                </label>
+
+
+
+
+
+                <label class="form-field">
+
+
+
+                    <span>
+
+                        Opening bowler <em>*</em>
+
+                    </span>
+
+
+
+                    <select
+
+                        id="next-opening-bowler"
+
+                    ></select>
+
+
+
+                </label>
+
+
+
+
+
+                <div
+
+                    class="
+
+                        form-field
+
+                        next-innings-action
+
+                    "
+
+                >
+
+
+
+                    <button
+
+                        class="
+
+                            button
+
+                            button-primary
+
+                        "
+
+                        id="start-next-innings"
+
+                        type="button"
+
+                    >
+
+                        Start innings
+
+                    </button>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </article>
+
+<article class="panel delivery-panel" id="delivery-panel">
+
+
+
+            <div class="panel-header">
+
+
+
+                <div>
+
+
+
+                    <p class="eyebrow">
+
+                        Ball by ball
+
+                    </p>
+
+
+
+                    <h2>
+
+                        Record delivery
+
+                    </h2>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+
+
+            <div class="panel-body">
+
+
+
+                <p class="muted">
+
+                    Tap a score to record the delivery. Use the panels below for extras and wickets.
+
+                </p>
+
+
+
+
+
+                <div
+
+                    class="run-controls"
+
+                    id="run-controls"
+
+                >
+
+
+
+                    <button
+
+                        class="run-button"
+
+                        type="button"
+
+                        data-runs="0"
+
+                    >
+
+                        0
+
+                    </button>
+
+
+
+
+
+                    <button
+
+                        class="run-button"
+
+                        type="button"
+
+                        data-runs="1"
+
+                    >
+
+                        1
+
+                    </button>
+
+
+
+
+
+                    <button
+
+                        class="run-button"
+
+                        type="button"
+
+                        data-runs="2"
+
+                    >
+
+                        2
+
+                    </button>
+
+
+
+
+
+                    <button
+
+                        class="run-button"
+
+                        type="button"
+
+                        data-runs="3"
+
+                    >
+
+                        3
+
+                    </button>
+
+
+
+
+
+                    <button
+
+                        class="
+
+                            run-button
+
+                            boundary
+
+                        "
+
+                        type="button"
+
+                        data-runs="4"
+
+                    >
+
+                        4
+
+                    </button>
+
+
+
+
+
+                    <button
+
+                        class="
+
+                            run-button
+
+                            boundary
+
+                        "
+
+                        type="button"
+
+                        data-runs="6"
+
+                    >
+
+                        6
+
+                    </button>
+
+
+
+                </div>
+
+
+
+
+
+                <p
+
+                    class="muted"
+
+                    id="scoring-lock-note"
+
+                >
+
+                    Confirm the striker and bowler before recording each ball.
+
+                </p>
+
+
+
+
+
+                <button
+
+                    class="
+
+                        button
+
+                        button-secondary
+
+                        button-small
+
+                        hidden
+
+                    "
+
+                    id="end-innings"
+
+                    type="button"
+
+                >
+
+                    End innings
+
+                </button>
+
+
+
+            </div>
+
+
+
+        </article>
+
+<article class="panel participants-panel" id="participants-panel">
 
 
 
@@ -561,279 +957,7 @@ Live Scoring | Cricket Intelligence Platform
 
         </article>
 
-
-
-
-
-        <!-- =========================
-
-             S13 NORMAL RUNS
-
-        ========================== -->
-
-
-
-        <article class="panel">
-
-
-
-            <div class="panel-header">
-
-
-
-                <div>
-
-
-
-                    <p class="eyebrow">
-
-                        S13 · Normal runs
-
-                    </p>
-
-
-
-                    <h2>
-
-                        Record delivery
-
-                    </h2>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-
-
-            <div class="panel-body">
-
-
-
-                <p class="muted">
-
-                    Record a normal legal
-
-                    delivery with 0, 1, 2,
-
-                    3, 4 or 6 batter runs.
-
-                    Use the Stage 5 panels
-
-                    below for extras and
-
-                    wickets.
-
-                </p>
-
-
-
-
-
-                <div
-
-                    class="run-controls"
-
-                    id="run-controls"
-
-                >
-
-
-
-                    <button
-
-                        class="run-button"
-
-                        type="button"
-
-                        data-runs="0"
-
-                    >
-
-                        0
-
-                    </button>
-
-
-
-
-
-                    <button
-
-                        class="run-button"
-
-                        type="button"
-
-                        data-runs="1"
-
-                    >
-
-                        1
-
-                    </button>
-
-
-
-
-
-                    <button
-
-                        class="run-button"
-
-                        type="button"
-
-                        data-runs="2"
-
-                    >
-
-                        2
-
-                    </button>
-
-
-
-
-
-                    <button
-
-                        class="run-button"
-
-                        type="button"
-
-                        data-runs="3"
-
-                    >
-
-                        3
-
-                    </button>
-
-
-
-
-
-                    <button
-
-                        class="
-
-                            run-button
-
-                            boundary
-
-                        "
-
-                        type="button"
-
-                        data-runs="4"
-
-                    >
-
-                        4
-
-                    </button>
-
-
-
-
-
-                    <button
-
-                        class="
-
-                            run-button
-
-                            boundary
-
-                        "
-
-                        type="button"
-
-                        data-runs="6"
-
-                    >
-
-                        6
-
-                    </button>
-
-
-
-                </div>
-
-
-
-
-
-                <p
-
-                    class="muted"
-
-                    id="scoring-lock-note"
-
-                >
-
-                    Each scoring event is
-
-                    committed as one backend
-
-                    transaction.
-
-                </p>
-
-
-
-
-
-                <button
-
-                    class="
-
-                        button
-
-                        button-secondary
-
-                        button-small
-
-                        hidden
-
-                    "
-
-                    id="end-innings"
-
-                    type="button"
-
-                >
-
-                    End innings
-
-                </button>
-
-
-
-            </div>
-
-
-
-        </article>
-
-
-
-
-
-        <!-- =========================
-
-             S14 EXTRAS ENTRY
-
-        ========================== -->
-
-
-
-        <article
+<article
 
             class="panel"
 
@@ -853,7 +977,7 @@ Live Scoring | Cricket Intelligence Platform
 
                     <p class="eyebrow">
 
-                        S14 · Extras Entry
+                        Beyond the bat
 
                     </p>
 
@@ -883,15 +1007,7 @@ Live Scoring | Cricket Intelligence Platform
 
                 <p class="muted">
 
-                    Record Wide, No Ball,
-
-                    Bye or Leg Bye while the
-
-                    backend controls legal-ball
-
-                    counting, run attribution
-
-                    and strike movement.
+                    Choose the extra type and runs to add to this delivery.
 
                 </p>
 
@@ -1103,19 +1219,7 @@ Live Scoring | Cricket Intelligence Platform
 
         </article>
 
-
-
-
-
-        <!-- =========================
-
-             S15 WICKET ENTRY
-
-        ========================== -->
-
-
-
-        <article
+<article
 
             class="panel"
 
@@ -1135,7 +1239,7 @@ Live Scoring | Cricket Intelligence Platform
 
                     <p class="eyebrow">
 
-                        S15 · Wicket Entry
+                        Dismissals
 
                     </p>
 
@@ -1165,17 +1269,7 @@ Live Scoring | Cricket Intelligence Platform
 
                 <p class="muted">
 
-                    Select the dismissal,
-
-                    dismissed batter and next
-
-                    batter. The backend validates
-
-                    playing-XI membership,
-
-                    dismissal eligibility and
-
-                    innings limits.
+                    Choose the dismissal, the player out, and the next batter to take the crease.
 
                 </p>
 
@@ -1760,421 +1854,7 @@ Live Scoring | Cricket Intelligence Platform
 
         </article>
 
-
-
-
-
-        <!-- =========================
-             STAGE 10 - RETIREMENTS
-        ========================== -->
-
-        <article
-            class="panel"
-            id="retirement-panel"
-        >
-
-            <div class="panel-header">
-
-                <div>
-
-                    <p class="eyebrow">
-                        S17 · Retirement
-                    </p>
-
-                    <h2>
-                        Retire batter
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="panel-body">
-
-                <p class="muted">
-                    Retirements happen between
-                    deliveries. Retired hurt adds no
-                    wicket and the batter may resume
-                    later. Retired out counts as a
-                    team wicket but is never credited
-                    to the bowler.
-                </p>
-
-                <div class="form-grid">
-
-                    <label class="form-field">
-                        <span>
-                            Retiring batter
-                        </span>
-                        <select id="retire-player">
-                            <option value="">
-                                Select batter
-                            </option>
-                        </select>
-                    </label>
-
-                    <label class="form-field">
-                        <span>
-                            Retirement type
-                        </span>
-                        <select id="retire-type">
-                            <option value="retired_hurt">
-                                Retired hurt
-                            </option>
-                            <option value="retired_out">
-                                Retired out
-                            </option>
-                        </select>
-                    </label>
-
-                    <label class="form-field">
-                        <span>
-                            Replacement
-                        </span>
-                        <select id="retire-replacement">
-                            <option value="">
-                                Automatic — next in batting order
-                            </option>
-                        </select>
-                    </label>
-
-                    <label class="form-field">
-                        <span>
-                            Reason
-                        </span>
-                        <input
-                            id="retire-reason"
-                            maxlength="500"
-                            placeholder="e.g. Hamstring injury"
-                            type="text"
-                        >
-                    </label>
-
-                </div>
-
-                <p
-                    class="muted"
-                    id="retirement-help"
-                ></p>
-
-                <button
-                    class="
-                        button
-                        button-primary
-                        button-small
-                    "
-                    id="record-retirement"
-                    type="button"
-                >
-                    Record retirement
-                </button>
-
-                <div
-                    class="recent-balls retirement-list"
-                    id="retirement-list"
-                ></div>
-
-            </div>
-
-        </article>
-
-
-        <!-- =========================
-             STAGE 10 - LIVE BATTING ORDER
-        ========================== -->
-
-        <article
-            class="panel"
-            id="batting-order-panel"
-        >
-
-            <div class="panel-header">
-
-                <div>
-
-                    <p class="eyebrow">
-                        S18 · Strategy
-                    </p>
-
-                    <h2>
-                        Live batting order
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="panel-body">
-
-                <p class="muted">
-                    Reorder batters who have not yet
-                    batted. Automatic selection at the
-                    next wicket uses this order. Batters
-                    who have already entered stay locked.
-                </p>
-
-                <ol
-                    class="batting-order-list live-batting-order"
-                    id="batting-order-list"
-                >
-                    <li class="muted">
-                        Loading batting order…
-                    </li>
-                </ol>
-
-                <label class="form-field">
-                    <span>
-                        Reason for change
-                    </span>
-                    <input
-                        id="batting-order-reason"
-                        maxlength="500"
-                        placeholder="e.g. Promote power hitter for the death overs"
-                        type="text"
-                    >
-                </label>
-
-                <p
-                    class="muted"
-                    id="batting-order-help"
-                ></p>
-
-                <div class="batting-order-buttons">
-
-                    <button
-                        class="
-                            button
-                            button-primary
-                            button-small
-                        "
-                        id="save-batting-order"
-                        type="button"
-                    >
-                        Save order
-                    </button>
-
-                    <button
-                        class="
-                            button
-                            button-secondary
-                            button-small
-                        "
-                        id="reset-batting-order"
-                        type="button"
-                    >
-                        Reset
-                    </button>
-
-                </div>
-
-            </div>
-
-        </article>
-
-
-        <!-- =========================
-
-             NEXT INNINGS
-
-        ========================== -->
-
-
-
-        <article
-
-            class="
-
-                panel
-
-                scoring-grid-wide
-
-                next-innings-panel
-
-                hidden
-
-            "
-
-            id="next-innings-panel"
-
-        >
-
-
-
-            <div class="panel-header">
-
-
-
-                <div>
-
-
-
-                    <p class="eyebrow">
-
-                        Innings break
-
-                    </p>
-
-
-
-                    <h2 id="next-innings-title">
-
-                        Start next innings
-
-                    </h2>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-
-
-            <div class="form-grid next-innings-grid">
-
-
-
-                <label class="form-field">
-
-
-
-                    <span>
-
-                        Striker <em>*</em>
-
-                    </span>
-
-
-
-                    <select
-
-                        id="next-striker"
-
-                    ></select>
-
-
-
-                </label>
-
-
-
-
-
-                <label class="form-field">
-
-
-
-                    <span>
-
-                        Non-striker <em>*</em>
-
-                    </span>
-
-
-
-                    <select
-
-                        id="next-non-striker"
-
-                    ></select>
-
-
-
-                </label>
-
-
-
-
-
-                <label class="form-field">
-
-
-
-                    <span>
-
-                        Opening bowler <em>*</em>
-
-                    </span>
-
-
-
-                    <select
-
-                        id="next-opening-bowler"
-
-                    ></select>
-
-
-
-                </label>
-
-
-
-
-
-                <div
-
-                    class="
-
-                        form-field
-
-                        next-innings-action
-
-                    "
-
-                >
-
-
-
-                    <button
-
-                        class="
-
-                            button
-
-                            button-primary
-
-                        "
-
-                        id="start-next-innings"
-
-                        type="button"
-
-                    >
-
-                        Start innings
-
-                    </button>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-        </article>
-
-
-
-
-
-        <!-- =========================
-
-             BOWLER CHANGE
-
-        ========================== -->
-
-
-
-        <article
+<article
 
             class="
 
@@ -2312,19 +1992,205 @@ Live Scoring | Cricket Intelligence Platform
 
         </article>
 
+<article
+            class="panel"
+            id="retirement-panel"
+        >
 
+            <div class="panel-header">
 
+                <div>
 
+                    <p class="eyebrow">
+                        Player management
+                    </p>
 
-        <!-- =========================
+                    <h2>
+                        Retire batter
+                    </h2>
 
-             S16 UNDO / CORRECTION
+                </div>
 
-        ========================== -->
+            </div>
 
+            <div class="panel-body">
 
+                <p class="muted">
+                    Retirements happen between
+                    deliveries. Retired hurt adds no
+                    wicket and the batter may resume
+                    later. Retired out counts as a
+                    team wicket but is never credited
+                    to the bowler.
+                </p>
 
-        <article
+                <div class="form-grid">
+
+                    <label class="form-field">
+                        <span>
+                            Retiring batter
+                        </span>
+                        <select id="retire-player">
+                            <option value="">
+                                Select batter
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>
+                            Retirement type
+                        </span>
+                        <select id="retire-type">
+                            <option value="retired_hurt">
+                                Retired hurt
+                            </option>
+                            <option value="retired_out">
+                                Retired out
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>
+                            Replacement
+                        </span>
+                        <select id="retire-replacement">
+                            <option value="">
+                                Automatic — next in batting order
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>
+                            Reason
+                        </span>
+                        <input
+                            id="retire-reason"
+                            maxlength="500"
+                            placeholder="e.g. Hamstring injury"
+                            type="text"
+                        >
+                    </label>
+
+                </div>
+
+                <p
+                    class="muted"
+                    id="retirement-help"
+                ></p>
+
+                <button
+                    class="
+                        button
+                        button-primary
+                        button-small
+                    "
+                    id="record-retirement"
+                    type="button"
+                >
+                    Record retirement
+                </button>
+
+                <div
+                    class="recent-balls retirement-list"
+                    id="retirement-list"
+                ></div>
+
+            </div>
+
+        </article>
+
+<article
+            class="panel"
+            id="batting-order-panel"
+        >
+
+            <div class="panel-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Team strategy
+                    </p>
+
+                    <h2>
+                        Live batting order
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="panel-body">
+
+                <p class="muted">
+                    Reorder batters who have not yet
+                    batted. Automatic selection at the
+                    next wicket uses this order. Batters
+                    who have already entered stay locked.
+                </p>
+
+                <ol
+                    class="batting-order-list live-batting-order"
+                    id="batting-order-list"
+                >
+                    <li class="muted">
+                        Loading batting order…
+                    </li>
+                </ol>
+
+                <label class="form-field">
+                    <span>
+                        Reason for change
+                    </span>
+                    <input
+                        id="batting-order-reason"
+                        maxlength="500"
+                        placeholder="e.g. Promote power hitter for the death overs"
+                        type="text"
+                    >
+                </label>
+
+                <p
+                    class="muted"
+                    id="batting-order-help"
+                ></p>
+
+                <div class="batting-order-buttons">
+
+                    <button
+                        class="
+                            button
+                            button-primary
+                            button-small
+                        "
+                        id="save-batting-order"
+                        type="button"
+                    >
+                        Save order
+                    </button>
+
+                    <button
+                        class="
+                            button
+                            button-secondary
+                            button-small
+                        "
+                        id="reset-batting-order"
+                        type="button"
+                    >
+                        Reset
+                    </button>
+
+                </div>
+
+            </div>
+
+        </article>
+
+<article
 
             class="
 
@@ -2350,7 +2216,7 @@ Live Scoring | Cricket Intelligence Platform
 
                     <p class="eyebrow">
 
-                        S16 · Undo / Correction
+                        Review &amp; correct
 
                     </p>
 
@@ -2396,19 +2262,7 @@ Live Scoring | Cricket Intelligence Platform
 
                 <p class="muted">
 
-                    Undo never deletes an
-
-                    official scoring event.
-
-                    The delivery is marked void,
-
-                    a correction record is stored,
-
-                    and the innings state is rebuilt
-
-                    from the remaining official
-
-                    delivery history.
+                    Review recent deliveries and correct an entry when needed. Corrections remain in the match history.
 
                 </p>
 
@@ -2463,6 +2317,8 @@ Live Scoring | Cricket Intelligence Platform
 
 
 {% block scripts %}
+<script src="{{ url_for('static', path='js/broadcast.js') }}?v={{ asset_version('js/broadcast.js') }}"></script>
+<script src="{{ url_for('static', path='js/match-events.js') }}?v={{ asset_version('js/match-events.js') }}"></script>
 
 
 

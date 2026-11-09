@@ -22,14 +22,7 @@ Live Viewer | Cricket Intelligence Platform
     >
 
 
-        <a
-            class="back-link"
-            href="/scorecard/{{ match_id }}"
-        >
 
-            Full scorecard →
-
-        </a>
 
 
         <div
@@ -44,8 +37,7 @@ Live Viewer | Cricket Intelligence Platform
                     class="eyebrow"
                 >
 
-                    Stage 7 ·
-                    S19 Live Viewer
+                    Live from the ground
 
                 </p>
 
@@ -54,7 +46,7 @@ Live Viewer | Cricket Intelligence Platform
                     id="viewer-title"
                 >
 
-                    Live Match Viewer
+                    Match day live
 
                 </h1>
 
@@ -64,9 +56,7 @@ Live Viewer | Cricket Intelligence Platform
                     id="viewer-subtitle"
                 >
 
-                    Waiting for committed
-                    match state…
-
+                    Waiting for match updates&hellip;
                 </p>
 
 
@@ -378,6 +368,8 @@ Live Viewer | Cricket Intelligence Platform
 
 
 {% block scripts %}
+<script src="{{ url_for('static', path='js/broadcast.js') }}?v={{ asset_version('js/broadcast.js') }}"></script>
+<script src="{{ url_for('static', path='js/match-events.js') }}?v={{ asset_version('js/match-events.js') }}"></script>
 
 
 <script

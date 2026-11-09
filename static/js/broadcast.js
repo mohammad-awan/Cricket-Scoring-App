@@ -1,0 +1,49 @@
+﻿(() => {
+ 'use strict';
+ const root=document.querySelector('#live-scoring-page, #live-viewer-page, #scorecard-page');
+ if(!root)return;
+ const e=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const n=v=>v==null?'—':Number(v).toFixed(2);
+ const badge=t=>`<span class="team-crest" aria-label="${e(t.name)} team monogram">${e(t.code||t.short_name||t.name.slice(0,3))}</span>`;
+ let state,card,fetchTimer,fetching=false,dirty=false;
+ const panel=document.createElement('section');panel.className='international-board';panel.setAttribute('aria-label','Match broadcast scoreboard');
+ root.querySelector('.page-heading').after(panel);
+ const replay=document.createElement('button');replay.type='button';replay.className='button button-secondary victory-replay';replay.textContent='✦ Replay victory celebration';replay.hidden=true;panel.after(replay);
+ const dialog=document.createElement('dialog');dialog.className='victory-dialog';dialog.setAttribute('aria-label','Match victory celebration');dialog.innerHTML='<div class="victory-effects" aria-hidden="true"></div><button class="victory-close" type="button" aria-label="Close celebration">×</button><div class="victory-content"><span class="victory-kicker">THE FINAL WORD • MATCH COMPLETE</span><div class="victory-trophy" aria-hidden="true">🏆</div><h2>TEAM WINS!</h2><strong class="victory-team"></strong><p class="victory-margin"></p><button class="button button-primary victory-done" type="button">Back to the match</button></div>';document.body.append(dialog);
+ let victoryKey='',effectTimer,returnFocus;
+ function stop(){clearTimeout(effectTimer);dialog.querySelector('.victory-effects').replaceChildren();}
+ function close(){dialog.close();stop();returnFocus?.focus();}
+ dialog.querySelector('.victory-close').onclick=close;dialog.querySelector('.victory-done').onclick=close;dialog.addEventListener('close',stop);
+ function celebrate(){
+  if(!card?.lifecycle?.result?.completed||!card.lifecycle.result.winner_team)return;
+  const r=card.lifecycle.result;dialog.querySelector('.victory-team').textContent=r.winner_team.name;dialog.querySelector('.victory-margin').textContent=r.summary||'Match won';
+  returnFocus=document.activeElement;if(!dialog.open)dialog.showModal();stop();
+  const fx=dialog.querySelector('.victory-effects');
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+   for(let i=0;i<70;i++){const bit=document.createElement('i');bit.className='victory-confetti';bit.style.cssText=`--x:${Math.random()*100}%;--delay:${Math.random()*2}s;--drift:${Math.random()*240-120}px;--hue:${i*47%360};--turn:${Math.random()*720}deg`;fx.append(bit);}
+   for(let i=0;i<5;i++){const burst=document.createElement('span');burst.className='victory-firework';burst.style.cssText=`left:${15+i*17}%;top:${15+(i%2)*22}%;--delay:${i*.5}s`;for(let j=0;j<12;j++){const ray=document.createElement('b');ray.style.setProperty('--angle',j*30+'deg');burst.append(ray);}fx.append(burst);}
+   effectTimer=setTimeout(stop,6500);
+  }
+ }
+ replay.onclick=celebrate;
+ function result(){const r=card?.lifecycle?.result;if(!r?.completed||!r.winner_team){replay.hidden=true;victoryKey='';if(dialog.open)close();return;}replay.hidden=false;const key=card.match_id+':'+r.winner_team.id+':'+r.summary;if(victoryKey!==key){victoryKey=key;celebrate();}}
+ function draw(){
+  if(!card&&!state)return;
+  const innings=card?.innings?.find(x=>x.innings_number===state?.innings_number)||card?.innings?.at(-1);
+  const bat=state?.batting_team||innings?.batting_team||card.team_a,bowl=state?.bowling_team||innings?.bowling_team||card.team_b;
+  const chase=card?.lifecycle?.chase||{};const live=(state?.match_status||card?.status)!=='completed';
+  const metric=(label,value)=>`<div><span>${label}</span><strong>${e(value)}</strong></div>`;
+  const active=innings?.batting?.filter(b=>state?[state.striker?.id,state.non_striker?.id].includes(b.player.id):b.is_not_out&&b.balls>0)||[];
+  const bowling=innings?.bowling?.find(b=>b.player.id===state?.current_bowler?.id)||innings?.bowling?.at(-1);
+  const partnership=innings?.partnerships?.at(-1);
+  const balls=[...(state?.recent_deliveries||[])].filter(d=>d.status==='recorded').sort((a,b)=>a.sequence-b.sequence).slice(-8);
+  const ballLabel=d=>d.wicket_type?'W':d.wide_runs?'Wd':d.no_ball_runs?'Nb':d.bye_runs?d.total_runs+'b':d.leg_bye_runs?d.total_runs+'lb':d.total_runs;
+  panel.innerHTML=`<header class="broadcast-topline"><span class="broadcast-status">${live?'● MATCH CENTRE':'◆ FINAL RESULT'}</span><span>${e(card?.lifecycle?.state_label||state?.match_status)} • INNINGS ${e(state?.innings_number||innings?.innings_number||1)}</span></header><div class="broadcast-teams"><div class="broadcast-team">${badge(bat)}<div><small>BATTING</small><h2>${e(bat.name)}</h2></div></div><div class="broadcast-total"><strong>${e(state?.total_runs??innings?.total_runs??0)}<em>/${e(state?.wickets??innings?.wickets??0)}</em></strong><span>${e(state?.overs??innings?.overs??'0.0')} OVERS</span></div><div class="broadcast-team opposition"><div><small>BOWLING</small><h2>${e(bowl.name)}</h2></div>${badge(bowl)}</div></div><div class="broadcast-metrics">${metric('CURRENT RR',n(state?.current_run_rate??innings?.run_rate))}${metric('REQUIRED RR',n(chase.required_run_rate))}${metric('TARGET',state?.target??chase.target)}${metric('RUNS NEEDED',state?.runs_required??chase.runs_required)}${metric('BALLS LEFT',state?.balls_remaining??chase.balls_remaining)}</div><div class="broadcast-players"><div><h3>AT THE CREASE</h3>${active.map(b=>`<div class="broadcast-player ${b.player.id===state?.striker?.id?'on-strike':''}"><span>${e(b.player.full_name)} ${b.player.id===state?.striker?.id?'★':''}</span><strong>${e(b.runs)} <small>(${e(b.balls)}) • SR ${n(b.strike_rate)}</small></strong></div>`).join('')||`<p>${e(state?.striker?.full_name||'Awaiting batting figures')}</p>`}</div><div><h3>WITH THE BALL</h3><p>${e(bowling?.player.full_name||state?.current_bowler?.full_name||'Awaiting bowler')}</p><strong>${bowling?e(bowling.wickets)+' / '+e(bowling.runs_conceded)+' · '+e(bowling.overs)+' ov · ECON '+n(bowling.economy):'Figures pending'}</strong></div></div><footer class="broadcast-bottom"><span>PARTNERSHIP <strong>${partnership?e(partnership.runs)+' ('+e(partnership.legal_balls)+' balls)':'—'}</strong></span><div class="broadcast-balls" aria-label="Recent balls">${balls.map(d=>`<span class="ball-result ${d.wicket_type?'is-wicket':d.batter_runs>=4?'is-boundary':''}">${e(ballLabel(d))}</span>`).join('')}</div></footer>${card?.lifecycle?.result?.summary?`<div class="broadcast-result">${e(card.lifecycle.result.summary)}</div>`:''}`;
+ }
+ function accept(data,scoring){if(scoring)state=scoring;if(data)card=data;draw();result();}
+ async function refresh(){if(fetching){dirty=true;return;}fetching=true;try{const response=await window.API.scorecardGet(root.dataset.matchId);accept(response);}catch{/* Existing score/error UI remains responsible for connection feedback. */}finally{fetching=false;if(dirty){dirty=false;refresh();}}}
+ window.BroadcastUI={accept,update(scoring){state=scoring;draw();clearTimeout(fetchTimer);fetchTimer=setTimeout(refresh,100);},innings(card){
+  const active=state?.innings_number===card.innings_number;const header=(name,labels)=>`<div class="premium-section-heading"><h3>${name}</h3><span>${labels}</span></div>`;
+  return `<article class="premium-innings"><header class="premium-innings-header">${badge(card.batting_team)}<div><small>INNINGS ${e(card.innings_number)} • ${e(card.status)}</small><h2>${e(card.batting_team.name)}</h2></div><strong>${e(card.total_runs)}/${e(card.wickets)}<small>${e(card.overs)} OV • RR ${n(card.run_rate)}</small></strong></header><section>${header('Batting','R / B / 4s / 6s / SR')}<div class="premium-roster">${card.batting.map(b=>`<div class="premium-player ${active&&[state.striker?.id,state.non_striker?.id].includes(b.player.id)?'is-active':''}"><div><strong>${e(b.player.full_name)} ${active&&b.player.id===state.striker?.id?'★':''}</strong><small>${e(b.dismissal)}</small></div><div class="premium-figures"><b>${e(b.runs)}<small>RUNS</small></b><span>${e(b.balls)}<small>BALLS</small></span><span>${e(b.fours)}<small>4s</small></span><span>${e(b.sixes)}<small>6s</small></span><span>${n(b.strike_rate)}<small>SR</small></span></div></div>`).join('')}</div></section><section>${header('Extras',e(card.extras.total)+' TOTAL')}<div class="extras-ribbon">${Object.entries(card.extras).filter(([k])=>k!=='total').map(([k,v])=>`<span>${e(k.replaceAll('_',' '))}<b>${e(v)}</b></span>`).join('')}</div></section><section>${header('Bowling','O / M / R / W / ECON')}<div class="premium-roster">${card.bowling.map(b=>`<div class="premium-player ${active&&b.player.id===state.current_bowler?.id?'is-active':''}"><div><strong>${e(b.player.full_name)}</strong><small>WD ${e(b.wides)} · NB ${e(b.no_balls)}</small></div><div class="premium-figures">${[[b.overs,'OV'],[b.maidens,'M'],[b.runs_conceded,'R'],[b.wickets,'W'],[n(b.economy),'ECON']].map(([v,l])=>`<span>${e(v)}<small>${l}</small></span>`).join('')}</div></div>`).join('')||'<p>Bowling figures will appear after the first delivery.</p>'}</div></section><section>${header('Partnerships','RUNS • BALLS')}<div class="partnership-cards">${card.partnerships.map(p=>`<div><small>STAND ${e(p.number)}</small><strong>${e(p.runs)} <small>(${e(p.legal_balls)} balls)</small></strong><p>${e(p.batter_one.full_name)} &amp; ${e(p.batter_two.full_name)}</p><meter min="0" max="${Math.max(1,card.total_runs)}" value="${p.runs}"></meter></div>`).join('')||'<p>No partnerships yet.</p>'}</div></section><section>${header('Fall of wickets','MATCH RECORD')}<p class="muted">Detailed fall-of-wicket scores are not supplied by this match feed.</p></section></article>`;
+ }};
+})();

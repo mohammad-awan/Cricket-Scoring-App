@@ -335,6 +335,7 @@
 
 
     function inningsCard(card) {
+        if (window.BroadcastUI) return window.BroadcastUI.innings(card);
 
         const extras =
             card.extras;
@@ -617,6 +618,7 @@
 
 
     function render(data) {
+        window.BroadcastUI?.accept(data);
 
         const lifecycle =
             data.lifecycle;
@@ -773,6 +775,7 @@
                     event.scorecard
                 ) {
 
+                    window.BroadcastUI?.accept(event.scorecard, event.scoring);
                     render(
                         event.scorecard
                     );

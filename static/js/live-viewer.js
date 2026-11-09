@@ -234,6 +234,9 @@
         const scoring =
             event.scoring;
 
+        window.MatchEvents?.accept(scoring, event.event_type);
+        window.BroadcastUI?.accept(event.scorecard, scoring);
+
 
         elements
             .error

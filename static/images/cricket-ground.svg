@@ -1,0 +1,27 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 440" fill="none">
+<defs>
+ <radialGradient id="turf"><stop stop-color="#65a447"/><stop offset="1" stop-color="#256638"/></radialGradient>
+ <linearGradient id="clay" x2="1" y2="1"><stop stop-color="#dfc593"/><stop offset=".5" stop-color="#c2a570"/><stop offset="1" stop-color="#e0c494"/></linearGradient>
+ <pattern id="mowing" width="480" height="48" patternUnits="userSpaceOnUse"><path fill="#ffffff09" d="M0 0h480v24H0z"/></pattern>
+ <pattern id="grass" width="11" height="13" patternUnits="userSpaceOnUse"><path stroke="#e4efba" stroke-opacity=".1" stroke-width=".7" d="m2 4 1-2m4 8 1-2M1 12l1-1"/></pattern>
+ <clipPath id="oval"><ellipse cx="240" cy="208" rx="170" ry="185"/></clipPath>
+ <filter id="shadow" x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="2" dy="4" stdDeviation="2" flood-color="#102b1c" flood-opacity=".5"/></filter>
+ <g id="player" filter="url(#shadow)"><ellipse cy="8" rx="7" ry="3" fill="#173c2b" opacity=".25"/><path d="m-3 2-1 8m7-8 1 8" stroke="#f0f5ff" stroke-width="3" stroke-linecap="round"/><path d="m-5-5-5 5m15-5 5 5" stroke="#d9aa7b" stroke-width="2.6" stroke-linecap="round"/><path d="M-5-7h10l1 10H-6Z" fill="#1185e3" stroke="#d2eaff" stroke-width=".6"/><path d="M-5-7h10v3H-5Z" fill="#ffb240"/><circle cy="-10" r="3.8" fill="#c98b5c"/><path d="M-4-11q4-6 8 0Z" fill="#054c91"/></g>
+ <g id="batter"><use href="#player"/><path d="m7 0 5 12" stroke="#f8ddb0" stroke-width="4" stroke-linecap="round"/><path d="M-5-7h10v9H-5Z" fill="#fff8e7"/><circle cy="-10" r="4" fill="#152e46"/></g>
+ <g id="wicket"><path d="M-4 0v-12M0 0v-12M4 0v-12" stroke="#fff8de" stroke-width="1.8"/><path d="M-5-13h10" stroke="#ffcf65" stroke-width="2"/></g>
+</defs>
+<ellipse cx="240" cy="212" rx="190" ry="204" fill="#001522"/>
+<ellipse cx="240" cy="208" rx="184" ry="199" stroke="#39576a" stroke-width="9"/>
+<ellipse cx="240" cy="208" rx="179" ry="193" stroke="#cf9b40" stroke-width="2" stroke-dasharray="2 5"/>
+<g clip-path="url(#oval)"><path fill="url(#turf)" d="M60 15h360v390H60z"/><path fill="url(#mowing)" d="M60 15h360v390H60z"/><path fill="url(#grass)" d="M60 15h360v390H60z"/></g>
+<ellipse cx="240" cy="208" rx="165" ry="180" stroke="#fff9d8" stroke-width="1.8"/>
+<rect x="176" y="104" width="128" height="208" rx="64" stroke="#d9efc0" stroke-opacity=".65" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="218" y="147" width="44" height="124" rx="3" fill="#91a65e"/>
+<rect x="227" y="152" width="26" height="114" fill="url(#clay)"/>
+<path d="M219 167h42m-42 84h42m-36-91v16m30-16v16m-30 67v16m30-16v16" stroke="#fff9e8" stroke-width="1.6"/>
+<use href="#wicket" x="240" y="166"/><use href="#wicket" x="240" y="265"/>
+<!-- Wicketkeeper, slip, point, cover, mid-off, bowler, mid-on, midwicket and outfield. -->
+<use href="#player" x="240" y="127"/><use href="#player" x="272" y="136"/><use href="#player" x="326" y="178"/><use href="#player" x="305" y="241"/><use href="#player" x="275" y="299"/><use href="#player" x="240" y="289"/><use href="#player" x="197" y="292"/><use href="#player" x="151" y="230"/><use href="#player" x="124" y="141"/><use href="#player" x="324" y="90"/><use href="#player" x="158" y="330"/>
+<use href="#batter" x="231" y="181"/><use href="#batter" x="260" y="247"/>
+<path d="M209 404h62" stroke="#bf8430" stroke-width="2" stroke-linecap="round"/>
+</svg>
