@@ -26,6 +26,16 @@ from app.models.entities.tournaments import (
     TournamentPointDeduction,
     TournamentSeries,
 )
+from app.models.entities.fixtures import (
+    FixtureGenerationRun,
+    FixtureRound,
+    Fixture,
+    FixtureBracketDependency,
+    VenueAvailability,
+    SchedulingConstraint,
+    FixtureChangeAudit,
+)
+
 from app.models.entities.venues import Venue
 
 

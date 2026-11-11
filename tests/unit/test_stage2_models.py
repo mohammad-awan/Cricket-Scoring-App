@@ -1,37 +1,49 @@
+
 from sqlalchemy.orm import configure_mappers
+
 import app.models
 from app.db.base import Base
 
 
+# ---------------------------------------
+# STAGE 2 MODEL REGISTRATION
+# ---------------------------------------
 
 def test_all_stage2_entities_are_registered() -> None:
     expected_tables = {
-            "teams",
-            "players",
-            "team_players",
-            "venues",
-            "tournaments",
-            "matches",
-            "match_players",
-            "innings",
-            "deliveries",
-            "delivery_corrections",
-            "audit_logs",
-            "batter_retirements",
-            "tournament_assets",
-            "tournament_audit_events",
-            "tournament_groups",
-            "tournament_point_deductions",
-            "tournament_rosters",
-            "tournament_rule_sets",
-            "tournament_series",
-            "tournament_teams",
-            "tournament_venues",
-        }
+        "teams",
+        "players",
+        "team_players",
+        "venues",
+        "tournaments",
+        "matches",
+        "match_players",
+        "innings",
+        "deliveries",
+        "delivery_corrections",
+        "audit_logs",
+        "batter_retirements",
+        "tournament_assets",
+        "tournament_audit_events",
+        "tournament_groups",
+        "tournament_point_deductions",
+        "tournament_rosters",
+        "tournament_rule_sets",
+        "tournament_series",
+        "tournament_teams",
+        "tournament_venues",
+    }
 
-    assert expected_tables == set(Base.metadata.tables)
+    # Verify all Stage 2 tables remain registered.
+    # Newer stages may introduce additional tables.
+    assert expected_tables.issubset(
+        set(Base.metadata.tables)
+    )
 
 
+# ---------------------------------------
+# RELATIONSHIP LOADING
+# ---------------------------------------
 
 def test_relationships_require_explicit_loading() -> None:
     # Every relationship must be eager-loaded deliberately by a
@@ -43,6 +55,10 @@ def test_relationships_require_explicit_loading() -> None:
         for relationship in mapper.relationships:
             assert relationship.lazy == "raise_on_sql", relationship
 
+
+# ---------------------------------------
+# CONSTRAINT AND INDEX VALIDATION
+# ---------------------------------------
 
 def test_constraints_and_indexes_are_named() -> None:
     teams = Base.metadata.tables["teams"]

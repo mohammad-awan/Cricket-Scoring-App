@@ -1,4 +1,6 @@
+
 from sqlalchemy.orm import configure_mappers
+
 from app.db.base import Base
 from app.models import (
     AuditLog,
@@ -15,6 +17,10 @@ from app.models import (
 )
 
 
+# ---------------------------------------
+# STAGE 8 MODEL IMPORTS AND CONFIGURATION
+# ---------------------------------------
+
 def test_stage8_public_model_imports_and_mapper_configuration() -> None:
     exported_models = (
         AuditLog,
@@ -30,11 +36,14 @@ def test_stage8_public_model_imports_and_mapper_configuration() -> None:
         Venue,
     )
 
-    assert all(model.__table__ is not None for model in exported_models)
+    assert all(
+        model.__table__ is not None
+        for model in exported_models
+    )
 
     configure_mappers()
 
-    assert set(Base.metadata.tables) == {
+    expected_tables = {
         "audit_logs",
         "batter_retirements",
         "deliveries",
@@ -58,6 +67,16 @@ def test_stage8_public_model_imports_and_mapper_configuration() -> None:
         "venues",
     }
 
+    # Verify all Stage 8 tables are registered.
+    # Additional tables from later stages are allowed.
+    assert expected_tables.issubset(
+        set(Base.metadata.tables)
+    )
+
+
+# ---------------------------------------
+# STAGE 8 MODEL MODULE VALIDATION
+# ---------------------------------------
 
 def test_stage8_models_live_in_their_domain_modules() -> None:
     expected_modules = {
@@ -75,4 +94,6 @@ def test_stage8_models_live_in_their_domain_modules() -> None:
     }
 
     for model, module in expected_modules.items():
-        assert model.__module__ == f"app.models.entities.{module}"
+        assert model.__module__ == (
+            f"app.models.entities.{module}"
+        )

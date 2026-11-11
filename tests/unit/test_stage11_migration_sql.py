@@ -1,9 +1,13 @@
+
 """Stage 11 migrations, upgrade and downgrade, without a database.
 
-Alembic's offline mode renders every operation to SQL, so these tests prove
+Alembic's offline mode renders every operation to SQL, so these tests verify
 both directions of the Stage 11 revisions compile (valid identifiers, no
 calls that need a live connection) and preserve existing data: upgrades
 only add nullable or defaulted columns and new tables.
+
+Stage 12 introduces a newer Alembic revision, so Stage 11 is no longer
+expected to be the latest migration head.
 
 A live round trip belongs on a disposable database:
     alembic downgrade 20261010_0010 && alembic upgrade head
@@ -24,6 +28,7 @@ STAGE11 = "20261013_0011"
 COMPLETION = "20261014_0012"
 SHORT_SIDES = "20261015_0013"
 MATCH_RULE_GUARDS = "20261015_0014"
+STAGE12_FIXTURES = "845e2be3dfb1"
 
 
 def alembic_config(buffer: io.StringIO) -> Config:
@@ -34,21 +39,33 @@ def alembic_config(buffer: io.StringIO) -> Config:
 
 def render(direction: str, revision_range: str) -> str:
     buffer = io.StringIO()
-    getattr(command, direction)(alembic_config(buffer), revision_range, sql=True)
+    getattr(command, direction)(
+        alembic_config(buffer),
+        revision_range,
+        sql=True,
+    )
     return buffer.getvalue()
 
 
+# ---------------------------------------
+# MIGRATION REVISION CHAIN
+# ---------------------------------------
+
 def test_completion_revision_is_the_single_head() -> None:
     script = ScriptDirectory.from_config(alembic_config(io.StringIO()))
-
-    # The latest migration must be the only Alembic head.
-    assert script.get_heads() == [MATCH_RULE_GUARDS]
-
+    # Stage 12 is now the latest migration head.
+    assert script.get_heads() == [STAGE12_FIXTURES]
     # Verify the complete Stage 11 migration chain.
     assert script.get_revision(MATCH_RULE_GUARDS).down_revision == SHORT_SIDES
     assert script.get_revision(SHORT_SIDES).down_revision == COMPLETION
     assert script.get_revision(COMPLETION).down_revision == STAGE11
+    # Verify Stage 12 follows the Stage 11 migration chain.
+    assert script.get_revision(STAGE12_FIXTURES).down_revision == MATCH_RULE_GUARDS
 
+
+# ---------------------------------------
+# STAGE 11 MIGRATION SQL
+# ---------------------------------------
 
 @pytest.mark.parametrize(
     ("direction", "revision_range"),
@@ -61,26 +78,60 @@ def test_completion_revision_is_the_single_head() -> None:
         ("downgrade", f"{SHORT_SIDES}:{COMPLETION}"),
     ],
 )
-def test_stage11_migrations_render_in_both_directions(direction: str, revision_range: str) -> None:
+def test_stage11_migrations_render_in_both_directions(
+    direction: str,
+    revision_range: str,
+) -> None:
     sql = render(direction, revision_range)
     target = revision_range.split(":")[1]
 
     assert f"version_num='{target}'" in sql
 
 
+# ---------------------------------------
+# POSTGRESQL IDENTIFIER VALIDATION
+# ---------------------------------------
+
 def test_identifiers_fit_postgresql_limit() -> None:
-    sql = render("upgrade", f"{BEFORE_STAGE11}:{COMPLETION}")
-    names = re.findall(r"CONSTRAINT (\w+)|INDEX (\w+)", sql)
+    sql = render(
+        "upgrade",
+        f"{BEFORE_STAGE11}:{COMPLETION}",
+    )
+
+    names = re.findall(
+        r"CONSTRAINT (\w+)|INDEX (\w+)",
+        sql,
+    )
 
     assert names
-    assert all(len(name) <= 63 for pair in names for name in pair if name)
 
+    assert all(
+        len(name) <= 63
+        for pair in names
+        for name in pair
+        if name
+    )
+
+
+# ---------------------------------------
+# COMPLETION MIGRATION UPGRADE
+# ---------------------------------------
 
 def test_completion_upgrade_preserves_existing_rows() -> None:
-    sql = render("upgrade", f"{STAGE11}:{COMPLETION}")
-    added_columns = re.findall(r"ALTER TABLE (\w+) ADD COLUMN (\w+) ([^;]+);", sql)
+    sql = render(
+        "upgrade",
+        f"{STAGE11}:{COMPLETION}",
+    )
 
-    assert {(table, column) for table, column, _ in added_columns} == {
+    added_columns = re.findall(
+        r"ALTER TABLE (\w+) ADD COLUMN (\w+) ([^;]+);",
+        sql,
+    )
+
+    assert {
+        (table, column)
+        for table, column, _ in added_columns
+    } == {
         ("players", "sex"),
         ("tournaments", "series_id"),
         ("tournaments", "edition_number"),
@@ -89,17 +140,29 @@ def test_completion_upgrade_preserves_existing_rows() -> None:
         ("tournament_assets", "original_filename"),
         ("tournament_assets", "created_by"),
     }
+
     for _, column, definition in added_columns:
-        assert "NOT NULL" not in definition or "DEFAULT" in definition, column
+        assert (
+            "NOT NULL" not in definition
+            or "DEFAULT" in definition
+        ), column
 
     assert "DROP TABLE" not in sql
     assert "DROP COLUMN" not in sql
+
     assert "CREATE TABLE tournament_series" in sql
     assert "CREATE TABLE tournament_point_deductions" in sql
 
 
+# ---------------------------------------
+# COMPLETION MIGRATION DOWNGRADE
+# ---------------------------------------
+
 def test_completion_downgrade_removes_everything_it_added() -> None:
-    sql = render("downgrade", f"{COMPLETION}:{STAGE11}")
+    sql = render(
+        "downgrade",
+        f"{COMPLETION}:{STAGE11}",
+    )
 
     for statement in (
         "DROP TABLE tournament_point_deductions",
@@ -113,11 +176,25 @@ def test_completion_downgrade_removes_everything_it_added() -> None:
         assert statement in sql
 
 
-def test_short_sides_upgrade_keeps_existing_matches_on_full_sides() -> None:
-    sql = render("upgrade", f"{COMPLETION}:{SHORT_SIDES}")
+# ---------------------------------------
+# SHORT SIDES MIGRATION
+# ---------------------------------------
 
-    assert "ALTER TABLE matches ADD COLUMN minimum_players_to_start INTEGER;" in sql
-    assert "ALTER TABLE innings ADD COLUMN batting_side_size INTEGER;" in sql
+def test_short_sides_upgrade_keeps_existing_matches_on_full_sides() -> None:
+    sql = render(
+        "upgrade",
+        f"{COMPLETION}:{SHORT_SIDES}",
+    )
+
+    assert (
+        "ALTER TABLE matches ADD COLUMN "
+        "minimum_players_to_start INTEGER;"
+    ) in sql
+
+    assert (
+        "ALTER TABLE innings ADD COLUMN "
+        "batting_side_size INTEGER;"
+    ) in sql
     # Existing innings keep their all-out point from their real XI size.
     assert "UPDATE innings AS i" in sql
     assert "DROP" not in sql
