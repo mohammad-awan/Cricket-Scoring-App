@@ -58,6 +58,8 @@
 
     ) {
 
+        const finishLoading = window.CricketUI?.begin();
+        try {
         const response = await fetch(
 
             path,
@@ -130,7 +132,9 @@
 
 
         return payload;
-
+        } finally {
+            finishLoading?.();
+        }
     }
 
 

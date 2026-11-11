@@ -1167,8 +1167,10 @@
         );
 
 
-    loadProfile();
-
-    loadHistory();
+    root.setAttribute("aria-busy", "true");
+    Promise.allSettled([loadProfile(), loadHistory()]).finally(() => {
+        document.getElementById("profile-loading").hidden = true;
+        root.setAttribute("aria-busy", "false");
+    });
 
 })();

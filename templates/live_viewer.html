@@ -1,393 +1,124 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %} Live Viewer | Cricket Intelligence
+Platform {% endblock %} {% block content %}
 
+<div id="live-viewer-page" data-match-id="{{ match_id }}">
+  <section class="page-heading">
+    <div class="setup-title-row">
+      <div>
+        <p class="eyebrow">Live from the ground</p>
 
-{% block title %}
+        <h1 id="viewer-title">Match day live</h1>
 
-Live Viewer | Cricket Intelligence Platform
+        <p class="page-subtitle" id="viewer-subtitle">
+          Waiting for match updates&hellip;
+        </p>
+      </div>
 
-{% endblock %}
+      <span
+        class="live-connection-pill"
+        data-live-connection-status
+        data-status="connecting"
+      >
+        Connecting…
+      </span>
+    </div>
+  </section>
 
+  <div class="form-error hidden" id="viewer-error"></div>
 
-{% block content %}
+  <section class="panel viewer-scoreboard">
+    <div>
+      <p class="eyebrow" id="viewer-batting-team">Batting</p>
 
+      <div class="viewer-score">
+        <span id="viewer-runs"> 0 </span>
 
-<div
-    id="live-viewer-page"
-    data-match-id="{{ match_id }}"
->
+        <span> / </span>
 
+        <span id="viewer-wickets"> 0 </span>
+      </div>
 
-    <section
-        class="page-heading"
-    >
+      <p class="viewer-overs">
+        <strong id="viewer-overs"> 0.0 </strong>
 
+        overs
+      </p>
 
-        <a
-            class="back-link"
-            href="/scorecard/{{ match_id }}"
-        >
+      <p class="viewer-chase muted" id="viewer-chase"></p>
+    </div>
 
-            Full scorecard →
+    <div class="viewer-metrics">
+      <div>
+        <span> Current RR </span>
 
-        </a>
+        <strong id="viewer-crr"> 0.00 </strong>
+      </div>
 
+      <div>
+        <span> Target </span>
 
-        <div
-            class="setup-title-row"
-        >
+        <strong id="viewer-target"> — </strong>
+      </div>
 
+      <div>
+        <span> Runs required </span>
 
-            <div>
+        <strong id="viewer-runs-required"> — </strong>
+      </div>
 
+      <div>
+        <span> Balls remaining </span>
 
-                <p
-                    class="eyebrow"
-                >
+        <strong id="viewer-balls-remaining"> — </strong>
+      </div>
+    </div>
+  </section>
 
-                    Stage 7 ·
-                    S19 Live Viewer
+  <section class="viewer-grid">
+    <article class="panel viewer-card">
+      <p class="eyebrow">At the crease</p>
 
-                </p>
+      <div class="viewer-person-row">
+        <span> Striker </span>
 
+        <strong id="viewer-striker"> — </strong>
+      </div>
 
-                <h1
-                    id="viewer-title"
-                >
+      <div class="viewer-person-row">
+        <span> Non-striker </span>
 
-                    Live Match Viewer
+        <strong id="viewer-non-striker"> — </strong>
+      </div>
 
-                </h1>
+      <div class="viewer-person-row">
+        <span> Bowler </span>
 
+        <strong id="viewer-bowler"> — </strong>
+      </div>
+    </article>
 
-                <p
-                    class="page-subtitle"
-                    id="viewer-subtitle"
-                >
-
-                    Waiting for committed
-                    match state…
-
-                </p>
-
-
-            </div>
-
-
-            <span
-                class="live-connection-pill"
-                data-live-connection-status
-                data-status="connecting"
-            >
-
-                Connecting…
-
-            </span>
-
-
-        </div>
-
-
-    </section>
-
-
-    <div
-        class="form-error hidden"
-        id="viewer-error"
-    ></div>
-
-
-    <section
-        class="
-            panel
-            viewer-scoreboard
-        "
-    >
-
-
-        <div>
-
-
-            <p
-                class="eyebrow"
-                id="viewer-batting-team"
-            >
-
-                Batting
-
-            </p>
-
-
-            <div
-                class="viewer-score"
-            >
-
-                <span
-                    id="viewer-runs"
-                >
-                    0
-                </span>
-
-
-                <span>
-                    /
-                </span>
-
-
-                <span
-                    id="viewer-wickets"
-                >
-                    0
-                </span>
-
-
-            </div>
-
-
-            <p
-                class="viewer-overs"
-            >
-
-                <strong
-                    id="viewer-overs"
-                >
-                    0.0
-                </strong>
-
-                overs
-
-            </p>
-
-
-            <p
-                class="
-                    viewer-chase
-                    muted
-                "
-                id="viewer-chase"
-            ></p>
-
-
-        </div>
-
-
-        <div
-            class="viewer-metrics"
-        >
-
-
-            <div>
-
-                <span>
-                    Current RR
-                </span>
-
-                <strong
-                    id="viewer-crr"
-                >
-                    0.00
-                </strong>
-
-            </div>
-
-
-            <div>
-
-                <span>
-                    Target
-                </span>
-
-                <strong
-                    id="viewer-target"
-                >
-                    —
-                </strong>
-
-            </div>
-
-
-            <div>
-
-                <span>
-                    Runs required
-                </span>
-
-                <strong
-                    id="viewer-runs-required"
-                >
-                    —
-                </strong>
-
-            </div>
-
-
-            <div>
-
-                <span>
-                    Balls remaining
-                </span>
-
-                <strong
-                    id="viewer-balls-remaining"
-                >
-                    —
-                </strong>
-
-            </div>
-
-
-        </div>
-
-
-    </section>
-
-
-    <section
-        class="viewer-grid"
-    >
-
-
-        <article
-            class="
-                panel
-                viewer-card
-            "
-        >
-
-
-            <p
-                class="eyebrow"
-            >
-
-                At the crease
-
-            </p>
-
-
-            <div
-                class="viewer-person-row"
-            >
-
-                <span>
-                    Striker
-                </span>
-
-                <strong
-                    id="viewer-striker"
-                >
-                    —
-                </strong>
-
-            </div>
-
-
-            <div
-                class="viewer-person-row"
-            >
-
-                <span>
-                    Non-striker
-                </span>
-
-                <strong
-                    id="viewer-non-striker"
-                >
-                    —
-                </strong>
-
-            </div>
-
-
-            <div
-                class="viewer-person-row"
-            >
-
-                <span>
-                    Bowler
-                </span>
-
-                <strong
-                    id="viewer-bowler"
-                >
-                    —
-                </strong>
-
-            </div>
-
-
-        </article>
-
-
-        <article
-            class="
-                panel
-                viewer-card
-            "
-        >
-
-
-            <p
-                class="eyebrow"
-            >
-
-                Recent delivery
-
-            </p>
-
-
-            <strong
-                class="viewer-last-ball"
-                id="viewer-last-ball"
-            >
-
-                No delivery yet
-
-            </strong>
-
-
-            <p
-                class="muted"
-                id="viewer-event-label"
-            >
-
-                Full snapshot will
-                appear when connected.
-
-            </p>
-
-
-        </article>
-
-
-    </section>
-
-
-    <section
-        class="
-            panel
-            viewer-result
-            hidden
-        "
-        id="viewer-result"
-    ></section>
-
-
+    <article class="panel viewer-card">
+      <p class="eyebrow">Recent delivery</p>
+
+      <strong class="viewer-last-ball" id="viewer-last-ball">
+        No delivery yet
+      </strong>
+
+      <p class="muted" id="viewer-event-label">
+        Full snapshot will appear when connected.
+      </p>
+    </article>
+  </section>
+
+  <section class="panel viewer-result hidden" id="viewer-result"></section>
 </div>
 
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', path='js/broadcast.js') }}?v={{ asset_version('js/broadcast.js') }}"></script>
+<script src="{{ url_for('static', path='js/match-events.js') }}?v={{ asset_version('js/match-events.js') }}"></script>
 
-{% endblock %}
+<script src="{{ url_for('static', path='js/realtime.js') }}?v={{ asset_version('js/realtime.js') }}"></script>
 
-
-{% block scripts %}
-
-
-<script
-    src="{{ url_for('static', path='js/realtime.js') }}?v={{ asset_version('js/realtime.js') }}"
-></script>
-
-
-<script
-    src="{{ url_for('static', path='js/live-viewer.js') }}?v={{ asset_version('js/live-viewer.js') }}"
-></script>
-
+<script src="{{ url_for('static', path='js/live-viewer.js') }}?v={{ asset_version('js/live-viewer.js') }}"></script>
 
 {% endblock %}

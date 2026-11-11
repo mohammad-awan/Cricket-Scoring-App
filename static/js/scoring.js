@@ -2286,6 +2286,7 @@
 
 
     function render(scoring) {
+        window.BroadcastUI?.update(scoring);
 
         state.scoring =
             scoring;
@@ -4096,6 +4097,7 @@
                 state.pendingEvent =
                     null;
 
+                window.MatchEvents?.accept(scoring);
                 return scoring;
 
             }
@@ -5625,6 +5627,8 @@
                     render(
                         event.scoring
                     );
+                    window.MatchEvents?.accept(event.scoring, event.event_type);
+                    window.BroadcastUI?.accept(event.scorecard, event.scoring);
 
                 }
 
