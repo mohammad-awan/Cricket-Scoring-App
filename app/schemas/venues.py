@@ -15,6 +15,19 @@ class VenueCreate(BaseModel):
     country: str | None = Field(default=None, max_length=80)
     address: str | None = None
     capacity: int | None = Field(default=None, ge=0)
+    latitude: float | None = Field(
+        default=None,
+        ge=-90,
+        le=90,
+        allow_inf_nan=False,
+    )
+    longitude: float | None = Field(
+        default=None,
+        ge=-180,
+        le=180,
+        allow_inf_nan=False,
+    )
+    image_url: str | None = Field(default=None, max_length=2048)
 
     _strip_text = field_validator(
         "name",
@@ -23,6 +36,19 @@ class VenueCreate(BaseModel):
         "address",
         mode="before",
     )(strip_text)
+
+    @model_validator(mode="after")
+    def validate_coordinates(self) -> Self:
+        latitude_set = "latitude" in self.model_fields_set
+        longitude_set = "longitude" in self.model_fields_set
+
+        if latitude_set != longitude_set:
+            raise ValueError("Latitude and longitude must be supplied together")
+
+        if latitude_set and (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Latitude and longitude must both be set or both be null")
+
+        return self
 
 
 class VenueUpdate(BaseModel):
@@ -33,6 +59,19 @@ class VenueUpdate(BaseModel):
     country: str | None = Field(default=None, max_length=80)
     address: str | None = None
     capacity: int | None = Field(default=None, ge=0)
+    latitude: float | None = Field(
+        default=None,
+        ge=-90,
+        le=90,
+        allow_inf_nan=False,
+    )
+    longitude: float | None = Field(
+        default=None,
+        ge=-180,
+        le=180,
+        allow_inf_nan=False,
+    )
+    image_url: str | None = Field(default=None, max_length=2048)
 
     _strip_required = field_validator(
         "name",
@@ -52,6 +91,19 @@ class VenueUpdate(BaseModel):
             raise ValueError("At least one venue field must be supplied")
         return self
 
+    @model_validator(mode="after")
+    def validate_coordinates(self) -> Self:
+        latitude_set = "latitude" in self.model_fields_set
+        longitude_set = "longitude" in self.model_fields_set
+
+        if latitude_set != longitude_set:
+            raise ValueError("Latitude and longitude must be supplied together")
+
+        if latitude_set and (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Latitude and longitude must both be set or both be null")
+
+        return self
+
 
 class VenueRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -62,6 +114,9 @@ class VenueRead(BaseModel):
     country: str | None
     address: str | None
     capacity: int | None
+    latitude: float | None = None
+    longitude: float | None = None
+    image_url: str | None = None
     status: VenueStatus
     archived_at: datetime | None
     created_at: datetime

@@ -233,6 +233,9 @@ async def lock_match_tournament_rules(session: AsyncSession, match: Match) -> No
     Must run inside the mark-ready transaction, with the match row locked.
     """
 
+    from app.services.fixture_planning import validate_fixture_activation
+    await validate_fixture_activation(session, match)
+
     if match.tournament_id is None:
         return
 

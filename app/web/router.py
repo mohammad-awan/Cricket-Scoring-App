@@ -130,6 +130,7 @@ TOURNAMENT_SECTIONS = {
     "teams",
     "squads",
     "venues",
+    "fixtures",
 }
 
 
@@ -172,7 +173,7 @@ async def tournament_detail_page(
 
     return templates.TemplateResponse(
         request=request,
-        name="tournament_detail.html",
+        name="fixture_builder.html" if section == "fixtures" else "tournament_detail.html",
         context={
             "tournament_id": tournament_id,
             "section": section,

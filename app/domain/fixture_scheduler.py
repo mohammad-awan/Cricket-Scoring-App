@@ -311,7 +311,7 @@ def generate_schedule(
                 pairing=pairing,
                 venue_id=slot.venue_id,
                 start_at=slot.start_at,
-                end_at=slot.start_at + duration,
+                end_at=end.astimezone(slot.start_at.tzinfo),
             )
 
             violations = validate_schedule(

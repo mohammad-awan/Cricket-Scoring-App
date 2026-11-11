@@ -6,8 +6,7 @@ both directions of the Stage 11 revisions compile (valid identifiers, no
 calls that need a live connection) and preserve existing data: upgrades
 only add nullable or defaulted columns and new tables.
 
-Stage 12 introduces a newer Alembic revision, so Stage 11 is no longer
-expected to be the latest migration head.
+Later revisions extend Stage 11; verify their chain to the current head.
 
 A live round trip belongs on a disposable database:
     alembic downgrade 20261010_0010 && alembic upgrade head
@@ -29,6 +28,7 @@ COMPLETION = "20261014_0012"
 SHORT_SIDES = "20261015_0013"
 MATCH_RULE_GUARDS = "20261015_0014"
 STAGE12_FIXTURES = "845e2be3dfb1"
+PROFILE_ASSETS = "20261112_0015"
 
 
 def alembic_config(buffer: io.StringIO) -> Config:
@@ -53,14 +53,14 @@ def render(direction: str, revision_range: str) -> str:
 
 def test_completion_revision_is_the_single_head() -> None:
     script = ScriptDirectory.from_config(alembic_config(io.StringIO()))
-    # Stage 12 is now the latest migration head.
-    assert script.get_heads() == [STAGE12_FIXTURES]
+    assert script.get_heads() == [PROFILE_ASSETS]
     # Verify the complete Stage 11 migration chain.
     assert script.get_revision(MATCH_RULE_GUARDS).down_revision == SHORT_SIDES
     assert script.get_revision(SHORT_SIDES).down_revision == COMPLETION
     assert script.get_revision(COMPLETION).down_revision == STAGE11
     # Verify Stage 12 follows the Stage 11 migration chain.
     assert script.get_revision(STAGE12_FIXTURES).down_revision == MATCH_RULE_GUARDS
+    assert script.get_revision(PROFILE_ASSETS).down_revision == STAGE12_FIXTURES
 
 
 # ---------------------------------------

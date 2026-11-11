@@ -41,6 +41,9 @@ async def create_venue(session: AsyncSession, payload: VenueCreate) -> Venue:
                     country=clean_optional(payload.country),
                     address=clean_optional(payload.address),
                     capacity=payload.capacity,
+                    latitude=payload.latitude,
+                    longitude=payload.longitude,
+                    image_url=payload.image_url
                 )
             )
 
@@ -121,6 +124,17 @@ async def update_venue(session: AsyncSession, venue_id: UUID, payload: VenueUpda
 
             if "capacity" in data:
                 venue.capacity = data["capacity"]
+
+            if "latitude" in data:
+                venue.latitude = data["latitude"]
+
+            if "longitude" in data:
+                venue.longitude = data["longitude"]
+
+            if "image_url" in data:
+                venue.image_url = clean_optional(
+                    data["image_url"]
+                )
 
             venue.updated_at = datetime.now(UTC)
 

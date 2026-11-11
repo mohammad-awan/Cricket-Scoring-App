@@ -30,24 +30,12 @@ if TYPE_CHECKING:
 class Team(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     __tablename__ = "teams"
     
-    name: Mapped[str] = mapped_column(
-        String(120),
-        nullable=False,
-        unique=True,
-    )
-    short_name: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-    )
-    code: Mapped[str] = mapped_column(
-        String(20),
-        nullable=False,
-        unique=True,
-    )
-    country: Mapped[str | None] = mapped_column(
-        String(80),
-        nullable=True,
-    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    short_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    code: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    country: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    logo_source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     status: Mapped[TeamStatus] = mapped_column(
         db_enum(TeamStatus, "team_status"),
         nullable=False,

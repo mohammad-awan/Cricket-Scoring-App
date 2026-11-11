@@ -35,7 +35,10 @@ Intelligence Platform {% endblock %} {% block content %}
 
   <section class="profile-hero">
     <div class="profile-hero-main">
-      <div class="profile-avatar" id="player-avatar" aria-hidden="true">··</div>
+      <div class="profile-photo-block">
+        <div class="profile-avatar" id="player-avatar" aria-hidden="true">··</div>
+        <div id="player-photo-source"></div>
+      </div>
 
       <div class="profile-hero-identity">
         <div class="profile-hero-badges">
@@ -196,6 +199,8 @@ Intelligence Platform {% endblock %} {% block content %}
 {% endblock %} {% block scripts %}
 
 <script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
+
+<script src="{{ url_for('static', path='js/profile-assets.js') }}?v={{ asset_version('js/profile-assets.js') }}"></script>
 
 <script src="{{ url_for('static', path='js/player-detail.js') }}?v={{ asset_version('js/player-detail.js') }}"></script>
 

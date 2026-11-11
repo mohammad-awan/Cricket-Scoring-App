@@ -12,6 +12,8 @@ from app.api.routes.team_squads import router as team_squads_router
 from app.api.routes.realtime import router as realtime_router
 from app.api.routes.player_profile import router as player_profile_router
 from app.api.routes.fixtures import router as fixtures_router
+from app.api.routes.fixture_planning import router as fixture_planning_router
+from app.api.routes.profile_assets import router as profile_assets_router
 
 
 api_router = APIRouter()
@@ -28,4 +30,6 @@ api_router.include_router(scorecard_router)
 api_router.include_router(realtime_router)
 api_router.include_router(player_profile_router)
 api_router.include_router(team_squads_router)
+api_router.include_router(fixture_planning_router)
 api_router.include_router(fixtures_router)
+api_router.include_router(profile_assets_router)

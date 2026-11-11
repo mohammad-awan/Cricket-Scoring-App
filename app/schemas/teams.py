@@ -14,6 +14,8 @@ class TeamCreate(BaseModel):
     short_name: str = Field(min_length=1, max_length=50)
     code: str = Field(min_length=1, max_length=20)
     country: str | None = Field(default=None, max_length=80)
+    logo_url: str | None = Field(default=None, max_length=2048)
+    logo_source_url: str | None = Field(default=None, max_length=2048)
     _strip_text = field_validator(
         "name",
         "short_name",
@@ -30,6 +32,8 @@ class TeamUpdate(BaseModel):
     short_name: str | None = Field(default=None, min_length=1, max_length=50)
     code: str | None = Field(default=None, min_length=1, max_length=20)
     country: str | None = Field(default=None, max_length=80)
+    logo_url: str | None = Field(default=None, max_length=2048)
+    logo_source_url: str | None = Field(default=None, max_length=2048)
 
     _strip_required = field_validator(
         "name",
@@ -59,6 +63,8 @@ class TeamRead(BaseModel):
     code: str
     country: str | None
     status: TeamStatus
+    logo_url: str | None = None
+    logo_source_url: str | None = None
     archived_at: datetime | None
     created_at: datetime
     updated_at: datetime

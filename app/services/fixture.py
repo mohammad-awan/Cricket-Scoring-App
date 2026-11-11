@@ -103,7 +103,7 @@ class FixtureService:
 
     The caller controls commit and rollback.
 
-    This service does not create scoring Match rows.
+    Publication delegates validated scoring Match linking to the planning service.
     """
 
     def __init__(self, session: AsyncSession):
@@ -495,6 +495,9 @@ class FixtureService:
                 "Expected fixture count must be positive."
             )
 
+        from app.repositories.fixtures import FixtureRepository
+        await FixtureRepository(self.session).scheduling_lock()
+
         run = await self.session.scalar(
             select(FixtureGenerationRun)
             .where(
@@ -540,19 +543,14 @@ class FixtureService:
         ):
             raise FixtureConflictError("All fixtures must be unlocked drafts.")
 
-        now = datetime.now(timezone.utc)
-
-        for fixture in fixtures:
-            fixture.status = "published"
-            fixture.published_at = now
-            fixture.version += 1
-
-        run.status = "published"
-        run.published_at = now
-
-        await self.session.flush()
-
-        return len(fixtures)
+        # Legacy clients use the same validation and Match-linking transaction
+        # as the fixture workspace; status-only publication is insufficient.
+        from app.services.fixture_planning import FixturePlanningService
+        planner = FixturePlanningService(self.session)
+        await planner.repo.scheduling_lock()
+        result = await planner.publish(generation_run_id,
+            {fixture.id: fixture.version for fixture in fixtures}, "Organizer confirmed fixture publication")
+        return result["published_count"]
 
     # ----------------------------------------------
     # UPDATE FIXTURE
@@ -580,6 +578,9 @@ class FixtureService:
 
         if not changes or set(changes) - allowed:
             raise FixtureValidationError("No changes or unsupported fixture fields.")
+
+        from app.repositories.fixtures import FixtureRepository
+        await FixtureRepository(self.session).scheduling_lock()
 
         fixture = await self.session.scalar(
             select(Fixture)
@@ -667,6 +668,16 @@ class FixtureService:
                         "Fixture team is not an "
                         "approved tournament team."
                     )
+
+        if set(changes) & {"home_team_id", "away_team_id", "venue_id", "scheduled_at", "ends_at"}:
+            from app.schemas.fixture_planning import FixtureChange, FixtureEditBatch
+            from app.services.fixture_planning import FixturePlanningService
+            planner = FixturePlanningService(self.session)
+            await planner.repo.scheduling_lock()
+            await planner.edit(fixture.generation_run_id, FixtureEditBatch(
+                changes=[FixtureChange(fixture_id=fixture_id, expected_version=expected_version, **changes)],
+                reason="Organizer edited fixture through the fixture API"))
+            return
 
         # Record previous values.
         old_values = {

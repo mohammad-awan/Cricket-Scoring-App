@@ -484,6 +484,8 @@ async def get_player_profile(session: AsyncSession, player_id: UUID) -> PlayerPr
             batting_hand=player.batting_hand,
             bowling_arm=player.bowling_arm,
             bowling_style=player.bowling_style,
+            photo_url=player.photo_url,
+            photo_source_url=player.photo_source_url,
             batting_style_display=batting_style_display(player.batting_hand),
             bowling_style_display=(
                 bowling_style_display(

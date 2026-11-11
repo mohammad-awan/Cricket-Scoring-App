@@ -44,25 +44,15 @@ async def create_player(session: AsyncSession, payload: PlayerCreate) -> Player:
                 Player(
                     full_name=full_name,
                     short_name=short_name,
-                    date_of_birth=(
-                        payload.date_of_birth
-                    ),
-                    nationality=(
-                        nationality
-                    ),
+                    date_of_birth=payload.date_of_birth,
+                    nationality=nationality,
                     sex=payload.sex,
-                    external_id=(
-                        external_id
-                    ),
-                    batting_hand=(
-                        payload.batting_hand
-                    ),
-                    bowling_arm=(
-                        payload.bowling_arm
-                    ),
-                    bowling_style=(
-                        payload.bowling_style
-                    ),
+                    external_id=external_id,
+                    batting_hand=payload.batting_hand,
+                    bowling_arm=payload.bowling_arm,
+                    bowling_style=payload.bowling_style,
+                    photo_url=payload.photo_url,
+                    photo_source_url=payload.photo_source_url,
                 )
             )
 
@@ -114,9 +104,7 @@ async def update_player(session: AsyncSession, player_id: UUID, payload: PlayerU
                 raise NotFoundError("Player not found")
 
             if player.status == PlayerStatus.ARCHIVED:
-                raise ConflictError(
-                    "Archived players cannot be updated"
-                )
+                raise ConflictError("Archived players cannot be updated")
 
             full_name = clean_required(data.get("full_name", player.full_name))
             date_of_birth = data.get("date_of_birth", player.date_of_birth)
@@ -215,6 +203,13 @@ async def update_player(session: AsyncSession, player_id: UUID, payload: PlayerU
                         "bowling_style"
                     ]
                 )
+
+            if "photo_url" in data:
+                player.photo_url = clean_optional(data["photo_url"])
+
+            if "photo_source_url" in data:
+                player.photo_source_url = clean_optional(data["photo_source_url"])
+
 
             player.updated_at = datetime.now(UTC)
 

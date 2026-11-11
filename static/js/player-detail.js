@@ -257,32 +257,6 @@
     }
 
 
-    function initials(name) {
-
-        const parts =
-            String(name || "")
-                .trim()
-                .split(/\s+/)
-                .filter(Boolean);
-
-
-        if (!parts.length) {
-            return "··";
-        }
-
-
-        return (
-            parts[0][0] +
-            (
-                parts.length > 1
-                    ? parts[parts.length - 1][0]
-                    : ""
-            )
-        ).toUpperCase();
-
-    }
-
-
     function stat(
         label,
         value
@@ -347,10 +321,11 @@
             player.full_name;
 
 
-        elements.avatar.textContent =
-            initials(
-                player.full_name
-            );
+        elements.avatar.innerHTML = window.ProfileAssets.image(
+            player.photo_url, player.full_name, "player"
+        );
+        document.getElementById("player-photo-source").innerHTML =
+            window.ProfileAssets.sourceLink(player.photo_source_url);
 
 
         elements.subtitle.textContent =

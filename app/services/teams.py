@@ -41,6 +41,8 @@ async def create_team(session: AsyncSession, payload: TeamCreate) -> Team:
                     short_name=short_name,
                     code=code,
                     country=country,
+                    logo_url=payload.logo_url,
+                    logo_source_url=payload.logo_source_url
                 )
             )
 
@@ -127,6 +129,16 @@ async def update_team(session: AsyncSession, team_id: UUID, payload: TeamUpdate)
             if "country" in data:
                 team.country = clean_optional(
                     data["country"]
+                )
+
+            if "logo_url" in data:
+                team.logo_url = clean_optional(
+                    data["logo_url"]
+                )
+
+            if "logo_source_url" in data:
+                team.logo_source_url = clean_optional(
+                    data["logo_source_url"]
                 )
 
             team.updated_at = datetime.now(UTC)

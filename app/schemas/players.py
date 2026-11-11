@@ -19,6 +19,8 @@ class PlayerCreate(BaseModel):
     batting_hand: BattingHand | None = None
     bowling_arm: BowlingArm | None = None
     bowling_style: BowlingStyle | None = None
+    photo_url: str | None = Field(default=None, max_length=2048)
+    photo_source_url: str | None = Field(default=None, max_length=2048)
 
     _strip_text = field_validator(
         "full_name",
@@ -97,6 +99,8 @@ class PlayerUpdate(BaseModel):
     batting_hand: BattingHand | None = None
     bowling_arm: BowlingArm | None = None
     bowling_style: BowlingStyle | None = None
+    photo_url: str | None = Field(default=None, max_length=2048)
+    photo_source_url: str | None = Field(default=None, max_length=2048)
 
 
     _strip_required = (
@@ -194,6 +198,8 @@ class PlayerRead(BaseModel):
     batting_hand: BattingHand | None
     bowling_arm: BowlingArm | None
     bowling_style: BowlingStyle | None
+    photo_url: str | None = None
+    photo_source_url: str | None = None
     status: PlayerStatus
     archived_at: datetime | None
     created_at: datetime

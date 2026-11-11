@@ -25,6 +25,8 @@ class PlayerIdentityRead(BaseModel):
     batting_hand: BattingHand | None
     bowling_arm: BowlingArm | None
     bowling_style: BowlingStyle | None
+    photo_url: str | None = None
+    photo_source_url: str | None = None
     batting_style_display: str | None
     bowling_style_display: str | None
 

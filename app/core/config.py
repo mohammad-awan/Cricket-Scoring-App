@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # to S3/Supabase Storage without renaming files.
     media_root: str = "media"
     tournament_asset_max_bytes: int = Field(default=2 * 1024 * 1024, ge=1024)
+    profile_image_max_bytes: int = Field(default=5 * 1024 * 1024, ge=1024)
 
     @field_validator("database_url", mode="before")
     @classmethod

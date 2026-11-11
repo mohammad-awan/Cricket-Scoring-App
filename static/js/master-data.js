@@ -18,6 +18,10 @@
 
         teams: {
 
+            imageField: "logo_url",
+            sourceField: "logo_source_url",
+            imageKind: "logo",
+
             singular: "Team",
 
             plural: "Teams",
@@ -66,6 +70,24 @@
                     placeholder: "Pakistan",
                 },
 
+                {
+                    name: "logo_url",
+                    label: "Logo URL",
+                    type: "text",
+                    url: true,
+                    maxLength: 2048,
+                    placeholder: "https://example.com/team-logo.png",
+                },
+
+                {
+                    name: "logo_source_url",
+                    label: "Logo source URL",
+                    type: "text",
+                    url: true,
+                    maxLength: 2048,
+                    placeholder: "https://example.com/original-source",
+                },
+
             ],
 
 
@@ -103,6 +125,10 @@
 
 
         players: {
+
+            imageField: "photo_url",
+            sourceField: "photo_source_url",
+            imageKind: "player",
 
             singular: "Player",
 
@@ -214,6 +240,24 @@
                         "Optional provider ID",
                 },
 
+                {
+                    name: "photo_url",
+                    label: "Photo URL",
+                    type: "text",
+                    url: true,
+                    maxLength: 2048,
+                    placeholder: "https://example.com/player.jpg",
+                },
+
+                {
+                    name: "photo_source_url",
+                    label: "Photo source URL",
+                    type: "text",
+                    url: true,
+                    maxLength: 2048,
+                    placeholder: "https://example.com/original-source",
+                },
+
             ],
 
 
@@ -251,6 +295,9 @@
 
 
         venues: {
+
+            imageField: "image_url",
+            imageKind: "venue",
 
             singular: "Venue",
 
@@ -294,11 +341,11 @@
 
                 {
                     name: "address",
-                    label: "Address",
+                    label: "Location",
                     type: "textarea",
                     wide: true,
                     placeholder:
-                        "Optional venue address",
+                        "Place name or full address, e.g. Gaddafi Stadium, Lahore, Pakistan",
                 },
 
                 {
@@ -307,6 +354,28 @@
                     type: "number",
                     min: 0,
                     placeholder: "27000",
+                },
+
+                {
+                    name: "latitude",
+                    type: "hidden",
+                    numeric: true,
+                },
+
+                {
+                    name: "longitude",
+                    type: "hidden",
+                    numeric: true,
+                },
+
+                {
+                    name: "image_url",
+                    label: "Venue image URL",
+                    type: "text",
+                    url: true,
+                    maxLength: 2048,
+                    wide: true,
+                    placeholder: "https://example.com/stadium.jpg",
                 },
 
             ],
@@ -333,6 +402,12 @@
                     key: "capacity",
                     label: "Capacity",
                     format: "number",
+                },
+
+                {
+                    key: "coordinates",
+                    label: "Location",
+                    format: "coordinates",
                 },
 
                 {
@@ -624,6 +699,9 @@
 
         editing: null,
 
+        uploadingImage: false,
+        imageUploadSequence: 0,
+
         loadSequence: 0,
 
     };
@@ -683,6 +761,23 @@
 
         const value =
             record[column.key];
+
+        if (config.imageField && column === config.columns[0]) {
+            return `<div class="record-identity">
+                ${window.ProfileAssets.image(record[config.imageField], value, config.imageKind)}
+                <div><span>${escapeHtml(value)}</span>
+                    ${window.ProfileAssets.sourceLink(record[config.sourceField])}
+                </div>
+            </div>`;
+        }
+
+        if (column.format === "coordinates") {
+            const map = window.ProfileAssets.map(record.address, record.latitude, record.longitude);
+            if (!map) {
+                return '<span class="muted">Not set</span>';
+            }
+            return `${record.address ? `<span class="venue-location-label">${escapeHtml(record.address)}</span>` : ""}${map}`;
+        }
 
 
         if (column.status) {
@@ -1093,6 +1188,10 @@
 
     function fieldHtml(field) {
 
+        if (field.type === "hidden") {
+            return `<input type="hidden" name="${field.name}">`;
+        }
+
         const required =
             field.required
                 ? "required"
@@ -1110,6 +1209,10 @@
                 ? `min="${field.min}"`
                 : "";
 
+        const max = field.max !== undefined ? `max="${field.max}"` : "";
+        const step = field.step !== undefined ? `step="${field.step}"` : "";
+        const hintId = `${field.name}-hint`;
+        const hint = field.hint || (field.url ? "Use https:// or a path starting with /. Leave blank to remove." : "");
 
         const placeholder =
             field.placeholder
@@ -1252,9 +1355,15 @@
                     type="${field.type}"
                     ${maxLength}
                     ${min}
+                    ${max}
+                    ${step}
+                    ${field.url ? 'inputmode="url"' : ""}
+                    ${hint ? `aria-describedby="${hintId}"` : ""}
                     ${placeholder}
                     ${required}
                 >
+
+                ${hint ? `<small class="field-hint" id="${hintId}">${escapeHtml(hint)}</small>` : ""}
 
             </label>
         `;
@@ -1267,8 +1376,65 @@
         elements.formFields.innerHTML =
             config.fields
                 .map(fieldHtml)
-                .join("");
+                .join("") + (resource === "venues"
+                    ? '<div class="form-field-wide venue-location-preview"><button type="button" class="button button-secondary button-small" id="preview-venue-location">Show location on map</button><div id="venue-map-preview"></div></div>' : "") + (config.imageField
+                    ? `<label class="form-field form-field-wide"><span>${resource === "teams" ? "Team logo" : resource === "players" ? "Player photo" : "Venue picture"} from your computer</span>
+                        <input type="file" id="profile-image-upload" accept="image/png,image/jpeg,image/webp">
+                        <small class="field-hint">Choose a PNG, JPEG or WebP image (up to 5 MB), or use the image URL above.</small>
+                        <small id="profile-upload-status" role="status" aria-live="polite"></small></label>
+                        <div class="record-image-preview form-field-wide" id="record-image-preview" aria-live="polite"></div>`
+                    : "");
 
+    }
+
+    function updateImagePreview() {
+        if (!config.imageField) return;
+        const imageUrl = elements.form.elements.namedItem(config.imageField).value;
+        const sourceUrl = config.sourceField
+            ? elements.form.elements.namedItem(config.sourceField).value : null;
+        const name = elements.form.elements.namedItem(config.fields[0].name).value;
+        document.getElementById("record-image-preview").innerHTML = `
+            ${window.ProfileAssets.image(imageUrl, name || config.singular, config.imageKind)}
+            <div><span>Image preview</span>${window.ProfileAssets.sourceLink(sourceUrl)}</div>`;
+    }
+
+    function updateVenueMap() {
+        if (resource !== "venues") return;
+        const address = elements.form.elements.namedItem("address").value.trim();
+        const latitude = elements.form.elements.namedItem("latitude").value;
+        const longitude = elements.form.elements.namedItem("longitude").value;
+        const preview = window.ProfileAssets.map(address,
+            latitude === "" ? null : Number(latitude), longitude === "" ? null : Number(longitude));
+        document.getElementById("venue-map-preview").innerHTML = preview ||
+            '<p class="field-hint">Enter a place name or full address in Location to see it on the map.</p>';
+    }
+
+    async function uploadImage(file) {
+        if (!file) return;
+        const sequence = ++state.imageUploadSequence;
+        state.uploadingImage = true;
+        elements.save.disabled = true;
+        const status = document.getElementById("profile-upload-status");
+        status.textContent = "Uploading image…";
+        try {
+            if (file.size > 5 * 1024 * 1024) throw new Error("Choose an image of 5 MB or smaller.");
+            const uploaded = await window.API.uploadProfileImage(resource, file);
+            if (sequence !== state.imageUploadSequence) return;
+            elements.form.elements.namedItem(config.imageField).value = uploaded.url;
+            updateImagePreview();
+            status.textContent = "Image uploaded. Save the record to apply it.";
+        } catch (error) {
+            if (sequence !== state.imageUploadSequence) return;
+            status.textContent = "";
+            document.getElementById("profile-image-upload").value = "";
+            elements.formError.textContent = error.message;
+            elements.formError.classList.remove("hidden");
+        } finally {
+            if (sequence === state.imageUploadSequence) {
+                state.uploadingImage = false;
+                elements.save.disabled = false;
+            }
+        }
     }
 
 
@@ -1304,6 +1470,11 @@
 
 
         elements.form.reset();
+
+        state.imageUploadSequence++;
+        state.uploadingImage = false;
+        elements.save.disabled = false;
+        if (config.imageField) document.getElementById("profile-upload-status").textContent = "";
 
 
         elements.formError
@@ -1358,6 +1529,9 @@
         }
 
 
+        updateImagePreview();
+        updateVenueMap();
+
         elements.modal
             .classList
             .remove("hidden");
@@ -1378,6 +1552,9 @@
 
 
     function closeModal() {
+
+        state.imageUploadSequence++;
+        state.uploadingImage = false;
 
         elements.modal
             .classList
@@ -1401,8 +1578,7 @@
     ) {
 
         if (
-            field.type ===
-            "number"
+            field.type === "number" || field.numeric
         ) {
 
             return value === ""
@@ -1469,6 +1645,23 @@
         );
 
 
+        config.fields.filter((field) => field.url).forEach((field) => {
+            if (payload[field.name] && !window.ProfileAssets.safeUrl(payload[field.name])) {
+                throw new Error(`${field.label}: use an http(s) URL or a path starting with /.`);
+            }
+        });
+
+        if (resource === "venues" && state.editing && payload.address !== (state.editing.address ?? null)) {
+            // A new named location replaces the old point; retain coordinates
+            // internally only while their original location is unchanged.
+            payload.latitude = null;
+            payload.longitude = null;
+        }
+
+        if (resource === "venues" && (payload.latitude === null) !== (payload.longitude === null)) {
+            throw new Error("Set both latitude and longitude, or leave both blank.");
+        }
+
         return payload;
 
     }
@@ -1513,6 +1706,12 @@
         );
 
 
+        // The API requires both coordinate keys even when only one value changes.
+        if (resource === "venues" && ("latitude" in changed || "longitude" in changed)) {
+            changed.latitude = payload.latitude;
+            changed.longitude = payload.longitude;
+        }
+
         return changed;
 
     }
@@ -1523,6 +1722,8 @@
     ) {
 
         event.preventDefault();
+
+        if (state.uploadingImage) return;
 
 
         if (
@@ -1770,6 +1971,19 @@
             closeModal
         );
 
+
+    elements.form.addEventListener("input", updateImagePreview);
+    elements.form.addEventListener("change", (event) => {
+        if (event.target.id === "profile-image-upload") uploadImage(event.target.files?.[0]);
+        if (resource === "venues" && event.target.name === "address") {
+            elements.form.elements.namedItem("latitude").value = "";
+            elements.form.elements.namedItem("longitude").value = "";
+            updateVenueMap();
+        }
+    });
+    elements.form.addEventListener("click", (event) => {
+        if (event.target.id === "preview-venue-location") updateVenueMap();
+    });
 
     elements.form
         .addEventListener(

@@ -33,14 +33,23 @@ async def test_tournament_workspace_sections_render(section: str) -> None:
 
     assert response.status_code == 200
     assert f'data-section="{section}"' in response.text
-    assert f'class="t-tab active" href="/competitions/{tournament_id}/{section}"' in response.text
+    assert f'class="t-tab active" href="/competitions/{tournament_id}/{section}"' in " ".join(response.text.split())
 
 
 @pytest.mark.asyncio
 async def test_unknown_workspace_section_is_404() -> None:
-    response = await _get(f"/competitions/{uuid4()}/fixtures")
+    response = await _get(f"/competitions/{uuid4()}/unknown-section")
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_fixture_builder_page_renders() -> None:
+    response = await _get(f"/competitions/{uuid4()}/fixtures")
+    assert response.status_code == 200
+    assert 'id="fixture-builder"' in response.text
+    assert "fixture-builder.js" in response.text
+    assert "fixtures.css" in response.text
 
 
 @pytest.mark.asyncio

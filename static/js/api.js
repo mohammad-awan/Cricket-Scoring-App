@@ -1022,6 +1022,27 @@
         },
 
 
+        fixtures: {
+            workspace: (id, runId) => request(`/fixtures/tournaments/${id}/workspace${runId ? `?generation_run_id=${encodeURIComponent(runId)}` : ""}`),
+            preview: (id, data) => request(`/fixtures/tournaments/${id}/generate-preview`, { method: "POST", body: JSON.stringify(data) }),
+            save: (id, data) => request(`/fixtures/tournaments/${id}/plans`, { method: "POST", body: JSON.stringify(data) }),
+            validate: (id) => request(`/fixtures/generations/${id}/validate`, { method: "POST" }),
+            edit: (id, data) => request(`/fixtures/generations/${id}/edits`, { method: "POST", body: JSON.stringify(data) }),
+            publish: (id, data) => request(`/fixtures/generations/${id}/confirm`, { method: "POST", body: JSON.stringify(data) }),
+            action: (id, data) => request(`/fixtures/${id}/actions`, { method: "POST", body: JSON.stringify(data) }),
+            regenerate: (id, data) => request(`/fixtures/generations/${id}/regenerate-unplayed`, { method: "POST", body: JSON.stringify(data) }),
+            progress: (id) => request(`/fixtures/generations/${id}/progress`, { method: "POST" }),
+            history: (id) => request(`/fixtures/${id}/history`),
+        },
+
+        uploadProfileImage(resource, file) {
+            return request(`/profile-assets/${resource}`, {
+                method: "POST",
+                body: file,
+                headers: { "Content-Type": file.type || "application/octet-stream" },
+            });
+        },
+
         tournamentSeries: {
 
             list: (params = {}) => request(`/tournament-series?${queryString({ page_size: 100, ...params })}`),

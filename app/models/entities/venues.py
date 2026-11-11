@@ -8,6 +8,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy import Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import (
     ArchiveMixin,
@@ -43,6 +44,9 @@ class Venue(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
         back_populates="venue",
         lazy="raise_on_sql",
     )
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
     __table_args__ = (
         UniqueConstraint(

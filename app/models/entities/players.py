@@ -43,6 +43,8 @@ class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     batting_hand: Mapped[BattingHand | None] = mapped_column(db_enum(BattingHand, "batting_hand"), nullable=True)
     bowling_arm: Mapped[BowlingArm | None] = mapped_column(db_enum(BowlingArm, "bowling_arm"), nullable=True)
     bowling_style: Mapped[BowlingStyle | None] = mapped_column(db_enum(BowlingStyle, "bowling_style"), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    photo_source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     status: Mapped[PlayerStatus] = mapped_column(
         db_enum(PlayerStatus, "player_status"),
         nullable=False,

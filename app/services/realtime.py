@@ -120,6 +120,11 @@ async def publish_committed_match_state(match_id: UUID, event_type: LiveEventTyp
 
         await live_connections.broadcast(match_id, event.model_dump(mode="json"))
 
+        if event.scorecard.status == "completed" or event_type in {
+            LiveEventType.DELIVERY_CORRECTED, LiveEventType.RETIREMENT_CORRECTED,
+        }:
+            await synchronize_fixture_result(match_id)
+
 
     except Exception:
         # WebSocket failure must never
@@ -140,6 +145,20 @@ async def publish_committed_match_state(match_id: UUID, event_type: LiveEventTyp
             ),
             match_id,
         )
+
+
+async def synchronize_fixture_result(match_id: UUID) -> None:
+    """Apply committed results; retries and organizer refreshes are safe."""
+    from sqlalchemy import select
+    from app.models.entities.fixtures import Fixture
+    from app.services.fixture_planning import FixturePlanningService
+    async with AsyncSessionFactory() as session:
+        async with session.begin():
+            service = FixturePlanningService(session)
+            await service.repo.scheduling_lock()
+            run_id = await session.scalar(select(Fixture.generation_run_id).where(Fixture.match_id == match_id))
+            if run_id:
+                await service.progress(run_id)
 
 
 

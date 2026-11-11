@@ -16,7 +16,7 @@ Platform {% endblock %} {% block content %}
     <nav class="t-tabs" aria-label="Tournament sections">
       {% for key, label in [ ("overview", "Overview"), ("identity", "Identity &
       Branding"), ("rules", "Rules & Format"), ("teams", "Team Registration"),
-      ("squads", "Squads & Eligibility"), ("venues", "Venues"), ] %}
+      ("squads", "Squads & Eligibility"), ("venues", "Venues"), ("fixtures", "Fixtures"), ] %}
       <a
         class="t-tab {% if section == key %}active{% endif %}"
         href="/competitions/{{ tournament_id }}/{{ key }}"

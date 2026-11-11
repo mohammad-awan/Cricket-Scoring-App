@@ -244,20 +244,19 @@ async def test_publish_rejects_count_mismatch(service, session):
 
 
 @pytest.mark.asyncio
-async def test_publish_updates_fixture_status(service, session):
+async def test_legacy_publish_uses_validated_match_linking(service, session, monkeypatch):
     run = make_run()
     fixture = make_fixture()
     session.scalar.return_value = run
     result = MagicMock()
     result.all.return_value = [fixture]
     session.scalars.return_value = result
+    from app.services.fixture_planning import FixturePlanningService
+    publish = AsyncMock(return_value={"published_count": 1})
+    monkeypatch.setattr(FixturePlanningService, "publish", publish)
     published_count = await service.publish_generation(generation_run_id=run.id, expected_fixture_count=1)
     assert published_count == 1
-    assert run.status == "published"
-    assert fixture.status == "published"
-    assert fixture.version == 2
-    assert fixture.published_at is not None
-    session.flush.assert_awaited_once()
+    publish.assert_awaited_once_with(run.id, {fixture.id: 1}, "Organizer confirmed fixture publication")
     session.commit.assert_not_awaited()
 
 

@@ -258,6 +258,7 @@
                 </div>
             </div>
             <div class="tournament-hero-actions">
+                <a class="button button-primary button-small" href="/competitions/${t.id}/fixtures">Fixtures</a>
                 ${t.status === "archived" ? "" : `<a class="button button-secondary button-small" href="/competitions/${t.id}/edit">Open wizard</a>`}
             </div>`;
     }

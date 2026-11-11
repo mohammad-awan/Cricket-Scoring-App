@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Fixture Builder | Cricket Intelligence{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/fixtures.css') }}?v={{ asset_version('css/fixtures.css') }}">
+<div id="fixture-builder" data-tournament-id="{{ tournament_id }}" data-section="fixtures">
+  <a class="back-link" href="/competitions/{{ tournament_id }}">← Tournament workspace</a>
+  <section class="page-heading page-heading-actions fixture-heading">
+    <div><p class="eyebrow" id="fixture-tournament">Competition planning</p><h1>Fixture Builder</h1><p class="page-subtitle">Build the draw. Check the schedule. Confirm the matches.</p></div>
+    <button class="button button-primary" type="button" id="new-fixture-plan">+ New plan</button>
+  </section>
+  <div id="fixture-error" class="notice notice-danger hidden" role="alert"></div>
+  <div id="fixture-loading" class="panel panel-body" role="status">Loading teams, venues and fixture plans…</div>
+  <div id="fixture-workspace" hidden>
+    <section class="panel fixture-plan-bar">
+      <label class="form-field"><span>Saved fixture plan</span><select id="fixture-run"><option value="">No saved plans</option></select></label>
+      <span id="fixture-plan-status"></span>
+      <div class="action-row">
+        <button class="button button-secondary button-small" type="button" id="fixture-validate">Validate</button>
+        <button class="button button-secondary button-small" type="button" id="fixture-progress">Update bracket</button>
+        <button class="button button-secondary button-small" type="button" id="fixture-regenerate">Reschedule unplayed</button>
+        <button class="button button-primary button-small" type="button" id="fixture-publish">Confirm &amp; publish</button>
+      </div>
+    </section>
+    <section class="fixture-metrics" id="fixture-metrics" aria-label="Schedule summary"></section>
+    <div class="fixture-layout">
+      <section class="panel fixture-main">
+        <div class="fixture-view-bar" role="tablist" aria-label="Fixture views">
+          <button type="button" role="tab" data-fixture-view="list" aria-selected="true">Fixtures</button>
+          <button type="button" role="tab" data-fixture-view="calendar" aria-selected="false">Calendar</button>
+          <button type="button" role="tab" data-fixture-view="matrix" aria-selected="false">Match matrix</button>
+          <button type="button" role="tab" data-fixture-view="bracket" aria-selected="false">Groups &amp; bracket</button>
+        </div>
+        <div class="fixture-filters">
+          <label class="sr-only" for="fixture-team-filter">Filter team</label><select id="fixture-team-filter"><option value="">All teams</option></select>
+          <label class="sr-only" for="fixture-round-filter">Filter round</label><select id="fixture-round-filter"><option value="">All rounds</option></select>
+          <label class="sr-only" for="fixture-status-filter">Filter status</label><select id="fixture-status-filter"><option value="">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="postponed">Postponed</option><option value="cancelled">Cancelled</option><option value="completed">Completed</option></select>
+          <button class="table-action" type="button" id="fixture-export">Export CSV</button>
+        </div>
+        <div id="fixture-view" role="tabpanel"></div>
+        <div class="pagination-bar"><span id="fixture-page-summary"></span><div class="action-row"><button class="button button-secondary button-small" id="fixture-previous" type="button">Previous</button><button class="button button-secondary button-small" id="fixture-next" type="button">Next</button></div></div>
+      </section>
+      <aside class="fixture-sidebar">
+        <section class="panel"><div class="panel-header"><h2>Schedule health</h2></div><div class="panel-body" id="fixture-conflicts" aria-live="polite"></div></section>
+        <section class="panel"><div class="panel-header"><h2>Team workload</h2></div><div class="panel-body" id="fixture-workload"></div></section>
+        <section class="panel"><div class="panel-header"><h2>Venues &amp; reproducibility</h2></div><div class="panel-body" id="fixture-audit-summary"></div></section>
+      </aside>
+    </div>
+  </div>
+</div>
+<dialog id="fixture-wizard" class="fixture-dialog fixture-wizard">
+  <form id="fixture-wizard-form">
+    <div class="modal-header"><div><p class="eyebrow">New fixture plan</p><h2>Plan your competition</h2></div><button type="button" class="icon-button" data-close-dialog aria-label="Close">×</button></div>
+    <div class="fixture-wizard-steps" aria-label="Planning steps"><button type="button" data-wizard-step="0">1 · Draw</button><button type="button" data-wizard-step="1">2 · Schedule</button><button type="button" data-wizard-step="2">3 · Preview</button></div>
+    <div class="fixture-dialog-body" id="fixture-wizard-body"></div>
+    <p class="form-error hidden" id="fixture-wizard-error" role="alert"></p>
+    <div class="modal-actions"><button type="button" class="button button-secondary" id="wizard-back">Back</button><button type="button" class="button button-secondary" data-close-dialog>Cancel</button><button type="submit" class="button button-primary" id="wizard-next">Continue</button><button type="button" class="button button-primary" id="wizard-save" hidden>Save draft</button></div>
+  </form>
+</dialog>
+<dialog id="fixture-editor" class="fixture-dialog"><form id="fixture-editor-form"><div class="modal-header"><h2 id="fixture-editor-title">Edit fixture</h2><button type="button" class="icon-button" data-close-dialog aria-label="Close">×</button></div><div class="fixture-dialog-body" id="fixture-editor-body"></div><p class="form-error hidden" id="fixture-editor-error" role="alert"></p><div class="modal-actions"><button type="button" class="button button-secondary" data-close-dialog>Cancel</button><button type="submit" class="button button-primary" id="fixture-editor-save">Save changes</button></div></form></dialog>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
+<script src="{{ url_for('static', path='js/tournament-common.js') }}?v={{ asset_version('js/tournament-common.js') }}"></script>
+<script src="{{ url_for('static', path='js/fixture-builder.js') }}?v={{ asset_version('js/fixture-builder.js') }}"></script>
+{% endblock %}

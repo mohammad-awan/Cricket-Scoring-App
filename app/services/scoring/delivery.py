@@ -107,6 +107,9 @@ async def record_delivery(session: AsyncSession, match_id: UUID, payload: Delive
                     )
 
             ensure_scoreable(match, innings)
+            if match.status == MatchStatus.READY:
+                from app.services.fixture_planning import validate_fixture_activation
+                await validate_fixture_activation(session, match)
             deliveries = await repository.get_recorded_deliveries_plain(innings.id)
 
             before = (
