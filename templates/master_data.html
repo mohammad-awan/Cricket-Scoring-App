@@ -86,8 +86,9 @@ Platform {% endblock %} {% block content %}
   </section>
 </div>
 
-<div class="modal-backdrop hidden" id="record-modal">
-  <div class="modal-card">
+<div class="modal-backdrop hidden premium-form-backdrop" id="record-modal" data-form-theme="{{ resource }}">
+  <div class="modal-card premium-form-card">
+    <div class="form-atmosphere" aria-hidden="true"><span class="atmosphere-light"></span><span class="atmosphere-caption">{% if resource == 'teams' %}ONE CLUB. ONE COLOUR. ONE TEAM.{% elif resource == 'players' %}EVERY GREAT INNINGS STARTS HERE.{% else %}GREAT GROUNDS. UNFORGETTABLE GAMES.{% endif %}</span></div>
     <div class="modal-header">
       <div>
         <p class="eyebrow" id="modal-eyebrow">Master Data</p>

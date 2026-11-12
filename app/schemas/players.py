@@ -13,6 +13,7 @@ class PlayerCreate(BaseModel):
     full_name: str = Field(min_length=1, max_length=160)
     short_name: str | None = Field(default=None, max_length=80)
     date_of_birth:  date | None = None
+    jersey_number: int | None = Field(default=None, ge=0, le=999, strict=True)
     nationality: str | None = Field(default=None, max_length=80)
     sex: PlayerSex | None = None
     external_id: str | None = Field(default=None, max_length=80)
@@ -93,6 +94,7 @@ class PlayerUpdate(BaseModel):
     full_name: str | None = Field(default=None, min_length=1, max_length=160)
     short_name: str | None = Field(default=None, max_length=80)
     date_of_birth: date | None = None
+    jersey_number: int | None = Field(default=None, ge=0, le=999, strict=True)
     nationality: str | None = Field(default=None, max_length=80)
     sex: PlayerSex | None = None
     external_id: str | None = Field(default=None, max_length=80)
@@ -192,6 +194,7 @@ class PlayerRead(BaseModel):
     full_name: str
     short_name: str | None
     date_of_birth: date | None
+    jersey_number: int | None = None
     nationality: str | None
     sex: PlayerSex | None = None
     external_id: str | None

@@ -1,0 +1,127 @@
+/* Clean page canvases. Cricket photography is contained within panels and forms. */
+body[data-page-scene] { background:#fff; color:#15364e; --panel-photo:var(--page-photo); }
+body[data-page-scene="teams"] { --panel-photo:url('../images/forms/teams.jpg'); }
+body[data-page-scene="tournament-details"] { --page-photo:url('../images/forms/tournaments.jpg'); }
+body[data-page-scene]::before,body[data-page-scene]::after { display:none; }
+body[data-page-scene] .page-content .page-heading { color:#15364e; }
+body[data-page-scene] .page-content .page-heading h1 { color:#082e48; text-shadow:none; }
+body[data-page-scene] .page-content .page-heading .eyebrow { color:#805b22; }
+body[data-page-scene] .page-content .page-heading .page-subtitle { color:#536c7f; text-shadow:none; }
+body[data-page-scene] .page-content :is(.section-heading,.profile-section-heading) { color:#15364e; }
+body[data-page-scene] .page-content .section-heading > span { color:#60788b; }
+body[data-page-scene] .page-content :is(.page-heading .back-link,#tournament-detail > .back-link,#fixture-builder > .back-link,.profile-back-link) { color:#315e7a; }
+body[data-page-scene] .profile-topbar-tag { color:#536b7c; border-color:#cbd9e4; background:#fff; }
+.dashboard-launchpad > div { color:#15364e; }.dashboard-launchpad > div p { color:#536c7f; }.dashboard-launchpad > div .eyebrow { color:#805b22; }
+/* Directory tables follow the approved Teams container. */
+.page-content .panel.master-panel {
+ background-color:#06283e;
+ background-image:linear-gradient(100deg,#031c2bf2 10%,#06283ee6 55%,#06283ec2),var(--panel-photo);
+ background-size:cover; background-position:center,right top;
+ color:#f3f7fb; border:1px solid #36566a; border-top:3px solid #bc914b;
+ box-shadow:0 18px 42px #082c461c; backdrop-filter:none;
+}
+.page-content .master-panel :is(.toolbar,.pagination-bar) { background:#031d2f99; color:#e4eef6; border-color:#aac6d32e; }
+.page-content .master-panel .checkbox-field { color:#eaf2f8; }
+.page-content .master-panel :is(.data-table,.data-table thead,.data-table tbody tr) { background:transparent; }
+.page-content .master-panel .data-table th { background:#031b2dd9; color:#cfe0ed; border-color:#aec5d32b; }
+.page-content .master-panel .data-table td { color:#f3f7fb; border-color:#aec5d324; }
+.page-content .master-panel .data-table tbody tr:nth-child(even) { background:#031b2d30; }
+.page-content .master-panel .data-table tbody tr:hover { background:#123c50b3; }
+.page-content .master-panel :is(.muted,.table-state) { color:#d3e2ed; }
+.page-content .master-panel .search-box input { background:#fff; color:#183b53; border-color:#c6d6e0; }
+/* General section containers: a photographic header with a readable solid body. */
+.page-content .panel:not(.master-panel):not(.scoring-scoreboard):not(.viewer-scoreboard) > .panel-header,
+.page-content .profile-card > .profile-card-header {
+ background-color:#06283e;
+ background-image:linear-gradient(100deg,#031c2bf2,#06283ec9),var(--panel-photo);
+ background-size:cover; background-position:center;
+ color:#fff; border-bottom:2px solid #bc914b;
+}
+.page-content .panel > .panel-header :is(h2,h3),.page-content .profile-card > .profile-card-header :is(h2,h3) { color:#fff; }
+.page-content .panel > .panel-header :is(p,.muted),.page-content .profile-card > .profile-card-header p { color:#d3e2ed; }
+.page-content .panel > .panel-header .eyebrow { color:#f0cd92; }
+.page-content .profile-card > .profile-card-header { padding:22px; border-radius:18px 18px 0 0; }
+.cricket-hero { background-image:linear-gradient(100deg,#031c2bf2,#06283edb),var(--panel-photo); background-size:cover; background-position:center; }
+.international-board { background-image:linear-gradient(100deg,#001d33f5,#00344de6),var(--panel-photo); background-size:cover; background-position:center; }
+.premium-innings-header { background-image:linear-gradient(100deg,#031c2bf2,#06283ec9),var(--panel-photo); background-size:cover; background-position:center; }
+/* Create/edit forms use their resource's image directly inside an opaque card. */
+.premium-form-backdrop { backdrop-filter:none; background:#001522c9; }
+.premium-form-card {
+ background-color:#06283e;
+ background-image:linear-gradient(105deg,#031c2bf2,#06283edb 65%,#06283ec9),var(--atmosphere-image);
+ background-size:cover; background-position:center,right center;
+ color:#f3f7fb; border:1px solid #597184; border-top:3px solid #c49a53;
+ box-shadow:0 24px 70px #00111f66; backdrop-filter:none;
+}
+.premium-form-card .form-atmosphere { display:none; }
+.premium-form-card .modal-header { min-height:130px; align-items:center; background:#031c2b40; border-color:#b2c9d433; }
+.premium-form-card .modal-header h2 { color:#fff; }.premium-form-card .modal-header .eyebrow { color:#f0cd92; }
+.premium-form-card form { background:transparent; }
+.premium-form-card .form-field > span { color:#edf4f9; }
+.premium-form-card :is(.muted,.form-hint,.field-help) { color:#c8dbe8; }
+.premium-form-card .modal-actions { background:#031c2b; border-color:#b2c9d433; backdrop-filter:none; }
+.premium-form-card .form-error { background:#fff1ef; color:#9c261d; }
+/* Tournament editor: contained image, accessible solid controls. */
+#tournament-wizard #wizard-body > form.panel {
+ background-color:#06283e; background-image:linear-gradient(105deg,#031c2bf2,#06283edb),var(--panel-photo);
+ background-size:cover; background-position:center; color:#edf4f9; border-color:#36566a; border-top:3px solid #bc914b;
+}
+#tournament-wizard #wizard-body > form.panel .form-field > span { color:#edf4f9; }
+#tournament-wizard #wizard-body > form.panel :is(.muted,.field-help) { color:#c8dbe8; }
+#tournament-wizard .wizard-footer { background:#031c2b; border-color:#b2c9d433; }
+#tournament-wizard .wizard-footer .form-error { color:#9c261d; background:#fff1ef; }
+/* Theme buttons across all pages. Danger actions retain a distinct warning colour. */
+body[data-page-scene] .button-primary { background:#dfb56b; color:#082b43; border-color:#f1ce90; box-shadow:0 3px 10px #00152220; }
+body[data-page-scene] .button-primary:hover:not(:disabled) { background:#f0cc8a; border-color:#ffdfa6; color:#082b43; }
+body[data-page-scene] .button-secondary,body[data-page-scene] .table-action { background:#173e55; color:#f0f5fa; border:1px solid #668193; box-shadow:none; }
+body[data-page-scene] :is(.button-secondary,.table-action):hover:not(:disabled) { background:#28556c; border-color:#a0b5c3; }
+body[data-page-scene] .table-action[data-action="edit"] { background:#293d47; border-color:#ad884c; color:#ffdda0; }
+body[data-page-scene] .table-action[data-action="edit"]:hover:not(:disabled) { background:#514631; border-color:#e2b767; }
+body[data-page-scene] :is(.table-action-danger,.table-action[data-action="archive"],.button-danger) { background:#512d39; border-color:#985461; color:#ffd4d0; }
+body[data-page-scene] :is(.table-action-danger,.table-action[data-action="archive"],.button-danger):hover:not(:disabled) { background:#713747; border-color:#c77f89; }
+body[data-page-scene] :is(.button,.table-action):disabled { opacity:.45; box-shadow:none; cursor:not-allowed; }
+@media(max-width:600px) { .premium-form-card .modal-header { min-height:110px; }.page-content .panel.master-panel { background-position:center,65% top; }.page-content .profile-card > .profile-card-header { padding:18px; } }
+@media(prefers-reduced-transparency:reduce) { .premium-form-card { backdrop-filter:none; }.page-content .panel.master-panel { backdrop-filter:none; } }
+@media print { .page-content .panel.master-panel,.page-content .master-panel .data-table :is(th,td),.premium-innings-header,.page-content .panel > .panel-header { background:#fff; color:#000; box-shadow:none; }.page-content .panel > .panel-header :is(h2,h3) { color:#000; } }
+
+/* Information sections share the approved Teams image/overlay treatment. */
+html { background:#fff; }
+body[data-page-scene] { --info-overlay:linear-gradient(100deg,#031c2bed 10%,#06283ee6 55%,#06283ec2); }
+body[data-page-scene="statistics"] { --panel-photo:url('../images/forms/players.jpg'); }
+.page-content .panel.master-panel {
+ background-image:var(--info-overlay),var(--panel-photo);
+ background-position:center,right top;
+}
+#player-profile-page .profile-hero,
+#tournament-detail .tournament-hero {
+ background-color:#06283e;
+ background-image:var(--info-overlay),var(--panel-photo);
+ background-size:cover;
+ background-position:center,right center;
+ color:#f3f7fb;
+ border-top:3px solid #bc914b;
+ box-shadow:0 18px 42px #082c461c;
+}
+#player-profile-page .profile-hero { border:1px solid #36566a; border-top:3px solid #bc914b; border-radius:20px; }
+#player-profile-page .profile-hero :is(h1,.profile-hero-highlights strong,.profile-facts dd) { color:#f3f7fb; }
+#player-profile-page .profile-hero :is(.profile-hero-subtitle,.profile-hero-teams,.profile-hero-highlights span,.profile-facts dt) { color:#d3e2ed; }
+#player-profile-page .profile-facts { background:#031d2f80; border-color:#aac6d32e; }
+#player-profile-page .profile-facts > div + div { border-color:#aac6d32e; }
+#tournament-detail .tournament-hero.has-cover { background-image:var(--info-overlay),var(--hero-cover); }
+#tournament-detail .tournament-hero h1 { color:#fff; }
+#tournament-detail .tournament-hero .eyebrow { color:#f0cd92; }
+#tournament-detail .tournament-hero-meta { color:#d3e2ed; }
+/* Secondary information stays legible over the directory photographs. */
+.page-content .master-panel :is(.record-source,.record-coordinates,.venue-location-label) { color:#d3e2ed; }
+.page-content .master-panel a.record-source:hover { color:#ffdda0; }
+@media(max-width:600px) {
+ #player-profile-page .profile-hero { border-radius:16px; background-position:center,65% center; }
+ #tournament-detail .tournament-hero { background-position:center,65% center; }
+}
+@media print {
+ #player-profile-page .profile-hero,
+ #tournament-detail .tournament-hero,
+ #tournament-detail .tournament-hero.has-cover { background:#fff; color:#000; box-shadow:none; }
+ #player-profile-page .profile-hero :is(h1,.profile-hero-highlights strong,.profile-facts dd,.profile-hero-subtitle,.profile-hero-teams,.profile-hero-highlights span,.profile-facts dt),
+ #tournament-detail .tournament-hero :is(h1,.eyebrow,.tournament-hero-meta) { color:#000!important; }
+}

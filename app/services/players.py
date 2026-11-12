@@ -46,6 +46,7 @@ async def create_player(session: AsyncSession, payload: PlayerCreate) -> Player:
                     short_name=short_name,
                     date_of_birth=payload.date_of_birth,
                     nationality=nationality,
+                    jersey_number=payload.jersey_number,
                     sex=payload.sex,
                     external_id=external_id,
                     batting_hand=payload.batting_hand,
@@ -133,6 +134,9 @@ async def update_player(session: AsyncSession, player_id: UUID, payload: PlayerU
 
             if "date_of_birth" in data:
                 player.date_of_birth = date_of_birth
+
+            if "jersey_number" in data:
+                player.jersey_number = data["jersey_number"]
 
             if "nationality" in data:
                 player.nationality = clean_optional(data["nationality"])

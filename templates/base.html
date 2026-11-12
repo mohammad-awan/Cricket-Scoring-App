@@ -53,6 +53,10 @@
       rel="stylesheet"
       href="{{ url_for('static', path='css/scoreboard-theme.css') }}?v={{ asset_version('css/scoreboard-theme.css') }}"
     />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/form-atmospheres.css') }}?v={{ asset_version('css/form-atmospheres.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/platform-atmosphere.css') }}?v={{ asset_version('css/platform-atmosphere.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/contained-backgrounds.css') }}?v={{ asset_version('css/contained-backgrounds.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/information-photos.css') }}?v={{ asset_version('css/information-photos.css') }}" />
   </head>
   {% set current_path = request.url.path %} {% set in_match =
   current_path.startswith('/match-setup/') or
@@ -63,7 +67,18 @@
   current_path.startswith('/competitions') else 'Players' if
   current_path.startswith('/player-profile') else
   resource|default('Overview')|replace('_', ' ')|title %}
-  <body>
+  {% set page_scene = 'scorecard' if current_path.startswith('/scorecard/') else
+    'scoreboard' if current_path.startswith('/live-scoring/') else
+    'spectator' if current_path.startswith('/live-viewer/') else
+    'statistics' if current_path.startswith('/player-profile/') else
+    'match-details' if current_path.startswith('/match-setup/') else
+    'matches' if current_path == '/match-setup' else
+    'fixtures' if current_path.startswith('/competitions/') and section|default('') == 'fixtures' else
+    'tournament-editor' if current_path == '/competitions/new' or current_path.endswith('/edit') else
+    'tournament-details' if current_path.startswith('/competitions/') else
+    'tournaments' if current_path == '/competitions' else
+    resource if resource|default('') in ['teams', 'players', 'venues'] else 'overview' %}
+  <body data-page-scene="{{ page_scene }}" data-info-photos="v2">
     <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="app-shell">
       <div class="app-main">

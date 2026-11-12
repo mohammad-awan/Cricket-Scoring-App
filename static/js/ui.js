@@ -1,10 +1,11 @@
-﻿(() => {
+(() => {
     'use strict';
     const toggle = document.getElementById('nav-toggle');
     const nav = document.getElementById('top-navigation');
     const loading = document.getElementById('page-loading');
     const setBallContext = path => {
         loading.classList.toggle('white-ball', /match|scor|competitions|tournament/.test(path));
+        loading.classList.toggle('pink-ball', /player/.test(path));
     };
     setBallContext(location.pathname);
     let pending = 0;

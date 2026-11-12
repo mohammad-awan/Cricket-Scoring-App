@@ -1,0 +1,165 @@
+/* Full-content photography. Loaded last so opaque legacy surfaces cannot hide it. */
+body[data-info-photos="v2"] {
+ background:#fff;
+ --content-image:url('../images/information-v2/overview.jpg');
+ --content-overlay:linear-gradient(100deg,rgba(3,28,43,.93) 0%,rgba(6,40,62,.86) 48%,rgba(6,40,62,.75) 100%);
+ --panel-photo:var(--content-image);
+}
+body[data-info-photos="v2"][data-page-scene="teams"] { --content-image:url('../images/forms/teams.jpg'); }
+body[data-info-photos="v2"][data-page-scene="players"] { --content-image:url('../images/information-v2/players.jpg'); }
+body[data-info-photos="v2"][data-page-scene="venues"] { --content-image:url('../images/information-v2/venues.jpg'); }
+body[data-info-photos="v2"][data-page-scene="tournaments"] { --content-image:url('../images/information-v2/tournaments.jpg'); }
+body[data-info-photos="v2"][data-page-scene="matches"] { --content-image:url('../images/information-v2/matches.jpg'); }
+body[data-info-photos="v2"][data-page-scene="match-details"] { --content-image:url('../images/information-v2/match-details.jpg'); }
+body[data-info-photos="v2"][data-page-scene="scoreboard"] { --content-image:url('../images/information-v2/scoreboard.jpg'); }
+body[data-info-photos="v2"][data-page-scene="spectator"] { --content-image:url('../images/information-v2/spectator.jpg'); }
+body[data-info-photos="v2"][data-page-scene="scorecard"] { --content-image:url('../images/information-v2/scorecard.jpg'); }
+body[data-info-photos="v2"][data-page-scene="statistics"] { --content-image:url('../images/information-v2/statistics.jpg'); }
+body[data-info-photos="v2"][data-page-scene="fixtures"] { --content-image:url('../images/information-v2/fixtures.jpg'); }
+body[data-info-photos="v2"][data-page-scene="tournament-details"] { --content-image:url('../images/information-v2/tournament-details.jpg'); }
+body[data-info-photos="v2"][data-page-scene="tournament-editor"] { --content-image:url('../images/information-v2/tournament-editor.jpg'); }
+body[data-info-photos="v2"]::before,body[data-info-photos="v2"]::after { display:none; }
+/* These are the actual containers holding tables, profile data, statistics and forms. */
+body[data-info-photos="v2"] .page-content :is(.panel,.master-panel,.stat-card,.profile-card,.profile-hero,.international-board,.premium-innings,.cricket-hero,.fixture-card,.fixture-metric,.profile-team-card) {
+ --text:#f3f7fb; --muted:#ccdeec; --border:#a9c5d636;
+ --surface:#06283e; --surface-soft:#031d2f80;
+ background-color:#06283e;
+ background-image:var(--content-overlay),var(--content-image);
+ background-size:cover;
+ background-position:center,right center;
+ background-repeat:no-repeat;
+ color:#f3f7fb;
+ border-color:#36566a;
+ border-top:3px solid #bc914b;
+ box-shadow:0 18px 42px #082c461c;
+ backdrop-filter:none;
+}
+/* Keep the Teams reference unchanged; use identical treatments for the other directories. */
+body[data-info-photos="v2"] .page-content .panel.master-panel { background-image:var(--content-overlay),var(--content-image); }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) > :is(.panel-header,.profile-card-header) {
+ background:#031d2f66;
+ border-bottom:1px solid #aac6d336;
+}
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) :is(h2,h3) { color:#f3f7fb; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card,.profile-team-card,.fixture-card,.fixture-metric) :is(.muted,.eyebrow,.page-subtitle) { color:#ccdeec; }
+body[data-info-photos="v2"] .page-content .panel :is(.panel-body,.toolbar,.pagination-bar,.t-tabs,.fixture-view-bar,.fixture-filters) { background:#031d2f40; color:#e3edf5; border-color:#aac6d32e; }
+body[data-info-photos="v2"] .page-content .panel .panel-body .panel { background-color:#06283e; }
+body[data-info-photos="v2"] .page-content .panel :is(.data-table,.data-table thead,.data-table tbody tr) { background:transparent; }
+body[data-info-photos="v2"] .page-content .panel :is(.data-table th,.scorecard-table th,.fixture-matrix th) { background:#031b2d99; color:#d7e7f2; border-color:#aec5d32b; }
+body[data-info-photos="v2"] .page-content .panel :is(.data-table td,.scorecard-table td,.fixture-matrix td) { color:#f3f7fb; border-color:#aec5d32b; }
+body[data-info-photos="v2"] .page-content .panel .data-table tbody tr:nth-child(even) { background:#031b2d25; }
+body[data-info-photos="v2"] .page-content .panel .data-table tbody tr:hover { background:#17425799; }
+body[data-info-photos="v2"] .page-content .panel .checkbox-field { color:#edf4f9; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) .form-field > span { color:#edf4f9; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) { background:#fff; color:#15364e; border-color:#bbcedc; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) :is(input,textarea)::placeholder { color:#617a8f; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) :is(input,select,textarea):disabled { background:#e8eef3; color:#597084; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) :is(.table-state,.record-source,.record-coordinates,.venue-location-label) { color:#d3e2ed; }
+body[data-info-photos="v2"] .page-content :is(.panel,.profile-card) a:not(.button):not(.status-badge):not(.table-action) { color:#e3edf6; }
+body[data-info-photos="v2"] .page-content .t-tab.active { color:#ffdb9b; background:#001d3340; border-color:#d8a651; }
+body[data-info-photos="v2"] .page-content :is(.stat-card strong,.stat-card small,.stat-card > div > span,.fixture-metric strong,.fixture-metric span) { color:#f1f6fb; }
+body[data-info-photos="v2"] .page-content .stat-card .stat-arrow { color:#ffdb9b; }
+body[data-info-photos="v2"] .page-content .quick-links strong { color:#f3f7fb; }
+body[data-info-photos="v2"] .page-content .quick-links a:hover { background:#ffffff0d; }
+/* Profile figures remain above the photograph rather than opaque white blocks. */
+body[data-info-photos="v2"] #player-profile-page .profile-hero { background-image:var(--content-overlay),var(--content-image); }
+body[data-info-photos="v2"] .page-content .profile-card :is(.profile-highlight,.profile-stat-grid > div,.profile-form-chip,.profile-history-card,.profile-history-figures > div) { background:#031d2f66; color:#f3f7fb; border-color:#aac6d32e; }
+body[data-info-photos="v2"] .page-content .profile-card :is(.profile-highlight strong,.profile-stat-item strong,.profile-history-date strong,.profile-history-main strong,.profile-history-figures strong) { color:#ffdb9b; }
+body[data-info-photos="v2"] .page-content .profile-card :is(.profile-highlight span,.profile-stat-item span,.profile-history-date span,.profile-history-date small,.profile-history-main span,.profile-form-chip small) { color:#d3e2ed; }
+/* Player and tournament identities keep their uploaded photographs/logos/cover. */
+body[data-info-photos="v2"] #tournament-detail .tournament-hero { background-image:var(--content-overlay),var(--content-image); background-size:cover; background-position:center; }
+body[data-info-photos="v2"] #tournament-detail .tournament-hero.has-cover { background-image:var(--content-overlay),var(--hero-cover); }
+body[data-info-photos="v2"] .page-content .premium-innings :is(.premium-innings-header,.premium-player,.partnership-cards > div,.extras-ribbon span) { background:#031d2f66; color:#f3f7fb; border-color:#aac6d32e; }
+body[data-info-photos="v2"] .page-content .premium-innings :is(h2,h3,.premium-player strong) { color:#f3f7fb; }
+body[data-info-photos="v2"] .page-content .premium-innings :is(small,.premium-section-heading > span) { color:#ccdeec; }
+body[data-info-photos="v2"] .page-content .premium-innings .premium-player.is-active { background:#8e672b66; border-left-color:#e8b35d; }
+body[data-info-photos="v2"] .page-content .international-board .broadcast-metrics { color:#002b49; background:#fff; }
+/* Editors also use their newly generated image inside the form, never on the page. */
+body[data-info-photos="v2"] #tournament-wizard #wizard-body > form.panel { background-image:var(--content-overlay),var(--content-image); }
+body[data-info-photos="v2"] .premium-form-card { background-image:var(--content-overlay),var(--content-image); }
+body[data-info-photos="v2"] #record-modal[data-form-theme="teams"] .premium-form-card { background-image:var(--content-overlay),url('../images/forms/teams.jpg'); }
+body[data-info-photos="v2"] .fixture-dialog { background-color:#06283e; background-image:var(--content-overlay),var(--content-image); background-size:cover; color:#f3f7fb; }
+body[data-info-photos="v2"] .fixture-dialog .modal-header { background:#031d2f66; }
+body[data-info-photos="v2"] .fixture-dialog .modal-header h2 { color:#f3f7fb; }
+body[data-info-photos="v2"] .fixture-dialog :is(.form-field > span,.fixture-wizard-section) { color:#edf4f9; }
+body[data-info-photos="v2"] .fixture-dialog :is(.fixture-help,.muted) { color:#ccdeec; }
+body[data-info-photos="v2"] .fixture-dialog :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) { background:#fff; color:#15364e; }
+@media(max-width:600px) { body[data-info-photos="v2"] .page-content :is(.panel,.master-panel,.stat-card,.profile-card,.profile-hero,.international-board,.premium-innings,.fixture-card,.fixture-metric,.cricket-hero) { background-position:center,65% center; } }
+@media print { body[data-info-photos="v2"] .page-content :is(.panel,.stat-card,.profile-card,.profile-hero,.international-board,.premium-innings,.fixture-card,.fixture-metric,.cricket-hero),body[data-info-photos="v2"] .page-content :is(.panel,.profile-card,.premium-innings) * { background-image:none!important; background-color:#fff!important; color:#000!important; box-shadow:none; } }
+
+/* Match actions need layout boxes: inline links can overlap when they wrap. */
+#matches-page .data-table .row-actions {
+ display:table-cell;
+ vertical-align:middle;
+ min-width:220px;
+}
+#matches-page .data-table .actions-column { width:240px; min-width:220px; }
+#matches-page .match-actions {
+ display:flex;
+ flex-wrap:wrap;
+ align-items:center;
+ gap:8px;
+}
+#matches-page .match-actions .table-action {
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ flex:0 0 auto;
+ min-height:40px;
+ padding:10px 12px;
+ margin:0;
+ line-height:1.3;
+ white-space:nowrap;
+ box-sizing:border-box;
+}
+
+/* Loading is a single cricket ball, without a notification card or visible copy. */
+#page-loading,
+#profile-loading {
+ background:transparent;
+ border:0;
+ border-radius:0;
+ box-shadow:none;
+ backdrop-filter:none;
+ padding:0;
+ gap:0;
+ width:48px;
+ min-height:48px;
+}
+#profile-loading { margin:12px auto 20px; }
+#page-loading > div,
+#profile-loading > div {
+ position:absolute;
+ width:1px;
+ height:1px;
+ padding:0;
+ margin:-1px;
+ overflow:hidden;
+ clip-path:inset(50%);
+ white-space:nowrap;
+ border:0;
+}
+/* Avoid displaying two balls while the dedicated player-profile loader is active. */
+body:has(#profile-loading:not([hidden])) #page-loading { display:none; }
+
+/* Supplied cricket-ball photographs, cropped to a single round rotating ball. */
+#page-loading .loading-ball,
+#profile-loading .loading-ball {
+ width:40px;
+ height:40px;
+ border:0;
+ border-radius:50%;
+ background:#8d1021 url('../images/loading/red-cricket-ball.jpg') 50% 47% / 120% auto no-repeat;
+ box-shadow:0 2px 7px #00132230;
+}
+#page-loading.white-ball .loading-ball {
+ background:#f1f1ed url('../images/loading/white-cricket-ball.jpg') 50% 48% / 128% auto no-repeat;
+}
+#page-loading.pink-ball .loading-ball,
+#profile-loading .loading-ball {
+ background:#df4c70 url('../images/loading/pink-cricket-ball.jpg') 50% 49% / 135% auto no-repeat;
+}
+#page-loading .loading-ball::before,
+#page-loading .loading-ball::after,
+#profile-loading .loading-ball::before,
+#profile-loading .loading-ball::after { content:none; }

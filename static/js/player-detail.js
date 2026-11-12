@@ -351,6 +351,7 @@
             display(player.age);
 
 
+        document.getElementById("player-jersey-number").textContent = display(player.jersey_number);
         elements.nationality.textContent =
             display(player.nationality);
 

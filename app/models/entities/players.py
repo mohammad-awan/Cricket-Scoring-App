@@ -5,6 +5,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     Index,
+    Integer,
     String,
     UniqueConstraint,
 )
@@ -35,6 +36,7 @@ class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
 
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
     short_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    jersey_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     nationality: Mapped[str | None] = mapped_column(String(80), nullable=True)
     # Used only for tournament sex eligibility (Stage 11).
@@ -65,6 +67,10 @@ class Player(UUIDPrimaryKeyMixin, TimestampMixin, ArchiveMixin, Base):
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "jersey_number IS NULL OR jersey_number BETWEEN 0 AND 999",
+            name="player_jersey_number_range",
+        ),
         CheckConstraint(
             "length(trim(full_name)) > 0",
             name="player_full_name_not_blank",

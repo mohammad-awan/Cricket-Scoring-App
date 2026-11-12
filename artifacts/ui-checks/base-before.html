@@ -1,0 +1,184 @@
+{% macro nav_icon(label) -%}
+<svg
+  viewBox="0 0 24 24"
+  width="20"
+  height="20"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.7"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  {% if label == 'Overview' %}
+  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  {% elif label == 'Teams' %}
+  <circle cx="9" cy="8" r="3" />
+  <path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5" />
+  {% elif label == 'Players' %}
+  <circle cx="12" cy="7" r="4" />
+  <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+  {% elif label == 'Venues' %}
+  <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" />
+  <circle cx="12" cy="10" r="2.5" />
+  {% elif label == 'Tournaments' %}
+  <path
+    d="M8 3h8v6a4 4 0 0 1-8 0ZM8 5H4v2a4 4 0 0 0 4 4M16 5h4v2a4 4 0 0 1-4 4M12 13v5M8 21h8M9 18h6v3H9Z"
+  />
+  {% else %}
+  <rect x="3" y="5" width="18" height="16" rx="2" />
+  <path d="M7 3v4M17 3v4M3 11h18M8 16h3" />
+  {% endif %}
+</svg>
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#002b49" />
+    <title>{% block title %}Cricket Intelligence Platform{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/app.css') }}?v={{ asset_version('css/app.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/theme.css') }}?v={{ asset_version('css/theme.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/scoreboard-theme.css') }}?v={{ asset_version('css/scoreboard-theme.css') }}"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/form-atmospheres.css') }}?v={{ asset_version('css/form-atmospheres.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/platform-atmosphere.css') }}?v={{ asset_version('css/platform-atmosphere.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', path='css/contained-backgrounds.css') }}?v={{ asset_version('css/contained-backgrounds.css') }}" />
+  </head>
+  {% set current_path = request.url.path %} {% set in_match =
+  current_path.startswith('/match-setup/') or
+  current_path.startswith('/live-scoring/') or
+  current_path.startswith('/live-viewer/') or
+  current_path.startswith('/scorecard/') %} {% set workspace_label = 'Matches'
+  if in_match or current_path == '/match-setup' else 'Tournaments' if
+  current_path.startswith('/competitions') else 'Players' if
+  current_path.startswith('/player-profile') else
+  resource|default('Overview')|replace('_', ' ')|title %}
+  {% set page_scene = 'scorecard' if current_path.startswith('/scorecard/') else
+    'scoreboard' if current_path.startswith('/live-scoring/') else
+    'spectator' if current_path.startswith('/live-viewer/') else
+    'statistics' if current_path.startswith('/player-profile/') else
+    'match-details' if current_path.startswith('/match-setup/') else
+    'matches' if current_path == '/match-setup' else
+    'fixtures' if current_path.startswith('/competitions/') and section|default('') == 'fixtures' else
+    'tournament-editor' if current_path == '/competitions/new' or current_path.endswith('/edit') else
+    'tournament-details' if current_path.startswith('/competitions/') else
+    'tournaments' if current_path == '/competitions' else
+    resource if resource|default('') in ['teams', 'players', 'venues'] else 'overview' %}
+  <body data-page-scene="{{ page_scene }}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="app-shell">
+      <div class="app-main">
+        <header class="club-header">
+          <div class="club-header-main">
+            <a class="brand" href="/dashboard"
+              ><span class="brand-mark" aria-hidden="true"
+                >CI<span class="brand-dot"></span></span
+              ><span
+                ><strong>Cricket Intelligence</strong
+                ><small>Every ball. Every detail.</small></span
+              ></a
+            >
+            <span class="club-header-caption">YOUR CRICKET. ALL TOGETHER.</span>
+            <a class="button button-primary header-match" href="/match-setup"
+              >+ Set up a match</a
+            >
+            <button
+              class="nav-toggle"
+              id="nav-toggle"
+              type="button"
+              aria-controls="top-navigation"
+              aria-expanded="false"
+            >
+              Menu <span aria-hidden="true">&#9776;</span>
+            </button>
+          </div>
+          <nav
+            class="top-navigation"
+            id="top-navigation"
+            aria-label="Main navigation"
+          >
+            {% for href, label in [('/dashboard', 'Overview'),
+            ('/master-data/teams', 'Teams'), ('/master-data/players',
+            'Players'), ('/master-data/venues', 'Venues'), ('/competitions',
+            'Tournaments'), ('/match-setup', 'Matches')] %} {% set selected =
+            current_path == href or (label == 'Matches' and in_match) or (label
+            == 'Players' and current_path.startswith('/player-profile')) or
+            (label == 'Tournaments' and
+            current_path.startswith('/competitions')) %}
+            <a
+              class="top-nav-link{% if selected %} active{% endif %}"
+              href="{{ href }}"
+              {%
+              if
+              selected
+              %}
+              aria-current="page"
+              {%
+              endif
+              %}
+              >{{ nav_icon(label) }}<span>{{ label }}</span></a
+            >
+            {% endfor %}
+            <span class="nav-current">{{ workspace_label }} workspace</span>
+          </nav>
+        </header>
+        <main class="page-content" id="main-content" tabindex="-1">
+          {% if in_match and match_id is defined %}
+          <nav class="match-navigation" aria-label="Match navigation">
+            <a class="match-back" href="/match-setup">&larr; All matches</a>
+            <div>
+              {% for href, label in [('/match-setup/', 'Setup'),
+              ('/live-scoring/', 'Score match'), ('/live-viewer/', 'Live view'),
+              ('/scorecard/', 'Scorecard')] %}
+              <a
+                href="{{ href }}{{ match_id }}"
+                {%
+                if
+                current_path.startswith(href)
+                %}
+                aria-current="page"
+                {%
+                endif
+                %}
+                >{{ label }}</a
+              >
+              {% endfor %}
+            </div>
+          </nav>
+          {% endif %} {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+    <div
+      class="cricket-loading page-loading"
+      id="page-loading"
+      role="status"
+      aria-live="polite"
+      hidden
+    >
+      <span class="ball-loader" aria-hidden="true"
+        ><span class="loading-ball"></span
+      ></span>
+      <div>
+        <strong id="page-loading-label">Taking the field</strong
+        ><small>Getting your cricket workspace ready...</small>
+      </div>
+    </div>
+    <script src="{{ url_for('static', path='js/ui.js') }}?v={{ asset_version('js/ui.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

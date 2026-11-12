@@ -19,6 +19,7 @@ class PlayerIdentityRead(BaseModel):
     short_name: str | None
     date_of_birth: date | None
     age: int | None
+    jersey_number: int | None = None
     nationality: str | None
     external_id: str | None
     status: PlayerStatus

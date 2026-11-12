@@ -161,6 +161,15 @@
                 },
 
                 {
+                    name: "jersey_number",
+                    label: "Jersey number",
+                    type: "number",
+                    min: 0,
+                    max: 999,
+                    placeholder: "56",
+                },
+
+                {
                     name: "date_of_birth",
                     label: "Date of birth",
                     type: "date",
@@ -271,6 +280,12 @@
                 {
                     key: "short_name",
                     label: "Short name",
+                },
+
+                {
+                    key: "jersey_number",
+                    label: "Jersey number",
+                    format: "number",
                 },
 
                 {

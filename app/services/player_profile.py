@@ -479,6 +479,7 @@ async def get_player_profile(session: AsyncSession, player_id: UUID) -> PlayerPr
             date_of_birth=player.date_of_birth,
             age=calculate_age(player.date_of_birth),
             nationality=player.nationality,
+            jersey_number=player.jersey_number,
             external_id=player.external_id,
             status=player.status,
             batting_hand=player.batting_hand,
