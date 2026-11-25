@@ -11,9 +11,14 @@
   <div id="fixture-error" class="notice notice-danger hidden" role="alert"></div>
   <div id="fixture-loading" class="panel panel-body" role="status">Loading teams, venues and fixture plans…</div>
   <div id="fixture-workspace" hidden>
-    <section class="panel fixture-plan-bar">
-      <label class="form-field"><span>Saved fixture plan</span><select id="fixture-run"><option value="">No saved plans</option></select></label>
-      <span id="fixture-plan-status"></span>
+    <section class="panel fixture-plan-bar" aria-label="Saved fixture plan">
+      <div class="fixture-plan-picker">
+        <div class="fixture-plan-label">
+          <label for="fixture-run">Saved fixture plan</label>
+          <span id="fixture-plan-status"></span>
+        </div>
+        <select id="fixture-run"><option value="">No saved plans</option></select>
+      </div>
       <div class="action-row">
         <button class="button button-secondary button-small" type="button" id="fixture-validate">Validate</button>
         <button class="button button-secondary button-small" type="button" id="fixture-progress">Update bracket</button>

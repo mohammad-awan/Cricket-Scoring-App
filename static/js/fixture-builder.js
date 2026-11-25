@@ -96,7 +96,7 @@
         el("fixture-publish").disabled = !state.run || published || !state.report?.valid || !rows.length;
         el("fixture-metrics").innerHTML = [[summary.matches || 0, "Fixtures"], [summary.rounds || 0, "Rounds"],
             [`${summary.scheduled || 0}/${summary.matches || 0}`, "Allocated"], [summary.minimum_rest_minutes == null ? "—" : `${Math.round(summary.minimum_rest_minutes)} min`, "Shortest rest gap"]]
-            .map(([value, label]) => `<div class="fixture-metric"><strong>${esc(value)}</strong><span>${label}</span></div>`).join("");
+            .map(([value, label]) => `<div class="fixture-metric"><span class="fixture-metric-label">${label}</span><strong>${esc(value)}</strong></div>`).join("");
         const violations = state.report?.violations || [];
         el("fixture-conflicts").innerHTML = !state.run ? '<p class="fixture-help">Create a plan to see feasibility checks.</p>' :
             `<div class="fixture-health ${state.report.valid ? "good" : "error"}"><strong>${state.report.valid ? "Ready for confirmation" : `${violations.length} conflict${violations.length === 1 ? "" : "s"} to resolve`}</strong><br>Checked against rest, venue conflicts, blackouts and the competition window.</div>` +
@@ -113,14 +113,18 @@
     function fixtureCard(row) {
         const immutable = row.immutable || ["completed", "cancelled"].includes(row.status);
         return `<article class="fixture-card" data-fixture-id="${esc(row.id)}">
-            <div class="fixture-card-head"><span>#${row.fixture_number} · Round ${row.round_number}${row.group ? ` · Group ${esc(row.group)}` : ""}${row.leg > 1 ? ` · Leg ${row.leg}` : ""}</span><span>${row.immutable ? "Pinned · " : ""}${UI.statusBadge(row.match_status === "completed" ? "completed" : row.status)}</span></div>
-            <h3>${esc(opponent(row, "home"))}<span>vs</span>${esc(opponent(row, "away"))}</h3>
+            <header class="fixture-card-header">
+                <div class="fixture-card-head"><span>#${row.fixture_number} · Round ${row.round_number}${row.group ? ` · Group ${esc(row.group)}` : ""}${row.leg > 1 ? ` · Leg ${row.leg}` : ""}</span><span>${row.immutable ? "Pinned · " : ""}${UI.statusBadge(row.match_status === "completed" ? "completed" : row.status)}</span></div>
+                <h3>${esc(opponent(row, "home"))}<span>vs</span>${esc(opponent(row, "away"))}</h3>
+            </header>
+            <div class="fixture-card-body">
             <div class="fixture-card-details"><span>${esc(dateTime(row.scheduled_at))}</span><span>· ${esc(venue(row.venue_id))}</span></div>
             <div class="fixture-card-actions">${!immutable ? `<button class="table-action" type="button" data-fixture-action="edit">${row.status === "draft" ? "Edit" : "Reschedule"}</button>${row.status === "draft" ? '<button class="table-action" type="button" data-fixture-action="swap">Swap allocation</button>' : ""}<button class="table-action" type="button" data-fixture-action="postpone">Postpone</button><button class="table-action table-action-danger" type="button" data-fixture-action="cancel">Cancel</button>` : ""}
             ${!immutable && state.run?.configuration?.reviews?.[row.id] ? '<button class="table-action" type="button" data-fixture-action="review">Review official opponents</button>' : ""}
             ${!["completed", "cancelled"].includes(row.status) && !["ready", "live", "innings_break", "completed"].includes(row.match_status) ? `<button class="table-action" type="button" data-fixture-action="${row.is_locked ? "unlock" : "lock"}">${row.is_locked ? "Unlock" : "Lock"}</button>` : ""}
             ${row.match_id ? `<a class="table-action" href="/match-setup/${esc(row.match_id)}">Open match →</a>` : ""}<button class="table-action" type="button" data-fixture-action="history">History</button></div>
             <details><summary>Why this fixture?</summary><p>${esc(row.explanation)}${row.home_source || row.away_source ? `<br>${esc(sourceLabel(row.home_source))} / ${esc(sourceLabel(row.away_source))}. A completed official result is required to advance.` : ""}</p></details>
+            </div>
         </article>`;
     }
 

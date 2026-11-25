@@ -32,7 +32,7 @@ Platform {% endblock %} {% block content %}
 
   <div class="result-banner hidden" id="result-banner"></div>
 
-  <section class="scoring-scoreboard panel">
+  <section class="scoring-scoreboard panel" aria-label="Current innings score">
     <div class="score-main">
       <p class="eyebrow" id="batting-team-label">Batting</p>
 
@@ -79,10 +79,14 @@ Platform {% endblock %} {% block content %}
   </section>
 
   <nav class="scoring-shortcuts" aria-label="Scoring sections">
-    <span>Jump to</span><a href="#delivery-panel">Delivery</a
-    ><a href="#extras-panel">Extras</a><a href="#wicket-panel">Wicket</a
-    ><a href="#batting-order-panel">Batting order</a
-    ><a href="#correction-panel">History</a>
+    <a href="#delivery-panel">Delivery</a>
+    <a href="#participants-panel">Players</a>
+    <a href="#extras-panel">Extras</a>
+    <a href="#wicket-panel">Wicket</a>
+    <a href="#bowler-panel">Change bowler</a>
+    <a href="#retirement-panel">Retirement</a>
+    <a href="#batting-order-panel">Batting order</a>
+    <a href="#correction-panel">History</a>
   </nav>
   <section class="scoring-grid">
     <!-- =========================

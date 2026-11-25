@@ -48,6 +48,28 @@
 
     const sectionRoot = document.getElementById("section-root");
     const hero = document.getElementById("tournament-hero");
+    const navigation = root.querySelector(".tournament-nav");
+
+    document.addEventListener("click", (event) => {
+        if (!navigation.contains(event.target)) {
+            navigation.querySelector("details[open]")?.removeAttribute("open");
+        }
+    });
+
+    navigation.addEventListener("keydown", (event) => {
+        const group = event.target.closest("details[open]");
+        if (event.key === "Escape" && group) {
+            event.preventDefault();
+            group.open = false;
+            group.querySelector("summary").focus();
+        }
+    });
+
+    hero.addEventListener("error", (event) => {
+        if (event.target.matches(".tournament-logo-image")) {
+            event.target.outerHTML = UI.logoMark(state.tournament.name);
+        }
+    }, true);
 
 
     // =========================
@@ -258,8 +280,8 @@
                 </div>
             </div>
             <div class="tournament-hero-actions">
-                <a class="button button-primary button-small" href="/competitions/${t.id}/fixtures">Fixtures</a>
-                ${t.status === "archived" ? "" : `<a class="button button-secondary button-small" href="/competitions/${t.id}/edit">Open wizard</a>`}
+                <a class="button button-primary" href="/competitions/${t.id}/fixtures">Build fixtures</a>
+                ${t.status === "archived" ? "" : `<a class="button button-secondary" href="/competitions/${t.id}/edit">Edit tournament</a>`}
             </div>`;
     }
 
@@ -284,12 +306,13 @@
             ? `${esc(hq.rules.format_code.toUpperCase())} · ${esc(hq.rules.structure.replace(/_/g, " "))} · ${esc(hq.rules.overs_per_innings)} overs · win ${esc(hq.rules.points.win)} pts (rules v${esc(hq.rules.version)})`
             : "Rules not configured";
         return panel("Tournament headquarters", `${rules} · ${esc(hq.teams.approved)} teams · ${esc(hq.venues.length)} venues${hq.groups.length ? ` · groups ${esc(hq.groups.join(", "))}` : ""}`, `
-            <div class="chip-row" style="margin-bottom:12px">
+            <div class="chip-row tournament-outcomes">
                 ${Object.entries(hq.fixtures.by_outcome).map(([key, value]) => `<span class="chip">${esc(key.replace(/_/g, " "))} <strong>${esc(value)}</strong></span>`).join("")}
             </div>
-            <div class="t-grid-sidebar">
-                <div><h3>Live now</h3>${list(hq.live, "No live matches.")}<h3>Upcoming</h3>${list(hq.upcoming, "No upcoming fixtures.")}</div>
-                <div><h3>Recent results</h3>${list(hq.recent_results, "No results yet.")}</div>
+            <div class="tournament-match-summary">
+                <section><h3>Live now</h3>${list(hq.live, "No live matches.")}</section>
+                <section><h3>Upcoming</h3>${list(hq.upcoming, "No upcoming fixtures.")}</section>
+                <section><h3>Recent results</h3>${list(hq.recent_results, "No results yet.")}</section>
             </div>
             <div class="action-row" style="flex-wrap:wrap;margin-top:12px">
                 <a class="button button-secondary button-small" href="/competitions/${esc(state.id)}/live">Schedule &amp; live</a>
@@ -512,21 +535,21 @@
                         <div class="panel-body"><div class="form-grid">${UI.renderFields(UI.BASIC_FIELDS, t)}</div></div>
                         <div class="wizard-footer"><span></span><button class="button button-primary" type="submit">Save basics</button></div>
                     </form>
-                    <form class="panel" data-form="identity" novalidate>
-                        <div class="panel-header t-panel-header"><div><h2>Identity, branding & contacts</h2><p>${locked ? "Locked once the tournament is scheduled." : "Code, category, scope, sponsorship and contacts."}</p></div></div>
-                        <div class="panel-body">
-                            <fieldset style="border:0;margin:0;padding:0" ${locked ? "disabled" : ""}>
-                                <div class="form-grid">${UI.renderFields(UI.IDENTITY_FIELDS, t, { series_id: UI.seriesOptions(state.series) })}</div>
-                            </fieldset>
-                        </div>
-                        <div class="wizard-footer"><span></span><button class="button button-primary" type="submit" ${locked ? "disabled" : ""}>Save identity</button></div>
-                    </form>
                 </div>
                 <aside class="t-stack">
                     ${panel("Logo & cover", "Uploaded images replace the monogram", `<div data-role="branding"></div>`)}
-                    ${locked ? "" : panel("Series", "Group editions of a recurring competition", `<button class="button button-secondary button-small" type="button" data-action="new-series">+ New series</button>`)}
-                    ${panel("Display safety", "", `<p class="muted" style="margin:0">Descriptions and terms are stripped of HTML on the server and always displayed as plain text. Websites must be http(s) links.</p>`)}
                 </aside>
+                <form class="panel" data-form="identity" novalidate>
+                    <div class="panel-header t-panel-header"><div><h2>Identity, branding & contacts</h2><p>${locked ? "Locked once the tournament is scheduled." : "Code, category, scope, sponsorship and contacts."}</p></div></div>
+                    <div class="panel-body">
+                        <fieldset style="border:0;margin:0;padding:0" ${locked ? "disabled" : ""}>
+                            <div class="form-grid">${UI.renderFields(UI.IDENTITY_FIELDS, t, { series_id: UI.seriesOptions(state.series) })}</div>
+                        </fieldset>
+                    </div>
+                    <div class="wizard-footer"><span></span><button class="button button-primary" type="submit" ${locked ? "disabled" : ""}>Save identity</button></div>
+                </form>
+                ${locked ? "" : panel("Series", "Group editions of a recurring competition", `<button class="button button-secondary button-small" type="button" data-action="new-series">+ New series</button>`, { className: "identity-series" })}
+                ${panel("Display safety", "", `<p class="muted" style="margin:0">Descriptions and terms are stripped of HTML on the server and always displayed as plain text. Websites must be http(s) links.</p>`, { className: "identity-display-safety" })}
             </div>`;
 
         UI.mountBrandingPanel(sectionRoot.querySelector('[data-role="branding"]'), {

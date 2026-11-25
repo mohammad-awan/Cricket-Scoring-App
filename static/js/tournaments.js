@@ -52,15 +52,14 @@
     function renderStats() {
         const count = (status) => state.all.filter((item) => item.status === status).length;
         const cards = [
-            ["Tournaments", state.all.filter((item) => item.status !== "archived").length, "C"],
-            ["Open for entries", count("registration_open"), "R"],
-            ["Scheduled / live", count("scheduled") + count("live"), "L"],
-            ["Drafts", count("draft"), "D"],
+            ["Tournaments", state.all.filter((item) => item.status !== "archived").length],
+            ["Open for entries", count("registration_open")],
+            ["Scheduled / live", count("scheduled") + count("live")],
+            ["Drafts", count("draft")],
         ];
 
-        elements.stats.innerHTML = cards.map(([label, value, icon]) => `
+        elements.stats.innerHTML = cards.map(([label, value]) => `
             <article class="stat-card">
-                <div class="stat-icon">${icon}</div>
                 <div>
                     <span>${UI.escapeHtml(label)}</span>
                     <strong>${value}</strong>
@@ -114,6 +113,7 @@
 
 
     async function load() {
+        elements.empty.classList.add("hidden");
         elements.loading.classList.remove("hidden");
         elements.loading.textContent = "Loading tournaments...";
         elements.body.innerHTML = "";

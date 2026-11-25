@@ -8,23 +8,40 @@ Platform {% endblock %} {% block content %}
 >
   <a class="back-link" href="/competitions">← All tournaments</a>
 
-  <section class="panel" style="margin: 12px 0 20px">
+  <section class="panel tournament-workspace-header">
     <div class="tournament-hero" id="tournament-hero">
       <div class="tournament-hero-main">Loading tournament…</div>
     </div>
 
-    <nav class="t-tabs" aria-label="Tournament sections">
-      {% for key, label in [ ("overview", "Tournament Home"), ("identity", "Identity &
-      Branding"), ("rules", "Rules & Format"), ("teams", "Teams"),
-      ("squads", "Squads & Eligibility"), ("venues", "Venues"), ("fixtures", "Fixture Builder"),
-      ("live", "Fixtures & Live"), ("tables", "Groups & Tables"), ("bracket", "Bracket"),
-      ("statistics", "Player Statistics"), ("leaderboards", "Leaderboards"), ("awards", "Awards"),
-      ("records", "Records"), ("operations", "Organizer Operations"), ("reports", "Reports"), ] %}
-      <a
-        class="t-tab {% if section == key %}active{% endif %}"
-        href="/competitions/{{ tournament_id }}/{{ key }}"
-        >{{ label }}</a
-      >
+    <nav class="tournament-nav" aria-label="Tournament sections">
+      {% for key, label, icon in [
+        ("overview", "Overview", "Overview"),
+        ("teams", "Teams", "Teams"),
+        ("live", "Fixtures & Live", "Matches"),
+      ] %}
+      <a class="t-tab {% if section == key %}active{% endif %}" href="/competitions/{{ tournament_id }}/{{ key }}"
+         {% if section == key %}aria-current="page"{% endif %}>{{ nav_icon(icon) }} {{ label }}</a>
+      {% endfor %}
+
+      {% for label, icon, items in [
+        ("Setup", "Settings", [("identity", "Identity & Branding"), ("rules", "Rules & Format"),
+          ("squads", "Squads & Eligibility"), ("venues", "Venues")]),
+        ("Competition", "Tournaments", [("fixtures", "Fixture Builder"), ("tables", "Groups & Tables"),
+          ("bracket", "Bracket"), ("operations", "Organizer Operations")]),
+        ("Insights", "Statistics", [("statistics", "Player Statistics"), ("leaderboards", "Leaderboards"),
+          ("awards", "Awards"), ("records", "Records"), ("reports", "Reports")]),
+      ] %}
+      <details class="tournament-nav-group" name="tournament-navigation">
+        <summary class="t-tab{% if section in (items | map(attribute=0) | list) %} active{% endif %}">
+          {{ nav_icon(icon) }} {{ label }}
+        </summary>
+        <div class="tournament-nav-menu">
+          {% for key, item_label in items %}
+          <a class="t-tab {% if section == key %}active{% endif %}" href="/competitions/{{ tournament_id }}/{{ key }}"
+             {% if section == key %}aria-current="page"{% endif %}>{{ item_label }}</a>
+          {% endfor %}
+        </div>
+      </details>
       {% endfor %}
     </nav>
   </section>

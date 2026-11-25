@@ -2,66 +2,64 @@
 Platform {% endblock %} {% block content %}
 
 <div id="tournaments-page">
-  <section class="page-heading page-heading-actions">
+  <header class="page-heading page-heading-actions">
     <div>
-      <p class="eyebrow">Stage 11 · Competitions</p>
+      <p class="eyebrow">Competitions</p>
       <h1>Tournaments</h1>
       <p class="page-subtitle">
-        Define international, domestic, school, indoor or gully competitions —
-        branding, entry rules, formats and versioned cricket rules.
+        Create and manage competitions, team entries, and playing rules.
       </p>
     </div>
 
-    <div class="action-row">
-      <a class="button button-primary" href="/competitions/new"
-        >+ New tournament</a
-      >
+    <a class="button button-primary" href="/competitions/new">+ New tournament</a>
+  </header>
+
+  <section class="stats-grid" id="tournament-stats" aria-label="Tournament overview"></section>
+
+  <section class="panel master-panel" aria-labelledby="tournament-directory-title">
+    <div class="panel-header">
+      <h2 id="tournament-directory-title">Tournament directory</h2>
     </div>
-  </section>
-
-  <section class="stats-grid" id="tournament-stats"></section>
-
-  <section class="panel master-panel">
     <div class="toolbar">
       <label class="search-box">
-        <span class="sr-only">Search</span>
+        <span class="tournament-filter-label">Search tournaments</span>
         <input
           id="search-input"
           type="search"
-          placeholder="Search by name, season, organizer…"
+          placeholder="Name, season, or organizer"
           autocomplete="off"
         />
       </label>
 
-      <select id="status-filter" class="status-filter" aria-label="Status">
-        <option value="">All statuses</option>
-        <option value="draft">Draft</option>
-        <option value="registration_open">Registration open</option>
-        <option value="registration_closed">Registration closed</option>
-        <option value="scheduled">Scheduled</option>
-        <option value="live">Live</option>
-        <option value="suspended">Suspended</option>
-        <option value="completed">Completed</option>
-        <option value="cancelled">Cancelled</option>
-        <option value="active">Active (legacy)</option>
-        <option value="archived">Archived</option>
-      </select>
-
-      <label class="checkbox-field">
-        <input id="include-archived" type="checkbox" />
-        Include archived
+      <label>
+        <span class="tournament-filter-label">Status</span>
+        <select id="status-filter" class="status-filter">
+          <option value="">All statuses</option>
+          <option value="draft">Draft</option>
+          <option value="registration_open">Registration open</option>
+          <option value="registration_closed">Registration closed</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="live">Live</option>
+          <option value="suspended">Suspended</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="active">Active (legacy)</option>
+          <option value="archived">Archived</option>
+        </select>
       </label>
 
-      <button
-        class="button button-secondary button-small"
-        id="refresh-list"
-        type="button"
-      >
-        Refresh
-      </button>
+      <div class="tournament-list-controls">
+        <label class="checkbox-field">
+          <input id="include-archived" type="checkbox" />
+          Include archived
+        </label>
+        <button class="button button-secondary" id="refresh-list" type="button">
+          Refresh
+        </button>
+      </div>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap" role="region" aria-label="Tournament results" tabindex="0">
       <table class="data-table">
         <thead>
           <tr>
@@ -74,20 +72,21 @@ Platform {% endblock %} {% block content %}
         </thead>
         <tbody id="table-body"></tbody>
       </table>
+    </div>
 
-      <div class="table-state" id="table-loading">Loading tournaments...</div>
-      <div class="table-state hidden" id="table-empty">
-        No tournaments match these filters.
-      </div>
+    <div class="table-state" id="table-loading" role="status">Loading tournaments...</div>
+    <div class="table-state hidden" id="table-empty" role="status">
+      No tournaments match these filters.
     </div>
 
     <div class="pagination-bar">
-      <span id="pagination-summary">0 tournaments</span>
+      <span id="pagination-summary" aria-live="polite">0 tournaments</span>
       <div class="pagination-actions">
         <button
           class="button button-secondary button-small"
           id="previous-page"
           type="button"
+          disabled
         >
           Previous
         </button>
@@ -96,6 +95,7 @@ Platform {% endblock %} {% block content %}
           class="button button-secondary button-small"
           id="next-page"
           type="button"
+          disabled
         >
           Next
         </button>

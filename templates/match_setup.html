@@ -3,8 +3,6 @@ Platform {% endblock %} {% block content %}
 
 <div id="match-setup-page" class="premium-form-workspace" data-form-theme="matches" data-match-id="{{ match_id }}">
   <section class="page-heading">
-    <a class="back-link" href="/match-setup"> ← All matches </a>
-
     <div class="setup-title-row">
       <div>
         <p class="eyebrow">Match centre</p>
@@ -62,11 +60,24 @@ Platform {% endblock %} {% block content %}
       <ul class="readiness-list" id="readiness-list"></ul>
     </article>
 
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Match details</p>
+          <h2>Venue, date &amp; overs</h2>
+        </div>
+      </div>
+
+      <div class="panel-body" id="match-details-body">
+        <p class="muted">Loading…</p>
+      </div>
+    </article>
+
     <!-- =========================
              TOSS
         ========================== -->
 
-    <article class="panel">
+    <article class="panel setup-grid-wide">
       <div class="panel-header">
         <div>
           <p class="eyebrow">Step 1</p>
@@ -106,24 +117,6 @@ Platform {% endblock %} {% block content %}
         >
           Save toss
         </button>
-      </div>
-    </article>
-
-    <!-- =========================
-             MATCH DETAILS
-        ========================== -->
-
-    <article class="panel setup-grid-wide">
-      <div class="panel-header">
-        <div>
-          <p class="eyebrow">Match</p>
-
-          <h2>Venue, date &amp; overs</h2>
-        </div>
-      </div>
-
-      <div class="panel-body" id="match-details-body">
-        <p class="muted">Loading…</p>
       </div>
     </article>
 
