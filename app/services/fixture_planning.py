@@ -316,18 +316,18 @@ class FixturePlanningService:
             raise FixtureConflictError("Unlock this fixture before changing it.")
         before = {key: getattr(fixture, key) for key in ("status", "is_locked", "venue_id", "scheduled_at", "ends_at")}
         if payload.action == "review":
+            from app.services.tournament_qualification import SlotResolver
+            resolver = SlotResolver(self.session, run.tournament_id)
+            by_number = {entry.fixture_number: entry for entry in fixtures}
             assignments = {}
             for side in ("home", "away"):
                 source = row.get(f"{side}_source")
                 if not source:
                     continue
-                if not source.startswith("winner:"):
-                    raise FixtureValidationError("Official Stage 13 ranking resolution is still required.")
-                parent = next((entry for entry in fixtures if entry.fixture_number == int(source.split(":")[1])), None)
-                official = await self.session.get(Match, parent.match_id, populate_existing=True) if parent and parent.match_id else None
-                if not official or official.status != MatchStatus.COMPLETED or not official.completed_at or official.winner_team_id not in {official.team_a_id, official.team_b_id}:
-                    raise FixtureValidationError("The prerequisite still has no finalized winner.")
-                assignments[f"{side}_team_id"] = official.winner_team_id
+                resolved, message = await resolver.resolve(source, by_number)
+                if resolved is None:
+                    raise FixtureValidationError(message)
+                assignments[f"{side}_team_id"] = resolved
             for key, value in assignments.items():
                 setattr(fixture, key, value)
             if match:
@@ -378,6 +378,8 @@ class FixturePlanningService:
         config = dict(run.configuration or {})
         reviews = dict(config.get("reviews", {}))
         changed, blocked = 0, []
+        from app.services.tournament_qualification import SlotResolver
+        resolver = SlotResolver(self.session, run.tournament_id)
         for row in sorted(rows, key=lambda row: (row["round_number"], row["fixture_number"])):
             fixture = by_number[row["fixture_number"]]
             if fixture.status in {"cancelled", "postponed"}:
@@ -386,15 +388,10 @@ class FixturePlanningService:
                 source = row.get(f"{side}_source")
                 if not source:
                     continue
-                winner = None
-                if source.startswith(("winner:", "loser:")):
-                    parent = by_number.get(int(source.split(":")[1]))
-                    match = await self.session.get(Match, parent.match_id) if parent and parent.match_id else None
-                    if match and match.status == MatchStatus.COMPLETED and match.completed_at and match.winner_team_id in {match.team_a_id, match.team_b_id}:
-                        winner = match.winner_team_id if source.startswith("winner:") else (match.team_b_id if match.winner_team_id == match.team_a_id else match.team_a_id)
+                # Stage 13 resolves winner/loser (incl. walkovers) and group places.
+                winner, message = await resolver.resolve(source, by_number)
                 if winner is None:
-                    blocked.append({"fixture_number": fixture.fixture_number, "source": source,
-                                    "message": "Official Stage 13 rankings required." if source.startswith("group:") else "Awaiting a finalized winner; ties, reopened results and no-results block advancement."})
+                    blocked.append({"fixture_number": fixture.fixture_number, "source": source, "message": message})
                 previous = getattr(fixture, f"{side}_team_id")
                 if previous != winner:
                     if fixture.match_id or fixture.is_locked:
@@ -468,18 +465,20 @@ async def validate_fixture_activation(session, match):
     fixture = await session.scalar(select(Fixture).where(Fixture.match_id == match.id))
     if fixture is None:
         return
+    from app.services.tournament_qualification import SlotResolver
     service = FixturePlanningService(session)
-    run, _, rows = await service.load(fixture.generation_run_id)
+    run, fixtures, rows = await service.load(fixture.generation_run_id)
     row = next(row for row in rows if row["id"] == fixture.id)
     if fixture.status != "published" or str(fixture.id) in (run.configuration or {}).get("reviews", {}):
         raise ConflictError("This fixture is postponed, cancelled, or requires bracket review.")
+    resolver = SlotResolver(session, run.tournament_id)
+    by_number = {entry.fixture_number: entry for entry in fixtures}
     for side in ("home", "away"):
         source = row.get(f"{side}_source")
         if not source:
             continue
-        if not source.startswith("winner:"):
-            raise ConflictError("Official group ranking resolution is required before activation.")
-        parent = next((entry for entry in rows if entry["fixture_number"] == int(source.split(":")[1])), None)
-        official = await session.get(Match, parent["match_id"]) if parent and parent["match_id"] else None
-        if not official or official.status != MatchStatus.COMPLETED or not official.completed_at or official.winner_team_id != getattr(fixture, f"{side}_team_id"):
+        resolved, message = await resolver.resolve(source, by_number)
+        if resolved is None:
+            raise ConflictError(message)
+        if resolved != getattr(fixture, f"{side}_team_id"):
             raise ConflictError("A prerequisite result is unresolved or changed. Review the bracket before activation.")

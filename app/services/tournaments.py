@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 from pydantic import ValidationError as PydanticValidationError
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
@@ -645,6 +646,24 @@ async def _check_transition_guards(
         ):
             raise ConflictError(
                 "Tournament matches are still ready or in progress"
+            )
+
+        # Stage 13: a tournament with published fixtures is completed only
+        # through finalization, which freezes an auditable championship.
+        from app.models.entities.fixtures import FixtureGenerationRun
+
+        has_published_fixtures = await session.scalar(
+            select(FixtureGenerationRun.id)
+            .where(
+                FixtureGenerationRun.tournament_id == tournament.id,
+                FixtureGenerationRun.status == "published",
+            )
+            .limit(1)
+        )
+        if has_published_fixtures is not None:
+            raise ConflictError(
+                "Use tournament finalization to complete a tournament "
+                "with published fixtures"
             )
 
     if target == TournamentStatus.CANCELLED:

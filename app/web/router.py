@@ -131,6 +131,16 @@ TOURNAMENT_SECTIONS = {
     "squads",
     "venues",
     "fixtures",
+    # Stage 13 screens
+    "live",
+    "tables",
+    "bracket",
+    "statistics",
+    "leaderboards",
+    "awards",
+    "records",
+    "operations",
+    "reports",
 }
 
 

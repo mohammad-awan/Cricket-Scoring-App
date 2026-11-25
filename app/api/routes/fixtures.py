@@ -1,11 +1,5 @@
 from uuid import UUID
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Query,
-    status,
-)
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db_session
@@ -25,6 +19,12 @@ from app.services.fixture import (
     FixtureNotFoundError,
     FixtureConflictError,
 )
+from app.services.tournament_bracket_review import review_bracket
+from app.models.entities.fixtures import FixtureBracketDependency
+from app.services.tournament_bracket import advance_bracket_dependency, BracketAdvancementError, BracketAdvancementConflict
+import csv
+import io
+from fastapi.responses import StreamingResponse
 
 
 router = APIRouter(prefix="/fixtures", tags=["Tournament Fixtures"])
@@ -292,3 +292,97 @@ async def update_fixture(
     except Exception:
         await session.rollback()
         raise
+
+
+
+@router.get("/tournaments/{tournament_id}/bracket/review")
+async def get_tournament_bracket_review(tournament_id: UUID, session: AsyncSession = Depends(get_db_session)):
+    try:
+        return await review_bracket(
+            session,
+            tournament_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+
+
+@router.post("/bracket/dependencies/{dependency_id}/advance")
+async def advance_bracket(dependency_id: UUID, session: AsyncSession = Depends(get_db_session)):
+    try:
+        async with session.begin():
+            result = await advance_bracket_dependency(
+                session=session,
+                dependency_id=dependency_id,
+            )
+
+        return result
+
+    except BracketAdvancementConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    except BracketAdvancementError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/tournaments/{tournament_id}/export")
+async def export_tournament_fixtures(tournament_id: UUID, session: AsyncSession = Depends(get_db_session)):
+    fixtures = (
+        await session.scalars(
+            select(Fixture)
+            .where(
+                Fixture.tournament_id == tournament_id
+            )
+            .order_by(
+                Fixture.fixture_number,
+                Fixture.id,
+            )
+        )
+    ).all()
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Fixture Number",
+        "Fixture ID",
+        "Home Team ID",
+        "Away Team ID",
+        "Venue ID",
+        "Scheduled At",
+        "Status",
+        "Match ID",
+        "Version",
+    ])
+
+    for fixture in fixtures:
+        writer.writerow([
+            fixture.fixture_number,
+            str(fixture.id),
+            str(fixture.home_team_id or ""),
+            str(fixture.away_team_id or ""),
+            str(fixture.venue_id or ""),
+            (
+                fixture.scheduled_at.isoformat()
+                if fixture.scheduled_at else ""
+            ),
+            fixture.status,
+            str(fixture.match_id or ""),
+            fixture.version,
+        ])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="fixtures.csv"'
+            )
+        },
+    )

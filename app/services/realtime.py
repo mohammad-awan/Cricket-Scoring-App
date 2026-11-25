@@ -74,6 +74,9 @@ class MatchConnectionManager:
 
 live_connections = MatchConnectionManager()
 
+# Stage 13: tournament-wide channel (HQ, live board, tables, brackets).
+tournament_connections = MatchConnectionManager()
+
 async def build_live_event(match_id: UUID, event_type: LiveEventType) -> LiveMatchEvent:
     """
     Build authoritative live state.
@@ -125,6 +128,8 @@ async def publish_committed_match_state(match_id: UUID, event_type: LiveEventTyp
         }:
             await synchronize_fixture_result(match_id)
 
+        await notify_tournament_of_match(match_id, event_type, event.scorecard.status)
+
 
     except Exception:
         # WebSocket failure must never
@@ -162,3 +167,51 @@ async def synchronize_fixture_result(match_id: UUID) -> None:
 
 
 
+
+
+async def publish_tournament_event(tournament_id: UUID, event_type: str, payload: dict | None = None) -> None:
+    """Broadcast a committed tournament state change.
+
+    Call only after the owning transaction committed. Consumers should
+    refetch the affected resources (standings, bracket, awards...).
+    """
+
+    from fastapi.encoders import jsonable_encoder
+
+    try:
+        await tournament_connections.broadcast(
+            tournament_id,
+            {
+                "event_type": event_type,
+                "tournament_id": str(tournament_id),
+                "sent_at": datetime.now(timezone.utc).isoformat(),
+                "payload": jsonable_encoder(payload or {}),
+            },
+        )
+    except Exception:
+        logger.exception("Tournament event %s could not be broadcast for %s", event_type, tournament_id)
+
+
+async def notify_tournament_of_match(match_id: UUID, event_type: LiveEventType, status: str) -> None:
+    """Forward a committed match change to its tournament channel."""
+
+    from app.models import Match
+
+    try:
+        async with AsyncSessionFactory() as session:
+            match = await session.get(Match, match_id)
+            tournament_id = match.tournament_id if match else None
+
+        if tournament_id is None:
+            return
+
+        await publish_tournament_event(
+            tournament_id,
+            "result_committed" if status == "completed" or event_type in {
+                LiveEventType.DELIVERY_CORRECTED, LiveEventType.RETIREMENT_CORRECTED,
+            } else "match_state_changed",
+            {"match_id": match_id, "match_event": event_type.value, "match_status": status,
+             "recompute": ["standings", "qualification", "bracket", "leaderboards"] if status == "completed" else []},
+        )
+    except Exception:
+        logger.exception("Tournament notification failed for match %s", match_id)

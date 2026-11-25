@@ -14,6 +14,12 @@ from app.api.routes.player_profile import router as player_profile_router
 from app.api.routes.fixtures import router as fixtures_router
 from app.api.routes.fixture_planning import router as fixture_planning_router
 from app.api.routes.profile_assets import router as profile_assets_router
+from app.api.routes.tournament_operations import router as tournament_operations_router
+from app.api.routes.tournament_statistics import router as tournament_statistics_router
+from app.api.routes.tournament_statistics import series_router as tournament_series_statistics_router
+from app.api.routes.tournament_awards import router as tournament_awards_router
+from app.api.routes.tournament_reports import router as tournament_reports_router
+
 
 
 api_router = APIRouter()
@@ -33,3 +39,8 @@ api_router.include_router(team_squads_router)
 api_router.include_router(fixture_planning_router)
 api_router.include_router(fixtures_router)
 api_router.include_router(profile_assets_router)
+api_router.include_router(tournament_operations_router)
+api_router.include_router(tournament_statistics_router)
+api_router.include_router(tournament_series_statistics_router)
+api_router.include_router(tournament_awards_router)
+api_router.include_router(tournament_reports_router)

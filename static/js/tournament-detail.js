@@ -268,16 +268,49 @@
     // OVERVIEW
     // =========================
 
+    // Stage 13 tournament headquarters: live, upcoming and recent matches.
+    function headquartersPanel(hq) {
+        const line = (row) => `
+            <li>
+                <strong>${esc(row.home_team_name || "TBD")}</strong> v <strong>${esc(row.away_team_name || "TBD")}</strong>
+                <span class="muted">· ${esc(row.venue_name || "Venue TBC")} · ${row.scheduled_at ? esc(UI.formatDateTime(row.scheduled_at, state.tournament.timezone)) : "Unscheduled"}</span>
+                ${(row.innings || []).map((item) => `<span class="chip">${esc(item.team_name)} ${esc(item.score)} (${esc(item.overs)})</span>`).join("")}
+                ${row.result ? `<div>${esc(row.result)}</div>` : ""}
+                ${row.links?.scorecard ? `<a class="table-action" href="${esc(row.links.scorecard)}">Scorecard</a>` : ""}
+                ${row.links?.live_viewer && ["live", "innings_break"].includes(row.match_status) ? `<a class="table-action" href="${esc(row.links.live_viewer)}">Watch live</a>` : ""}
+            </li>`;
+        const list = (rows, empty) => (rows.length ? `<ul class="t-list">${rows.map(line).join("")}</ul>` : `<p class="muted">${esc(empty)}</p>`);
+        const rules = hq.rules
+            ? `${esc(hq.rules.format_code.toUpperCase())} · ${esc(hq.rules.structure.replace(/_/g, " "))} · ${esc(hq.rules.overs_per_innings)} overs · win ${esc(hq.rules.points.win)} pts (rules v${esc(hq.rules.version)})`
+            : "Rules not configured";
+        return panel("Tournament headquarters", `${rules} · ${esc(hq.teams.approved)} teams · ${esc(hq.venues.length)} venues${hq.groups.length ? ` · groups ${esc(hq.groups.join(", "))}` : ""}`, `
+            <div class="chip-row" style="margin-bottom:12px">
+                ${Object.entries(hq.fixtures.by_outcome).map(([key, value]) => `<span class="chip">${esc(key.replace(/_/g, " "))} <strong>${esc(value)}</strong></span>`).join("")}
+            </div>
+            <div class="t-grid-sidebar">
+                <div><h3>Live now</h3>${list(hq.live, "No live matches.")}<h3>Upcoming</h3>${list(hq.upcoming, "No upcoming fixtures.")}</div>
+                <div><h3>Recent results</h3>${list(hq.recent_results, "No results yet.")}</div>
+            </div>
+            <div class="action-row" style="flex-wrap:wrap;margin-top:12px">
+                <a class="button button-secondary button-small" href="/competitions/${esc(state.id)}/live">Schedule &amp; live</a>
+                <a class="button button-secondary button-small" href="/competitions/${esc(state.id)}/tables">Tables</a>
+                <a class="button button-secondary button-small" href="/competitions/${esc(state.id)}/leaderboards">Leaderboards</a>
+                <a class="button button-secondary button-small" href="/competitions/${esc(state.id)}/operations">Operations</a>
+            </div>`);
+    }
+
     async function renderOverview() {
         const t = state.tournament;
-        const [readiness, audit, deductions, editions] = await Promise.all([
+        const [readiness, audit, deductions, editions, , hq] = await Promise.all([
             API.tournament.readiness(state.id),
             API.tournament.audit(state.id).catch((error) => error),
             API.tournament.deductions(state.id).catch(() => []),
             t.series_id ? API.tournamentSeries.editions(t.series_id).catch(() => []) : Promise.resolve([]),
             loadMemberships(),
+            API.tournamentHub.overview(state.id).catch(() => null),
         ]);
         const series = state.series.find((item) => item.id === t.series_id);
+        const hqPanel = hq ? headquartersPanel(hq) : "";
 
         const currentIndex = UI.LIFECYCLE_PATH.indexOf(t.status);
         const track = UI.LIFECYCLE_PATH.map((status, index) => {
@@ -343,7 +376,7 @@
                     </li>`).join("")}</ul>`
                 : `<p class="muted" style="margin:0">No audit events yet.</p>`;
 
-        sectionRoot.innerHTML = `
+        sectionRoot.innerHTML = hqPanel + `
             <div class="t-grid-sidebar">
                 <div class="t-stack">
                     ${panel("Lifecycle", "Every transition is validated and recorded in the audit trail.", `
@@ -1370,6 +1403,50 @@
     // BOOT
     // =========================
 
+    // Stage 13 screens live in tournament-hub.js.
+    function hubContext() {
+        return {
+            state,
+            root: sectionRoot,
+            UI,
+            esc,
+            panel,
+            notice,
+            listNotice,
+            ask,
+            run,
+            getChoice: () => lastChoice,
+            isFinal,
+            rerender: renderSection,
+            refresh,
+        };
+    }
+
+
+    function hubSection(name) {
+        return async () => {
+            if (!state.memberships.length) {
+                await loadMemberships().catch(() => undefined);
+            }
+            await window.TournamentHub.sections[name](hubContext());
+        };
+    }
+
+
+    sectionRoot.addEventListener("click", async (event) => {
+        if (window.TournamentHub && window.TournamentHub.sections[state.section]) {
+            await window.TournamentHub.handleClick(hubContext(), event);
+        }
+    });
+
+
+    sectionRoot.addEventListener("submit", async (event) => {
+        if (window.TournamentHub && window.TournamentHub.sections[state.section]) {
+            await window.TournamentHub.handleSubmit(hubContext(), event);
+        }
+    });
+
+
     const SECTIONS = {
         overview: renderOverview,
         identity: renderIdentity,
@@ -1377,6 +1454,15 @@
         teams: renderTeams,
         squads: renderSquads,
         venues: renderVenues,
+        live: hubSection("live"),
+        tables: hubSection("tables"),
+        bracket: hubSection("bracket"),
+        statistics: hubSection("statistics"),
+        leaderboards: hubSection("leaderboards"),
+        awards: hubSection("awards"),
+        records: hubSection("records"),
+        operations: hubSection("operations"),
+        reports: hubSection("reports"),
     };
 
 

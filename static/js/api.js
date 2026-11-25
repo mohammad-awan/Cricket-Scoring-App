@@ -1051,6 +1051,57 @@
 
             editions: (seriesId) => request(`/tournament-series/${seriesId}/editions`),
 
+            leaderboards: (seriesId, params = {}) => request(`/tournament-series/${seriesId}/leaderboards?${queryString(params)}`),
+
+            history: (seriesId) => request(`/tournament-series/${seriesId}/history`),
+
+        },
+
+
+        // =========================
+        // STAGE 13 - TOURNAMENT OPERATIONS
+        // =========================
+
+        tournamentHub: {
+            overview: (id) => request(`/tournaments/${id}/overview`),
+            live: (id) => request(`/tournaments/${id}/live`),
+            results: (id) => request(`/tournaments/${id}/results`),
+            calendar: (id, params = {}) => request(`/tournaments/${id}/calendar?${queryString(params)}`),
+            operations: (id) => request(`/tournaments/${id}/operations`),
+            standings: (id) => request(`/tournaments/${id}/standings`),
+            groupTables: (id) => request(`/tournaments/${id}/group-tables`),
+            qualification: (id, params = {}) => request(`/tournaments/${id}/qualification?${queryString(params)}`),
+            bracket: (id) => request(`/tournaments/${id}/bracket`),
+            resolveBracket: (id) => request(`/tournaments/${id}/bracket/resolve`, { method: "POST" }),
+            disposition: (id, fixtureId, data) => request(`/tournaments/${id}/fixtures/${fixtureId}/disposition`, { method: "POST", body: JSON.stringify(data) }),
+            revokeDisposition: (id, fixtureId, reason) => request(`/tournaments/${id}/fixtures/${fixtureId}/disposition/revoke`, { method: "POST", body: JSON.stringify({ reason }) }),
+            adjudicate: (id, data) => request(`/tournaments/${id}/standings/adjudications`, { method: "POST", body: JSON.stringify(data) }),
+            revokeAdjudication: (id, data) => request(`/tournaments/${id}/standings/adjudications/revoke`, { method: "POST", body: JSON.stringify(data) }),
+            bonuses: (id) => request(`/tournaments/${id}/standings/bonuses`),
+            addBonus: (id, data) => request(`/tournaments/${id}/standings/bonuses`, { method: "POST", body: JSON.stringify(data) }),
+            revokeBonus: (id, bonusId, reason) => request(`/tournaments/${id}/standings/bonuses/${bonusId}/revoke`, { method: "POST", body: JSON.stringify({ reason }) }),
+            leaderboards: (id, params = {}) => request(`/tournaments/${id}/leaderboards?${queryString(params)}`),
+            playerStats: (id, playerId) => request(`/tournaments/${id}/player-stats/${playerId}`),
+            teamStats: (id) => request(`/tournaments/${id}/team-stats`),
+            records: (id, limit = 5) => request(`/tournaments/${id}/records?limit=${limit}`),
+            awardCandidates: (id) => request(`/tournaments/${id}/awards/candidates`),
+            confirmedAwards: (id) => request(`/tournaments/${id}/awards/confirmed`),
+            awardSettings: (id) => request(`/tournaments/${id}/awards/settings`),
+            saveAwardSettings: (id, settings, reason) => request(`/tournaments/${id}/awards/settings`, { method: "PUT", body: JSON.stringify({ settings, reason }) }),
+            confirmAward: (id, code, data) => request(`/tournaments/${id}/awards/${encodeURIComponent(code)}/confirm`, { method: "POST", body: JSON.stringify(data) }),
+            revokeAward: (id, code, reason) => request(`/tournaments/${id}/awards/${encodeURIComponent(code)}/revoke`, { method: "POST", body: JSON.stringify({ reason }) }),
+            votes: (id, code) => request(`/tournaments/${id}/awards/${encodeURIComponent(code)}/votes`),
+            vote: (id, code, data) => request(`/tournaments/${id}/awards/${encodeURIComponent(code)}/votes`, { method: "POST", body: JSON.stringify(data) }),
+            playerOfMatch: (id, matchId, data) => request(`/tournaments/${id}/matches/${matchId}/player-of-match`, { method: "POST", body: JSON.stringify(data) }),
+            awardPublication: (id) => request(`/tournaments/${id}/awards/publication`),
+            publishAwards: (id, reason) => request(`/tournaments/${id}/awards/publish`, { method: "POST", body: JSON.stringify({ reason }) }),
+            unpublishAwards: (id, reason) => request(`/tournaments/${id}/awards/unpublish`, { method: "POST", body: JSON.stringify({ reason }) }),
+            readiness: (id) => request(`/tournaments/${id}/closeout/readiness`),
+            finalize: (id) => request(`/tournaments/${id}/finalize`, { method: "POST" }),
+            reopen: (id, reason) => request(`/tournaments/${id}/reopen`, { method: "POST", body: JSON.stringify({ reason }) }),
+            officialRecord: (id) => request(`/tournaments/${id}/official-record`),
+            decisions: (id) => request(`/tournaments/${id}/decisions`),
+            report: (id) => request(`/tournaments/${id}/report`),
         },
 
 

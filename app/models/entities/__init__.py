@@ -37,6 +37,11 @@ from app.models.entities.fixtures import (
 )
 
 from app.models.entities.venues import Venue
+from app.models.entities.tournament_operations import (
+    TournamentAward,
+    TournamentCloseout,
+    TournamentDecision,
+)
 
 
 __all__ = [

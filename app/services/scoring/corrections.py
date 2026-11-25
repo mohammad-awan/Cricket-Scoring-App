@@ -14,6 +14,9 @@ from app.services.scoring.chase import (
     innings_finished,
 )
 from app.services.scoring.state import current_state, rebuild_innings_state
+from app.services.tournament_result_guard import (
+    guard_tournament_result_correction,
+)
 
 
 async def undo_delivery(
@@ -71,6 +74,11 @@ async def undo_delivery(
             raise NotFoundError(
                 "Match not found"
             )
+
+        await guard_tournament_result_correction(
+            session,
+            match_id,
+        )
 
         delivery = (
             await repository

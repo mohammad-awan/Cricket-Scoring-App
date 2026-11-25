@@ -6,7 +6,9 @@ both directions of the Stage 11 revisions compile (valid identifiers, no
 calls that need a live connection) and preserve existing data: upgrades
 only add nullable or defaulted columns and new tables.
 
-Later revisions extend Stage 11; verify their chain to the current head.
+Later revisions extend Stage 11; verify their chain to the current head,
+including Stage 12 fixtures, profile assets, jersey configuration,
+Stage 13 tournament operations, and immutable tournament decisions.
 
 A live round trip belongs on a disposable database:
     alembic downgrade 20261010_0010 && alembic upgrade head
@@ -29,21 +31,23 @@ SHORT_SIDES = "20261015_0013"
 MATCH_RULE_GUARDS = "20261015_0014"
 STAGE12_FIXTURES = "845e2be3dfb1"
 PROFILE_ASSETS = "20261112_0015"
+JERSEY_CONFIGURATION = "20261112_0016"
+STAGE13_OPERATIONS = "20261121_0017"
+IMMUTABLE_DECISIONS = "2d2ab70822d4"
+CURRENT_HEAD = IMMUTABLE_DECISIONS
 
 
 def alembic_config(buffer: io.StringIO) -> Config:
     config = Config(str(ROOT / "alembic.ini"), output_buffer=buffer)
     config.set_main_option("script_location", str(ROOT / "alembic"))
+
     return config
 
 
 def render(direction: str, revision_range: str) -> str:
     buffer = io.StringIO()
-    getattr(command, direction)(
-        alembic_config(buffer),
-        revision_range,
-        sql=True,
-    )
+    getattr(command, direction)(alembic_config(buffer), revision_range, sql=True)
+
     return buffer.getvalue()
 
 
@@ -53,14 +57,23 @@ def render(direction: str, revision_range: str) -> str:
 
 def test_completion_revision_is_the_single_head() -> None:
     script = ScriptDirectory.from_config(alembic_config(io.StringIO()))
-    assert script.get_heads() == [PROFILE_ASSETS]
+    # Verify that the project has exactly one migration head.
+    assert script.get_heads() == [CURRENT_HEAD]
     # Verify the complete Stage 11 migration chain.
-    assert script.get_revision(MATCH_RULE_GUARDS).down_revision == SHORT_SIDES
-    assert script.get_revision(SHORT_SIDES).down_revision == COMPLETION
+    assert script.get_revision(STAGE11).down_revision == BEFORE_STAGE11
     assert script.get_revision(COMPLETION).down_revision == STAGE11
-    # Verify Stage 12 follows the Stage 11 migration chain.
+    assert script.get_revision(SHORT_SIDES).down_revision == COMPLETION
+    assert script.get_revision(MATCH_RULE_GUARDS).down_revision == SHORT_SIDES
+    # Verify Stage 12 follows Stage 11.
     assert script.get_revision(STAGE12_FIXTURES).down_revision == MATCH_RULE_GUARDS
+    # Verify profile assets follow Stage 12 fixtures.
     assert script.get_revision(PROFILE_ASSETS).down_revision == STAGE12_FIXTURES
+    # Verify jersey configuration follows profile assets.
+    assert script.get_revision(JERSEY_CONFIGURATION).down_revision == PROFILE_ASSETS
+    # Verify Stage 13 tournament operations.
+    assert script.get_revision(STAGE13_OPERATIONS).down_revision == JERSEY_CONFIGURATION
+    # Verify immutable tournament decision history.
+    assert script.get_revision(IMMUTABLE_DECISIONS).down_revision == STAGE13_OPERATIONS
 
 
 # ---------------------------------------
@@ -78,13 +91,9 @@ def test_completion_revision_is_the_single_head() -> None:
         ("downgrade", f"{SHORT_SIDES}:{COMPLETION}"),
     ],
 )
-def test_stage11_migrations_render_in_both_directions(
-    direction: str,
-    revision_range: str,
-) -> None:
+def test_stage11_migrations_render_in_both_directions(direction: str, revision_range: str) -> None:
     sql = render(direction, revision_range)
     target = revision_range.split(":")[1]
-
     assert f"version_num='{target}'" in sql
 
 
@@ -93,18 +102,9 @@ def test_stage11_migrations_render_in_both_directions(
 # ---------------------------------------
 
 def test_identifiers_fit_postgresql_limit() -> None:
-    sql = render(
-        "upgrade",
-        f"{BEFORE_STAGE11}:{COMPLETION}",
-    )
-
-    names = re.findall(
-        r"CONSTRAINT (\w+)|INDEX (\w+)",
-        sql,
-    )
-
+    sql = render("upgrade", f"{BEFORE_STAGE11}:{COMPLETION}")
+    names = re.findall(r"CONSTRAINT (\w+)|INDEX (\w+)", sql)
     assert names
-
     assert all(
         len(name) <= 63
         for pair in names
@@ -118,16 +118,8 @@ def test_identifiers_fit_postgresql_limit() -> None:
 # ---------------------------------------
 
 def test_completion_upgrade_preserves_existing_rows() -> None:
-    sql = render(
-        "upgrade",
-        f"{STAGE11}:{COMPLETION}",
-    )
-
-    added_columns = re.findall(
-        r"ALTER TABLE (\w+) ADD COLUMN (\w+) ([^;]+);",
-        sql,
-    )
-
+    sql = render("upgrade", f"{STAGE11}:{COMPLETION}")
+    added_columns = re.findall(r"ALTER TABLE (\w+) ADD COLUMN (\w+) ([^;]+);", sql)
     assert {
         (table, column)
         for table, column, _ in added_columns
@@ -142,10 +134,7 @@ def test_completion_upgrade_preserves_existing_rows() -> None:
     }
 
     for _, column, definition in added_columns:
-        assert (
-            "NOT NULL" not in definition
-            or "DEFAULT" in definition
-        ), column
+        assert "NOT NULL" not in definition or "DEFAULT" in definition, column
 
     assert "DROP TABLE" not in sql
     assert "DROP COLUMN" not in sql
@@ -185,16 +174,15 @@ def test_short_sides_upgrade_keeps_existing_matches_on_full_sides() -> None:
         "upgrade",
         f"{COMPLETION}:{SHORT_SIDES}",
     )
-
     assert (
         "ALTER TABLE matches ADD COLUMN "
         "minimum_players_to_start INTEGER;"
     ) in sql
-
     assert (
         "ALTER TABLE innings ADD COLUMN "
         "batting_side_size INTEGER;"
     ) in sql
-    # Existing innings keep their all-out point from their real XI size.
+    # Existing innings keep their all-out point
+    # from their real XI size.
     assert "UPDATE innings AS i" in sql
     assert "DROP" not in sql

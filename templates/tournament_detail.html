@@ -14,9 +14,12 @@ Platform {% endblock %} {% block content %}
     </div>
 
     <nav class="t-tabs" aria-label="Tournament sections">
-      {% for key, label in [ ("overview", "Overview"), ("identity", "Identity &
-      Branding"), ("rules", "Rules & Format"), ("teams", "Team Registration"),
-      ("squads", "Squads & Eligibility"), ("venues", "Venues"), ("fixtures", "Fixtures"), ] %}
+      {% for key, label in [ ("overview", "Tournament Home"), ("identity", "Identity &
+      Branding"), ("rules", "Rules & Format"), ("teams", "Teams"),
+      ("squads", "Squads & Eligibility"), ("venues", "Venues"), ("fixtures", "Fixture Builder"),
+      ("live", "Fixtures & Live"), ("tables", "Groups & Tables"), ("bracket", "Bracket"),
+      ("statistics", "Player Statistics"), ("leaderboards", "Leaderboards"), ("awards", "Awards"),
+      ("records", "Records"), ("operations", "Organizer Operations"), ("reports", "Reports"), ] %}
       <a
         class="t-tab {% if section == key %}active{% endif %}"
         href="/competitions/{{ tournament_id }}/{{ key }}"
@@ -82,5 +85,6 @@ Platform {% endblock %} {% block content %}
 {% endblock %} {% block scripts %}
 <script src="{{ url_for('static', path='js/api.js') }}?v={{ asset_version('js/api.js') }}"></script>
 <script src="{{ url_for('static', path='js/tournament-common.js') }}?v={{ asset_version('js/tournament-common.js') }}"></script>
+<script src="{{ url_for('static', path='js/tournament-hub.js') }}?v={{ asset_version('js/tournament-hub.js') }}"></script>
 <script src="{{ url_for('static', path='js/tournament-detail.js') }}?v={{ asset_version('js/tournament-detail.js') }}"></script>
 {% endblock %}

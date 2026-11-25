@@ -51,7 +51,7 @@ from app.services import tournament_assets as asset_services
 from app.services import tournament_discipline as discipline_services
 from app.services import tournaments as tournament_services
 from app.services.tournaments import archive_tournament, create_tournament, get_tournament, list_tournaments, update_tournament
-
+from app.services.tournament_closeout import closeout_readiness
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
@@ -817,3 +817,10 @@ async def tournament_asset_file_endpoint(
             "Content-Disposition": "inline",
         },
     )
+
+
+@router.get("/{tournament_id}/closeout/check")
+async def check_tournament_closeout(tournament_id: UUID, session: SessionDependency):
+    """Full Stage 13 completion check (results, bracket, champion, awards)."""
+
+    return await closeout_readiness(session, tournament_id)

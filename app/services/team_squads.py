@@ -4,23 +4,10 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictError, NotFoundError
-from app.models import (
-    AuditAction,
-    PlayerStatus,
-    TeamPlayer,
-    TeamStatus,
-)
+from app.models import AuditAction, PlayerStatus, TeamPlayer, TeamStatus
 from app.repositories.match_setup import MatchSetupRepository
-from app.schemas.match_setup import (
-    PlayerSummary,
-    SquadMemberCreate,
-    TeamSquadMembershipRead,
-)
-from app.services.common import (
-    add_audit_log,
-    integrity_conflict,
-    service_transaction,
-)
+from app.schemas.match_setup import PlayerSummary, SquadMemberCreate, TeamSquadMembershipRead
+from app.services.common import add_audit_log, integrity_conflict, service_transaction
 
 
 
